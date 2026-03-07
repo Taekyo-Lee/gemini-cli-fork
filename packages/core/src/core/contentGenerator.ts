@@ -263,8 +263,11 @@ export async function createContentGenerator(
       const selectedModelName =
         config.selectedOpenAIModel ?? gcConfig.getModel();
       const modelConfig = getModelByName(selectedModelName);
-      const apiKeyEnv = modelConfig?.apiKeyEnv ?? 'OPENAI_API_KEY';
-      const apiKey = process.env[apiKeyEnv] ?? config.apiKey ?? '';
+      const apiKeyEnv = modelConfig?.apiKeyEnv;
+      const apiKey = (apiKeyEnv ? process.env[apiKeyEnv] : undefined) ??
+        process.env['PROJECT_OPENAI_API_KEY'] ??
+        process.env['OPENAI_API_KEY'] ??
+        config.apiKey ?? '';
       const baseURL =
         modelConfig?.url ?? config.baseUrl ?? 'https://api.openai.com/v1';
       const modelToSend =
