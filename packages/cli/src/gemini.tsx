@@ -50,6 +50,7 @@ import {
   sessionId,
   logUserPrompt,
   AuthType,
+  getAuthTypeFromEnv,
   getOauthClient,
   UserPromptEvent,
   debugLogger,
@@ -664,6 +665,7 @@ export async function main() {
     initAppHandle?.end();
 
     if (
+      getAuthTypeFromEnv() !== AuthType.OPENAI_COMPATIBLE &&
       settings.merged.security.auth.selectedType ===
         AuthType.LOGIN_WITH_GOOGLE &&
       config.isBrowserLaunchSuppressed()
