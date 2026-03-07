@@ -18,6 +18,8 @@ import {
   AuthType,
   clearCachedCredentialFile,
   type Config,
+  getAuthTypeFromEnv,
+  getAvailableModels,
 } from '@google/gemini-cli-core';
 import { useKeypress } from '../hooks/useKeypress.js';
 import { AuthState } from '../types.js';
@@ -34,6 +36,172 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({
+  config,
+  settings,
+  setAuthState,
+  authError,
+  onAuthError,
+  setAuthContext,
+}: AuthDialogProps): React.JSX.Element {
+  const isOpenAIMode = getAuthTypeFromEnv() === AuthType.OPENAI_COMPATIBLE;
+
+  // -----------------------------------------------------------------------
+  // OpenAI-compatible mode: show LLM model picker
+  // -----------------------------------------------------------------------
+  if (isOpenAIMode) {
+    return (
+      <OpenAIModelPicker
+        config={config}
+        settings={settings}
+        setAuthState={setAuthState}
+        authError={authError}
+        onAuthError={onAuthError}
+      />
+    );
+  }
+
+  // -----------------------------------------------------------------------
+  // Original Google auth flow (unchanged)
+  // -----------------------------------------------------------------------
+  return (
+    <GoogleAuthDialog
+      config={config}
+      settings={settings}
+      setAuthState={setAuthState}
+      authError={authError}
+      onAuthError={onAuthError}
+      setAuthContext={setAuthContext}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// OpenAI Model Picker (replaces auth dialog in OpenAI-compatible mode)
+// ---------------------------------------------------------------------------
+
+function OpenAIModelPicker({
+  config,
+  settings,
+  setAuthState,
+  authError,
+  onAuthError,
+}: Omit<AuthDialogProps, 'setAuthContext'>): React.JSX.Element {
+  const [connecting, setConnecting] = useState(false);
+
+  const models = getAvailableModels();
+  const items = models.map((m) => ({
+    label: m.modelAlias
+      ? `${m.model} (${m.modelAlias})`
+      : m.model,
+    value: m.model,
+    key: m.model,
+  }));
+
+  const handleModelSelect = useCallback(
+    (modelName: string) => {
+      if (connecting) return;
+      setConnecting(true);
+      onAuthError(null);
+
+      // Set the model on config and connect
+      config.setModel(modelName, false);
+      settings.setValue(
+        SettingScope.User,
+        'security.auth.selectedType',
+        AuthType.OPENAI_COMPATIBLE,
+      );
+
+      config
+        .refreshAuth(AuthType.OPENAI_COMPATIBLE)
+        .then(() => {
+          setAuthState(AuthState.Authenticated);
+        })
+        .catch((e: unknown) => {
+          setConnecting(false);
+          onAuthError(
+            `Failed to connect: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        });
+    },
+    [config, settings, setAuthState, onAuthError, connecting],
+  );
+
+  useKeypress(
+    (key) => {
+      if (key.name === 'escape') {
+        if (authError) return true;
+        onAuthError(
+          'You must select a model to proceed. Press Ctrl+C twice to exit.',
+        );
+        return true;
+      }
+      return false;
+    },
+    { isActive: !connecting },
+  );
+
+  if (connecting) {
+    return (
+      <Box
+        borderStyle="round"
+        borderColor={theme.ui.focus}
+        flexDirection="row"
+        padding={1}
+        width="100%"
+        alignItems="flex-start"
+      >
+        <Text color={theme.text.primary}>Connecting to model...</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      borderStyle="round"
+      borderColor={theme.ui.focus}
+      flexDirection="row"
+      padding={1}
+      width="100%"
+      alignItems="flex-start"
+    >
+      <Text color={theme.text.accent}>? </Text>
+      <Box flexDirection="column" flexGrow={1}>
+        <Text bold color={theme.text.primary}>
+          Select a model
+        </Text>
+        <Box marginTop={1}>
+          <Text color={theme.text.secondary}>
+            {models.length} models available
+          </Text>
+        </Box>
+        <Box marginTop={1}>
+          <RadioButtonSelect
+            items={items}
+            initialIndex={0}
+            onSelect={handleModelSelect}
+            onHighlight={() => {
+              onAuthError(null);
+            }}
+          />
+        </Box>
+        {authError && (
+          <Box marginTop={1}>
+            <Text color={theme.status.error}>{authError}</Text>
+          </Box>
+        )}
+        <Box marginTop={1}>
+          <Text color={theme.text.secondary}>(Use Enter to select)</Text>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Original Google auth dialog (extracted for clarity)
+// ---------------------------------------------------------------------------
+
+function GoogleAuthDialog({
   config,
   settings,
   setAuthState,
