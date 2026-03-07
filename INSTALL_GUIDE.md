@@ -49,56 +49,28 @@ This compiles all TypeScript packages (`core`, `cli`, `sdk`, etc.) into `dist/` 
 
 ## Step 4: Make `gemini` Available Globally
 
-### Quick Test (no setup needed)
-
-You can always run the fork directly without any alias or linking:
-
-```bash
-cd ~/workspace/gemini-cli-fork
-node packages/cli
-```
-
-This works immediately after `npm run build` and does not affect your global `gemini` install. Good for quick testing before committing to a global setup.
-
-### Permanent Setup
-
-Pick **one** of the two methods below to make `gemini` available from any directory.
-
-### Method A: Shell Alias (simple, no symlinks)
-
-Add this line to your shell config file:
-
-```bash
-# For bash users:
-echo 'alias gemini="node ~/workspace/gemini-cli-fork/packages/cli"' >> ~/.bashrc
-source ~/.bashrc
-
-# For zsh users:
-echo 'alias gemini="node ~/workspace/gemini-cli-fork/packages/cli"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-### Method B: `npm link` (creates a real global binary)
-
-From the repo root:
-
-```bash
-npm link ./packages/cli
-```
-
-This registers `gemini` as a global command via symlink.
-
-To unlink later:
+If you previously installed the original gemini-cli globally, unlink it first:
 
 ```bash
 npm unlink -g @google/gemini-cli
 ```
 
-### Verify it works
+Then link this fork:
+
+```bash
+cd ~/workspace/gemini-cli-fork
+npm link ./packages/cli
+```
+
+Verify:
 
 ```bash
 gemini --version
 ```
+
+You should see `0.34.0-nightly.xxx`. Now `gemini` works from any directory.
+
+> **Tip:** If you don't want to touch your global install, you can always run `node packages/cli` from the repo root instead of `gemini`.
 
 You should see something like `0.34.0-nightly.xxx`. Now `gemini` works from any directory.
 
