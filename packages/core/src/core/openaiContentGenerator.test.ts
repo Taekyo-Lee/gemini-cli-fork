@@ -11,8 +11,7 @@ import type { LlmRole } from '../telemetry/llmRole.js';
 // We need to capture the mock _before_ importing the module under test
 const mockCreate = vi.fn();
 
-vi.mock('openai', () => {
-  return {
+vi.mock('openai', () => ({
     default: vi.fn().mockImplementation(() => ({
       chat: {
         completions: {
@@ -20,8 +19,7 @@ vi.mock('openai', () => {
         },
       },
     })),
-  };
-});
+  }));
 
 // Now import after mock is set up
 const { OpenAIContentGenerator } = await import(
@@ -79,7 +77,7 @@ describe('OpenAIContentGenerator', () => {
       );
 
       expect(result.candidates).toHaveLength(1);
-      expect(result.candidates![0]!.content!.parts![0]!.text).toBe(
+      expect(result.candidates![0].content!.parts![0].text).toBe(
         'Hello from test model!',
       );
       expect(result.usageMetadata?.totalTokenCount).toBe(11);
@@ -302,10 +300,10 @@ describe('OpenAIContentGenerator', () => {
       }
 
       expect(results.length).toBe(2);
-      expect(results[0]!.candidates![0]!.content!.parts![0]!.text).toBe(
+      expect(results[0].candidates![0].content!.parts![0].text).toBe(
         'Hello',
       );
-      expect(results[1]!.candidates![0]!.content!.parts![0]!.text).toBe(
+      expect(results[1].candidates![0].content!.parts![0].text).toBe(
         ' world',
       );
     });
@@ -382,10 +380,10 @@ describe('OpenAIContentGenerator', () => {
 
       // Only the final accumulated chunk should be yielded
       expect(results.length).toBe(1);
-      const parts = results[0]!.candidates![0]!.content!.parts!;
+      const parts = results[0].candidates![0].content!.parts!;
       expect(parts).toHaveLength(1);
-      expect(parts[0]!.functionCall!.name).toBe('search');
-      expect(parts[0]!.functionCall!.id).toBe('call_1');
+      expect(parts[0].functionCall!.name).toBe('search');
+      expect(parts[0].functionCall!.id).toBe('call_1');
     });
 
     it('requests stream with include_usage', async () => {
