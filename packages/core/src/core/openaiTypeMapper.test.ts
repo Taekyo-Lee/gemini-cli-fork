@@ -5,8 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { FinishReason } from '@google/genai';
-import { Type } from '@google/genai';
+import { FinishReason , Type } from '@google/genai';
 import type { Content, Tool } from '@google/genai';
 import type {
   ChatCompletion,
@@ -79,11 +78,11 @@ describe('geminiContentsToOpenAIMessages', () => {
     ];
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toHaveLength(1);
-    expect(messages[0]!.role).toBe('assistant');
+    expect(messages[0].role).toBe('assistant');
     const msg = messages[0] as { tool_calls: Array<{ function: { name: string; arguments: string } }> };
     expect(msg.tool_calls).toHaveLength(1);
-    expect(msg.tool_calls[0]!.function.name).toBe('get_weather');
-    expect(JSON.parse(msg.tool_calls[0]!.function.arguments)).toEqual({
+    expect(msg.tool_calls[0].function.name).toBe('get_weather');
+    expect(JSON.parse(msg.tool_calls[0].function.arguments)).toEqual({
       city: 'NYC',
     });
   });
@@ -104,7 +103,7 @@ describe('geminiContentsToOpenAIMessages', () => {
     ];
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toHaveLength(1);
-    expect(messages[0]!.role).toBe('tool');
+    expect(messages[0].role).toBe('tool');
     const msg = messages[0] as { content: string };
     expect(JSON.parse(msg.content)).toEqual({ temperature: 72 });
   });
@@ -125,7 +124,7 @@ describe('geminiContentsToOpenAIMessages', () => {
     ];
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toHaveLength(1);
-    expect(messages[0]!.role).toBe('tool');
+    expect(messages[0].role).toBe('tool');
   });
 
   it('handles model with both text and function calls', () => {
@@ -184,9 +183,9 @@ describe('geminiToolsToOpenAITools', () => {
     ];
     const result = geminiToolsToOpenAITools(tools);
     expect(result).toHaveLength(1);
-    expect(result![0]!.type).toBe('function');
-    expect(result![0]!.function.name).toBe('get_weather');
-    expect(result![0]!.function.description).toBe(
+    expect(result![0].type).toBe('function');
+    expect(result![0].function.name).toBe('get_weather');
+    expect(result![0].function.description).toBe(
       'Gets the weather for a city',
     );
   });
@@ -243,9 +242,9 @@ describe('openaiResponseToGeminiResponse', () => {
     const response = makeChatCompletion();
     const result = openaiResponseToGeminiResponse(response);
     expect(result.candidates).toHaveLength(1);
-    expect(result.candidates![0]!.content!.parts![0]!.text).toBe('Hello!');
-    expect(result.candidates![0]!.content!.role).toBe('model');
-    expect(result.candidates![0]!.finishReason).toBe(FinishReason.STOP);
+    expect(result.candidates![0].content!.parts![0].text).toBe('Hello!');
+    expect(result.candidates![0].content!.role).toBe('model');
+    expect(result.candidates![0].finishReason).toBe(FinishReason.STOP);
   });
 
   it('maps usage metadata', () => {
@@ -282,11 +281,11 @@ describe('openaiResponseToGeminiResponse', () => {
       ],
     });
     const result = openaiResponseToGeminiResponse(response);
-    const parts = result.candidates![0]!.content!.parts!;
+    const parts = result.candidates![0].content!.parts!;
     expect(parts).toHaveLength(1);
-    expect(parts[0]!.functionCall!.name).toBe('get_weather');
-    expect(parts[0]!.functionCall!.args).toEqual({ city: 'NYC' });
-    expect(parts[0]!.functionCall!.id).toBe('call_abc');
+    expect(parts[0].functionCall!.name).toBe('get_weather');
+    expect(parts[0].functionCall!.args).toEqual({ city: 'NYC' });
+    expect(parts[0].functionCall!.id).toBe('call_abc');
   });
 
   it('handles empty choices', () => {
@@ -315,7 +314,7 @@ describe('openaiResponseToGeminiResponse', () => {
         ],
       });
       const result = openaiResponseToGeminiResponse(response);
-      expect(result.candidates![0]!.finishReason).toBe(expected);
+      expect(result.candidates![0].finishReason).toBe(expected);
     }
   });
 
@@ -345,8 +344,8 @@ describe('openaiResponseToGeminiResponse', () => {
       ],
     });
     const result = openaiResponseToGeminiResponse(response);
-    const parts = result.candidates![0]!.content!.parts!;
-    expect(parts[0]!.functionCall!.args).toEqual({});
+    const parts = result.candidates![0].content!.parts!;
+    expect(parts[0].functionCall!.args).toEqual({});
   });
 });
 
@@ -375,7 +374,7 @@ describe('openaiStreamChunkToGeminiResponse', () => {
     const chunk = makeChunk();
     const result = openaiStreamChunkToGeminiResponse(chunk);
     expect(result.candidates).toHaveLength(1);
-    expect(result.candidates![0]!.content!.parts![0]!.text).toBe('Hello');
+    expect(result.candidates![0].content!.parts![0].text).toBe('Hello');
   });
 
   it('handles empty choices (usage-only chunk)', () => {
@@ -412,10 +411,10 @@ describe('openaiStreamChunkToGeminiResponse', () => {
       ],
     });
     const result = openaiStreamChunkToGeminiResponse(chunk);
-    const parts = result.candidates![0]!.content!.parts!;
+    const parts = result.candidates![0].content!.parts!;
     expect(parts).toHaveLength(1);
-    expect(parts[0]!.functionCall!.name).toBe('search');
-    expect(parts[0]!.functionCall!.id).toBe('call_stream_1');
+    expect(parts[0].functionCall!.name).toBe('search');
+    expect(parts[0].functionCall!.id).toBe('call_stream_1');
   });
 
   it('maps finish_reason on stream chunk', () => {
@@ -430,13 +429,13 @@ describe('openaiStreamChunkToGeminiResponse', () => {
       ],
     });
     const result = openaiStreamChunkToGeminiResponse(chunk);
-    expect(result.candidates![0]!.finishReason).toBe(FinishReason.STOP);
+    expect(result.candidates![0].finishReason).toBe(FinishReason.STOP);
   });
 
   it('returns undefined finishReason when null', () => {
     const chunk = makeChunk();
     const result = openaiStreamChunkToGeminiResponse(chunk);
-    expect(result.candidates![0]!.finishReason).toBeUndefined();
+    expect(result.candidates![0].finishReason).toBeUndefined();
   });
 
   it('preserves model version', () => {
