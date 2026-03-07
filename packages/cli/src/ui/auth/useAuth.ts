@@ -13,6 +13,7 @@ import {
   debugLogger,
   isAccountSuspendedError,
   ProjectIdRequiredError,
+  getAuthTypeFromEnv,
 } from '@google/gemini-cli-core';
 import { getErrorMessage } from '@google/gemini-cli-core';
 import { AuthState } from '../types.js';
@@ -88,6 +89,13 @@ export const useAuthCommand = (
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     (async () => {
       if (authState !== AuthState.Unauthenticated) {
+        return;
+      }
+
+      // In OpenAI-compatible mode, skip Google auth flow entirely.
+      // The AuthDialog's model picker handles authentication.
+      if (getAuthTypeFromEnv() === AuthType.OPENAI_COMPATIBLE) {
+        setAuthState(AuthState.Updating);
         return;
       }
 
