@@ -13,6 +13,8 @@ import {
   StartSessionEvent,
   logCliConfiguration,
   startupProfiler,
+  getAuthTypeFromEnv,
+  AuthType,
 } from '@google/gemini-cli-core';
 import { type LoadedSettings } from '../config/settings.js';
 import { performInitialAuth } from './auth.js';
@@ -38,15 +40,28 @@ export async function initializeApp(
   config: Config,
   settings: LoadedSettings,
 ): Promise<InitializationResult> {
-  const authHandle = startupProfiler.start('authenticate');
-  const { authError, accountSuspensionInfo } = await performInitialAuth(
-    config,
-    settings.merged.security.auth.selectedType,
-  );
-  authHandle?.end();
+  // Check if OpenAI-compatible mode is detected from environment
+  const detectedAuthType = getAuthTypeFromEnv();
+  const isOpenAIMode = detectedAuthType === AuthType.OPENAI_COMPATIBLE;
+
+  let authError: string | null = null;
+  let accountSuspensionInfo: AccountSuspensionInfo | null = null;
+
+  if (!isOpenAIMode) {
+    const authHandle = startupProfiler.start('authenticate');
+    const authResult = await performInitialAuth(
+      config,
+      settings.merged.security.auth.selectedType,
+    );
+    authError = authResult.authError;
+    accountSuspensionInfo = authResult.accountSuspensionInfo;
+    authHandle?.end();
+  }
+
   const themeError = validateTheme(settings);
 
-  const shouldOpenAuthDialog =
+  // In OpenAI mode, always show the model picker (auth dialog)
+  const shouldOpenAuthDialog = isOpenAIMode ||
     settings.merged.security.auth.selectedType === undefined || !!authError;
 
   logCliConfiguration(
