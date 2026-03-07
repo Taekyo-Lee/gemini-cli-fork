@@ -17,14 +17,22 @@ This guide walks you through building and installing Gemini CLI from this cloned
     ```
 - **Git** (already done since you cloned this repo)
 
-## Step 1: Install Dependencies
+## Step 1: Create Config Directory
+
+Gemini CLI stores settings and project data in `~/.gemini/`. Create it before first run:
+
+```bash
+mkdir -p ~/.gemini
+```
+
+## Step 2: Install Dependencies
 
 ```bash
 cd ~/workspace/gemini-cli-fork
 npm install
 ```
 
-## Step 2: Build
+## Step 3: Build
 
 ```bash
 npm run build
@@ -32,7 +40,7 @@ npm run build
 
 This compiles all TypeScript packages (`core`, `cli`, `sdk`, etc.) into `dist/` directories.
 
-## Step 3: Make `gemini` Available Globally
+## Step 4: Make `gemini` Available Globally
 
 Pick **one** of the two methods below.
 
@@ -74,7 +82,7 @@ gemini --version
 
 You should see something like `0.34.0-nightly.xxx`. Now `gemini` works from any directory.
 
-## Step 4: Authenticate
+## Step 5: Authenticate
 
 On first run, Gemini CLI will prompt you to choose an auth method.
 
@@ -120,6 +128,7 @@ npm start
 
 ```bash
 # Full setup (run once)
+mkdir -p ~/.gemini
 cd ~/workspace/gemini-cli-fork
 npm install
 npm run build
