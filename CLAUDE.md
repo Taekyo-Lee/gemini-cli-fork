@@ -6,6 +6,10 @@ This is a fork of [Google's Gemini CLI](https://github.com/GoogleCloudPlatform/g
 
 **Key behavior change:** `$ gemini` → shows LLM selection list (not auth prompt) → connects to selected model via OpenAI Chat Completions API.
 
+## Workflow Rule
+
+**After completing any Phase (or sub-phase), always update `TODO.md`** — mark completed items with `[x]`, add notes on what was done, and ensure the status accurately reflects reality. This keeps TODO.md as the single source of truth for project progress.
+
 ## Architecture
 
 Monorepo using npm workspaces:
