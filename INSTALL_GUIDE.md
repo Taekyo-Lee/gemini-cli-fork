@@ -49,7 +49,20 @@ This compiles all TypeScript packages (`core`, `cli`, `sdk`, etc.) into `dist/` 
 
 ## Step 4: Make `gemini` Available Globally
 
-Pick **one** of the two methods below.
+### Quick Test (no setup needed)
+
+You can always run the fork directly without any alias or linking:
+
+```bash
+cd ~/workspace/gemini-cli-fork
+node packages/cli
+```
+
+This works immediately after `npm run build` and does not affect your global `gemini` install. Good for quick testing before committing to a global setup.
+
+### Permanent Setup
+
+Pick **one** of the two methods below to make `gemini` available from any directory.
 
 ### Method A: Shell Alias (simple, no symlinks)
 
