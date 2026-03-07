@@ -72,8 +72,6 @@ You should see `0.34.0-nightly.xxx`. Now `gemini` works from any directory.
 
 > **Tip:** If you don't want to touch your global install, you can always run `node packages/cli` from the repo root instead of `gemini`.
 
-You should see something like `0.34.0-nightly.xxx`. Now `gemini` works from any directory.
-
 ## Step 5: Choose Your Mode
 
 This fork supports two modes: **OpenAI-compatible mode** (on-prem/cloud LLMs) and the **original Google auth mode**.
@@ -87,13 +85,15 @@ This mode replaces the Google auth prompt with a model picker. It activates auto
 The env file at `~/workspace/main/research/a2g_packages/envs/.env` contains API keys and the `PROJECT_A2G_LOCATION` variable that controls which models are available.
 
 ```bash
-# Option 1: Source the env file in your shell (recommended)
-source ~/workspace/main/research/a2g_packages/envs/.env
+# Option 1: Source the env file in your current shell
+set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
 
-# Option 2: Add to your shell profile for persistence
-echo 'source ~/workspace/main/research/a2g_packages/envs/.env' >> ~/.bashrc
+# Option 2: Add to your shell profile for persistence (auto-loads on every new terminal)
+echo 'set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a' >> ~/.bashrc
 source ~/.bashrc
 ```
+
+> **Why `set -a`?** The `.env` file uses `KEY=VALUE` format without `export`. `set -a` tells bash to automatically export all variables so child processes (like `node`) can see them. `set +a` turns it off after sourcing.
 
 **Run:**
 
@@ -182,7 +182,7 @@ npm run build
 npm link ./packages/cli     # or use alias method above
 
 # ----- OpenAI-compatible mode (on-prem/cloud LLMs) -----
-source ~/workspace/main/research/a2g_packages/envs/.env
+set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
 gemini                      # shows model picker
 
 # Or use the test script:
@@ -214,6 +214,58 @@ gemini
 To switch from Google mode to OpenAI mode:
 
 ```bash
-source ~/workspace/main/research/a2g_packages/envs/.env
+set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
 gemini
 ```
+
+## Troubleshooting
+
+### Model picker doesn't appear (shows Google auth instead)
+
+**Cause:** The env vars aren't exported to child processes.
+
+Verify with:
+```bash
+node -e "console.log(process.env.PROJECT_A2G_LOCATION)"
+```
+
+If this prints `undefined`, you sourced the `.env` file without `set -a`. Fix:
+```bash
+set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
+```
+
+If you already added `source .env` to `~/.bashrc` without `set -a`, fix it:
+```bash
+sed -i 's|source ~/workspace/main/research/a2g_packages/envs/.env|set -a \&\& source ~/workspace/main/research/a2g_packages/envs/.env \&\& set +a|' ~/.bashrc
+source ~/.bashrc
+```
+
+### Model picker doesn't appear (previously logged in with Google)
+
+If you previously used Google auth, the cached session may take priority. The env vars must be set **and exported** — the OpenAI mode detection (`PROJECT_A2G_LOCATION`, `PROJECT_OPENROUTER_API_KEY`, or `OPENAI_BASE_URL`) takes highest priority when the vars are properly exported.
+
+### `gemini` command not found
+
+You need to link the fork globally:
+```bash
+cd ~/workspace/gemini-cli-fork
+npm link ./packages/cli
+```
+
+Or run directly without linking:
+```bash
+cd ~/workspace/gemini-cli-fork
+node packages/cli
+```
+
+### TLS warning on startup
+
+```
+Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0'...
+```
+
+This is harmless — it comes from `NODE_TLS_REJECT_UNAUTHORIZED=0` in the env file (needed for some on-prem endpoints). You can safely ignore it.
+
+### Vulnerabilities warning from `npm install` / `npm link`
+
+These are upstream dependency issues, not from our code. Safe to ignore.
