@@ -243,8 +243,8 @@ Findings from code scrutiny — 16 issues (3 critical, 7 medium, 6 minor).
       fields (`model`, `messages`, `stream`) so they cannot be overridden
 - [x] Improve `countTokens()` — extracts text from parts instead of
       `JSON.stringify` on entire request
-- [ ] Document corp model API key resolution (no `apiKeyEnv`, relies on fallback
-      chain)
+- [x] Document corp model API key resolution (no `apiKeyEnv`, relies on fallback
+      chain) — added to `docs/openai-compatible.md` Corporate section
 - [x] Fix SDK `session.ts` — defaults to first available model when
       `OPENAI_COMPATIBLE` detected
 
@@ -253,16 +253,23 @@ Findings from code scrutiny — 16 issues (3 critical, 7 medium, 6 minor).
 - [x] Investigate `mapFinishReason('tool_calls') -> STOP` — NOT a bug.
       `geminiChat.ts` triggers tool execution from `resp.functionCalls` (parts),
       not from `finishReason`. Mapping to STOP is correct.
-- [ ] Handle or remove unused `custom` field on model configs
-- [ ] Model persistence (save last selection to `~/.gemini/settings.json`) —
-      also in Phase 6
-- [ ] Document auth detection priority (OpenAI mode silently wins over
-      GEMINI_API_KEY)
+- [x] Handle or remove unused `custom` field on model configs — removed from
+      `LLMModelConfig` interface and from `dev-claude-haiku-4.5-generic` and
+      `claude-haiku-4.5` model definitions. Was Python-only metadata never read
+      by TypeScript code.
+- [x] Model persistence (save last selection to `~/.gemini/settings.json`) —
+      completed in Phase 6 (`settingsSchema.ts`, `AuthDialog.tsx`,
+      `initializer.ts`)
+- [x] Document auth detection priority (OpenAI mode silently wins over
+      GEMINI_API_KEY) — added detection order to `docs/openai-compatible.md`
 - [x] Fix test isolation for global typeMapper state — resolved by
       `ToolCallIdTracker` class from 7.1. Each function creates a fresh tracker
       when none is provided; `OpenAIContentGenerator` uses a per-instance one.
-- [ ] Audit `turn.ts` fallback ID generation (`name_Date.now()_callCounter++`)
-      vs typeMapper IDs
+- [x] Audit `turn.ts` fallback ID generation (`name_Date.now()_callCounter++`)
+      vs typeMapper IDs — NOT a conflict. OpenAI responses always include
+      `tool_call_id` which the mapper preserves in `functionCall.id`. The
+      fallback in `turn.ts:412` only triggers for Gemini-native responses (which
+      don't use tool_call_id). No collision possible.
 
 ---
 

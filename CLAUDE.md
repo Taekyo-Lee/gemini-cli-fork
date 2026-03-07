@@ -55,7 +55,7 @@ LLMs. Our TypeScript registry must mirror this data.
   (CORP/DEV/HOME), hostname patterns, defaults to HOME
 - LLMConfig fields: `model`, `model_alias`, `url`, `api_key_env`,
   `context_length`, `max_tokens`, `corp/home/dev` (bools), `reasoning_model`,
-  `extra_body`, `default_headers`, `custom`
+  `extra_body`, `default_headers`
 
 ### Complete Model Registry
 
@@ -77,27 +77,16 @@ models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
 
 ---
 
-## Known Issues (see TODO.md Phase 7 for full details)
+## Known Issues
 
-**Critical -- Multi-turn tool calling broken:**
+All critical, medium, and minor issues from Phase 7 have been resolved. See
+TODO.md for the full history of fixes. Key fixes applied:
 
-- `openaiTypeMapper.ts`: Global `toolCallIdMap`/`toolCallCounter` cause ID
-  mismatches when same tool called twice. ROOT CAUSE of multi-turn failures.
-  Fix: per-request `ToolCallIdTracker` class.
-- `openaiContentGenerator.ts`: Streaming tool calls silently dropped when
-  `finish_reason` is `"stop"` instead of `"tool_calls"`. Fix: emit pending calls
-  regardless of finish_reason.
-- `packages/cli/src/config/auth.ts`: `validateAuthMethod()` rejects
-  `OPENAI_COMPATIBLE` -- breaks non-interactive mode. Fix: add early return.
-
-**Medium:**
-
-- `llmRegistry.ts`: `dev-claude-haiku-4.5-generic` missing `apiKeyEnv`; GaussO
-  headers evaluated at import time
-- `openaiContentGenerator.ts`: No `max_tokens` sent; `extraBody` can override
-  critical fields; `countTokens` overestimates
-- `turn.ts` line 412: Fallback tool call ID format may conflict with typeMapper
-  IDs
+- Per-instance `ToolCallIdTracker` (was global mutable state)
+- Streaming tool call emission at end-of-stream (was silently dropped)
+- `OPENAI_COMPATIBLE` in `validateAuthMethod()` (was rejected)
+- Corp model headers as lazy getter, `max_tokens` pass-through, `extraBody`
+  ordering, `countTokens` text extraction, `custom` field removal
 
 ---
 
@@ -202,15 +191,6 @@ npm run build && node packages/cli  # Build and run
 | `packages/core/src/core/openaiTypeMapper.ts`       | Gemini <> OpenAI type conversion                    |
 | `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator impl using OpenAI SDK              |
 | `scripts/test_openai_adapter.sh`                   | Build/test/run script                               |
-
-## Files to Fix (Phase 7 -- see TODO.md)
-
-| File                                               | Issue                                        |
-| -------------------------------------------------- | -------------------------------------------- |
-| `packages/core/src/core/openaiTypeMapper.ts`       | Global mutable state (tool call ID tracking) |
-| `packages/core/src/core/openaiContentGenerator.ts` | Streaming tool call drop, missing max_tokens |
-| `packages/cli/src/config/auth.ts`                  | validateAuthMethod rejects OPENAI_COMPATIBLE |
-| `packages/core/src/config/llmRegistry.ts`          | Missing apiKeyEnv, GaussO header timing      |
 
 ## Files NOT to Modify
 

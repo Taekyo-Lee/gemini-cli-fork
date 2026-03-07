@@ -21,12 +21,6 @@ export interface LLMModelConfig {
   reasoningModel: boolean;
   extraBody?: Record<string, unknown>;
   defaultHeaders?: Record<string, string>;
-  custom?: {
-    className: string;
-    module: string;
-    endpoint: string;
-    modelAlias?: string;
-  };
 }
 
 export type EnvironmentType = 'CORP' | 'DEV' | 'HOME';
@@ -239,12 +233,6 @@ const devModels: LLMModelConfig[] = [
     home: true,
     dev: true,
     reasoningModel: true,
-    custom: {
-      className: 'OPEN_ROUTER_BASE_LLM',
-      module: 'llms.custom_llms',
-      endpoint: 'chat/completions',
-      modelAlias: 'anthropic/claude-haiku-4.5',
-    },
   },
   {
     model: 'dev-Gemini-3.1-Pro-Preview',
@@ -450,12 +438,6 @@ const anthropicModels: LLMModelConfig[] = [
     home: true,
     dev: true,
     reasoningModel: true,
-    custom: {
-      className: 'CHAT_ANTHROPIC',
-      module: 'llms.custom_llms',
-      endpoint: 'messages',
-      modelAlias: 'claude-haiku-4-5',
-    },
   },
 ];
 
