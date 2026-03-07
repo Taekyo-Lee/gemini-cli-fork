@@ -89,11 +89,66 @@ gemini --version
 
 You should see something like `0.34.0-nightly.xxx`. Now `gemini` works from any directory.
 
-## Step 5: Authenticate
+## Step 5: Choose Your Mode
 
-On first run, Gemini CLI will prompt you to choose an auth method.
+This fork supports two modes: **OpenAI-compatible mode** (on-prem/cloud LLMs) and the **original Google auth mode**.
 
-### Option 1: Login with Google (easiest)
+### Mode A: OpenAI-Compatible Mode (LLM Model Picker)
+
+This mode replaces the Google auth prompt with a model picker. It activates automatically when certain env vars are set.
+
+**Setup: Load the env file before running.**
+
+The env file at `~/workspace/main/research/a2g_packages/envs/.env` contains API keys and the `PROJECT_A2G_LOCATION` variable that controls which models are available.
+
+```bash
+# Option 1: Source the env file in your shell (recommended)
+source ~/workspace/main/research/a2g_packages/envs/.env
+
+# Option 2: Add to your shell profile for persistence
+echo 'source ~/workspace/main/research/a2g_packages/envs/.env' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Run:**
+
+```bash
+gemini
+```
+
+You'll see a model picker instead of an auth prompt. Select a model and start chatting.
+
+**Which models you see depends on `PROJECT_A2G_LOCATION`:**
+
+| Value | Environment | Models |
+|-------|-------------|--------|
+| `DEVELOPMENT` or `DEV` | Dev/Home | OpenRouter models (DeepSeek, Claude, Gemini) + OpenAI models (GPT-4o, GPT-5, etc.) |
+| `HOME` | Home | Same as DEV |
+| `COMPANY`, `PRODUCTION`, or `CORP` | Corporate | On-prem models (GLM-5, Kimi-K2.5, Qwen3.5, GaussO, etc.) |
+
+**Trigger env vars** (any one of these activates OpenAI-compatible mode):
+- `PROJECT_A2G_LOCATION` — environment detection (set in env file)
+- `PROJECT_OPENROUTER_API_KEY` — OpenRouter API key (set in env file)
+- `OPENAI_BASE_URL` — custom OpenAI base URL
+
+**Using the test script** (alternative to manual source + run):
+
+```bash
+cd ~/workspace/gemini-cli-fork
+
+./scripts/test_openai_adapter.sh --quick      # build + run
+./scripts/test_openai_adapter.sh --run-only   # skip build, just run
+./scripts/test_openai_adapter.sh --build-only # just build
+./scripts/test_openai_adapter.sh --status     # check env vars and build status
+./scripts/test_openai_adapter.sh --list-models # show available models
+./scripts/test_openai_adapter.sh --python     # run Python LLM test (send "hello" to model)
+```
+
+### Mode B: Original Google Auth (unchanged)
+
+If none of the OpenAI trigger env vars are set, the CLI behaves exactly like upstream Gemini CLI.
+
+#### Option 1: Login with Google (easiest)
 
 1. Run `gemini`
 2. Select **Login with Google**
@@ -102,7 +157,7 @@ On first run, Gemini CLI will prompt you to choose an auth method.
 
 Free tier: 60 requests/min, 1,000 requests/day.
 
-### Option 2: Use a Gemini API Key
+#### Option 2: Use a Gemini API Key
 
 1. Get a key from [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Set and persist the environment variable:
@@ -141,12 +196,39 @@ npm install
 npm run build
 npm link ./packages/cli     # or use alias method above
 
-# Daily usage (from any directory)
-gemini                      # start interactive session
-gemini "explain this code"  # one-shot prompt
+# ----- OpenAI-compatible mode (on-prem/cloud LLMs) -----
+source ~/workspace/main/research/a2g_packages/envs/.env
+gemini                      # shows model picker
+
+# Or use the test script:
+./scripts/test_openai_adapter.sh --quick
+
+# ----- Original Google mode -----
+# (don't source the env file, or unset the trigger vars)
+unset PROJECT_A2G_LOCATION PROJECT_OPENROUTER_API_KEY OPENAI_BASE_URL
+gemini                      # shows Google auth prompt
+
+# ----- Common -----
 gemini --version            # verify installation
+gemini "explain this code"  # one-shot prompt
 
 # After editing source code
 cd ~/workspace/gemini-cli-fork
 npm run build               # rebuild, then run gemini again
+```
+
+## Switching Between Modes
+
+To switch from OpenAI mode back to Google auth mode in the same shell:
+
+```bash
+unset PROJECT_A2G_LOCATION PROJECT_OPENROUTER_API_KEY OPENAI_BASE_URL
+gemini
+```
+
+To switch from Google mode to OpenAI mode:
+
+```bash
+source ~/workspace/main/research/a2g_packages/envs/.env
+gemini
 ```
