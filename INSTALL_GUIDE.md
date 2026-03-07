@@ -242,7 +242,15 @@ source ~/.bashrc
 
 ### Model picker doesn't appear (previously logged in with Google)
 
-If you previously used Google auth, the cached session may take priority. The env vars must be set **and exported** — the OpenAI mode detection (`PROJECT_A2G_LOCATION`, `PROJECT_OPENROUTER_API_KEY`, or `OPENAI_BASE_URL`) takes highest priority when the vars are properly exported.
+If you previously used Google auth, the cached session triggers OAuth before the model picker loads. Delete the cached config and restart:
+
+```bash
+rm -rf ~/.gemini
+mkdir -p ~/.gemini
+gemini
+```
+
+This removes the cached `selectedType: oauth-personal` and lets the OpenAI mode detection take effect.
 
 ### `gemini` command not found
 
