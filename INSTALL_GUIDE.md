@@ -276,6 +276,15 @@ rm -rf node_modules
 npm install
 ```
 
+### `npm install` fails with `No matching export for import "getAvailableModels"`
+
+The postinstall script tries to bundle the CLI before the core package is compiled. Fix by skipping scripts and building manually:
+
+```bash
+npm install --ignore-scripts
+npm run build
+```
+
 ### TLS warning on startup
 
 ```
