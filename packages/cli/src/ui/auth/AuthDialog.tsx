@@ -89,13 +89,24 @@ function OpenAIModelPicker({
   const [connecting, setConnecting] = useState(false);
 
   const models = getAvailableModels();
-  const items = models.map((m) => ({
-    label: m.modelAlias
-      ? `${m.model} (${m.modelAlias})`
-      : m.model,
-    value: m.model,
-    key: m.model,
-  }));
+  const savedModel = settings.merged.security.auth.selectedModel;
+  const items = models.map((m) => {
+    const ctx =
+      m.contextLength >= 1000000
+        ? `${(m.contextLength / 1000000).toFixed(0)}M`
+        : `${Math.round(m.contextLength / 1000)}K`;
+    const tags = [ctx];
+    if (m.reasoningModel) tags.push('reasoning');
+    const detail = ` [${tags.join(', ')}]`;
+    return {
+      label: m.model + detail,
+      value: m.model,
+      key: m.model,
+    };
+  });
+  const savedIndex = savedModel
+    ? items.findIndex((i) => i.value === savedModel)
+    : -1;
 
   const handleModelSelect = useCallback(
     (modelName: string) => {
@@ -109,6 +120,11 @@ function OpenAIModelPicker({
         SettingScope.User,
         'security.auth.selectedType',
         AuthType.OPENAI_COMPATIBLE,
+      );
+      settings.setValue(
+        SettingScope.User,
+        'security.auth.selectedModel',
+        modelName,
       );
 
       config
@@ -177,7 +193,7 @@ function OpenAIModelPicker({
         <Box marginTop={1}>
           <RadioButtonSelect
             items={items}
-            initialIndex={0}
+            initialIndex={savedIndex >= 0 ? savedIndex : 0}
             onSelect={handleModelSelect}
             onHighlight={() => {
               onAuthError(null);

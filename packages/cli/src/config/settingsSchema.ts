@@ -1615,6 +1615,16 @@ const SETTINGS_SCHEMA = {
             description: 'Whether to use an external authentication flow.',
             showInDialog: false,
           },
+          selectedModel: {
+            type: 'string',
+            label: 'Selected OpenAI Model',
+            category: 'Security',
+            requiresRestart: false,
+            default: undefined as string | undefined,
+            description:
+              'The last selected model in OpenAI-compatible mode. Used to auto-connect on startup.',
+            showInDialog: false,
+          },
         },
       },
       enableConseca: {

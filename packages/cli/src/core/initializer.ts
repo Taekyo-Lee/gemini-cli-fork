@@ -14,6 +14,7 @@ import {
   logCliConfiguration,
   startupProfiler,
   getAuthTypeFromEnv,
+  getModelByName,
   AuthType,
 } from '@google/gemini-cli-core';
 import { type LoadedSettings } from '../config/settings.js';
@@ -47,6 +48,21 @@ export async function initializeApp(
   let authError: string | null = null;
   let accountSuspensionInfo: AccountSuspensionInfo | null = null;
 
+  // In OpenAI mode, try to auto-connect to the last selected model
+  let openAIAutoConnected = false;
+  if (isOpenAIMode) {
+    const savedModel = settings.merged.security.auth.selectedModel;
+    if (savedModel && getModelByName(savedModel)) {
+      try {
+        config.setModel(savedModel, false);
+        await config.refreshAuth(AuthType.OPENAI_COMPATIBLE);
+        openAIAutoConnected = true;
+      } catch {
+        // Fall through to show model picker
+      }
+    }
+  }
+
   if (!isOpenAIMode) {
     const authHandle = startupProfiler.start('authenticate');
     const authResult = await performInitialAuth(
@@ -60,9 +76,11 @@ export async function initializeApp(
 
   const themeError = validateTheme(settings);
 
-  // In OpenAI mode, always show the model picker (auth dialog)
-  const shouldOpenAuthDialog = isOpenAIMode ||
-    settings.merged.security.auth.selectedType === undefined || !!authError;
+  // In OpenAI mode, show model picker unless auto-connected to saved model
+  const shouldOpenAuthDialog =
+    (isOpenAIMode && !openAIAutoConnected) ||
+    settings.merged.security.auth.selectedType === undefined ||
+    !!authError;
 
   logCliConfiguration(
     config,

@@ -199,13 +199,13 @@ one, and connect via OpenAI Chat Completions API.
 
 ## Phase 6: Polish & Documentation
 
-- [ ] Remember last selected model (save to `~/.gemini/settings.json`)
-- [ ] Show model details in selection list (context length, reasoning
+- [x] Remember last selected model (save to `~/.gemini/settings.json`)
+- [x] Show model details in selection list (context length, reasoning
       capability)
-- [ ] Handle connection errors gracefully (model unavailable, invalid API key)
+- [x] Handle connection errors gracefully (model unavailable, invalid API key)
 - [x] Update `INSTALL_GUIDE.md` with OpenAI-compatible setup (Mode A/B, `set -a`
       for env export, troubleshooting section for common issues)
-- [ ] Create `docs/openai-compatible.md` with full documentation
+- [x] Create `docs/openai-compatible.md` with full documentation
 
 ---
 
