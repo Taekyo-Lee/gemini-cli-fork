@@ -70,8 +70,10 @@ export class OpenAIContentGenerator implements ContentGenerator {
     const systemInstruction = request.config?.systemInstruction;
     const messages = geminiContentsToOpenAIMessages(
       contents,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- systemInstruction type is wider than needed
       systemInstruction as Content | string | undefined,
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
     const tools = geminiToolsToOpenAITools(request.config?.tools as Tool[] | undefined);
 
     const response = await this.client.chat.completions.create({
@@ -94,8 +96,10 @@ export class OpenAIContentGenerator implements ContentGenerator {
     const systemInstruction = request.config?.systemInstruction;
     const messages = geminiContentsToOpenAIMessages(
       contents,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- systemInstruction type is wider than needed
       systemInstruction as Content | string | undefined,
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
     const tools = geminiToolsToOpenAITools(request.config?.tools as Tool[] | undefined);
 
     const stream = await this.client.chat.completions.create({
@@ -212,23 +216,23 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
 function normalizeContents(contents: ContentListUnion): Content[] {
   if (Array.isArray(contents)) {
-    return contents.map((c) => {
+    return contents.map((c): Content => {
       if (typeof c === 'string') {
         return { role: 'user', parts: [{ text: c }] };
       }
       if ('role' in c && 'parts' in c) {
-        return c as Content;
+        return c;
       }
       // PartUnion
-      return { role: 'user', parts: [c] } as Content;
+      return { role: 'user', parts: [c] };
     });
   }
   if (typeof contents === 'string') {
     return [{ role: 'user', parts: [{ text: contents }] }];
   }
   if ('role' in contents && 'parts' in contents) {
-    return [contents as Content];
+    return [contents];
   }
   // Single PartUnion
-  return [{ role: 'user', parts: [contents] } as Content];
+  return [{ role: 'user', parts: [contents] }];
 }
