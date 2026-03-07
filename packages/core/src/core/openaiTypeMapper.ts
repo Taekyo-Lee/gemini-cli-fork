@@ -162,10 +162,11 @@ export function geminiToolsToOpenAITools(
           function: {
             name: fd.name ?? '',
             description: fd.description ?? '',
-            parameters: (fd.parameters as Record<string, unknown>) ?? {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Schema objects are opaque JSON
+            parameters: (fd.parameters ?? {
               type: 'object',
               properties: {},
-            },
+            }) as Record<string, unknown>,
           },
         });
       }
@@ -184,6 +185,7 @@ export function openaiResponseToGeminiResponse(
 ): GeminiResponse {
   const choice = response.choices[0];
   if (!choice) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Object.setPrototypeOf returns any
     return Object.setPrototypeOf(
       { candidates: [] },
       GenerateContentResponse.prototype,
@@ -201,6 +203,7 @@ export function openaiResponseToGeminiResponse(
     for (const tc of msg.tool_calls) {
       let args: Record<string, unknown> = {};
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns unknown
         args = JSON.parse(tc.function.arguments) as Record<string, unknown>;
       } catch {
         // keep empty args
@@ -234,6 +237,7 @@ export function openaiResponseToGeminiResponse(
         }
       : undefined;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Object.setPrototypeOf returns any
   return Object.setPrototypeOf(
     {
       candidates: [candidate],
@@ -259,6 +263,7 @@ export function openaiStreamChunkToGeminiResponse(
             totalTokenCount: chunk.usage.total_tokens,
           }
         : undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Object.setPrototypeOf returns any
     return Object.setPrototypeOf(
       { candidates: [], usageMetadata, modelVersion: chunk.model },
       GenerateContentResponse.prototype,
@@ -279,6 +284,7 @@ export function openaiStreamChunkToGeminiResponse(
         let args: Record<string, unknown> = {};
         try {
           if (tc.function.arguments) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns unknown
             args = JSON.parse(tc.function.arguments) as Record<
               string,
               unknown
@@ -321,6 +327,7 @@ export function openaiStreamChunkToGeminiResponse(
         }
       : undefined;
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Object.setPrototypeOf returns any
   return Object.setPrototypeOf(
     {
       candidates: [candidate],
