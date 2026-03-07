@@ -5,16 +5,23 @@ This guide walks you through building and installing Gemini CLI from this cloned
 ## Prerequisites
 
 - **Node.js >= 20** (check with `node --version`)
-  - If you don't have it or need a different version, install via:
+  - If your version is below 20 (e.g. v12, v14, v16, v18), you **must** upgrade or `npm install` will fail with syntax errors like `SyntaxError: Unexpected token '?'`.
+  - Upgrade options:
     ```bash
-    # Option 1: System package manager
-    sudo apt install nodejs npm
-
-    # Option 2: Install nvm first, then use it
+    # Option 1: nvm (no sudo needed — installs to your home dir, best for company PCs)
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
     source ~/.bashrc
-    nvm install 20.19.0
+    nvm install 20
+    nvm use 20
+
+    # Option 2: NodeSource (requires sudo)
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt install -y nodejs
+
+    # Option 3: System package manager (may install an older version)
+    sudo apt install nodejs npm
     ```
+  - After upgrading, verify: `node --version` should show `v20.x.x` or higher.
 - **Git** (already done since you cloned this repo)
 
 ## Step 1: Create Config Directory
