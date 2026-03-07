@@ -25,6 +25,8 @@ import { parseCustomHeaders } from '../utils/customHeaderUtils.js';
 import { RecordingContentGenerator } from './recordingContentGenerator.js';
 import { getVersion, resolveModel } from '../../index.js';
 import type { LlmRole } from '../telemetry/llmRole.js';
+import { OpenAIContentGenerator } from './openaiContentGenerator.js';
+import { getModelByName } from '../config/llmRegistry.js';
 
 /**
  * Interface abstracting the core functionalities for generating content and counting tokens.
@@ -60,6 +62,7 @@ export enum AuthType {
   LEGACY_CLOUD_SHELL = 'cloud-shell',
   COMPUTE_ADC = 'compute-default-credentials',
   GATEWAY = 'gateway',
+  OPENAI_COMPATIBLE = 'openai-compatible',
 }
 
 /**
@@ -71,6 +74,14 @@ export enum AuthType {
  * 3. GEMINI_API_KEY -> USE_GEMINI
  */
 export function getAuthTypeFromEnv(): AuthType | undefined {
+  // OpenAI-compatible mode (highest priority for this fork)
+  if (
+    process.env['OPENAI_BASE_URL'] ||
+    process.env['PROJECT_OPENROUTER_API_KEY'] ||
+    process.env['PROJECT_A2G_LOCATION']
+  ) {
+    return AuthType.OPENAI_COMPATIBLE;
+  }
   if (process.env['GOOGLE_GENAI_USE_GCA'] === 'true') {
     return AuthType.LOGIN_WITH_GOOGLE;
   }
@@ -96,6 +107,7 @@ export type ContentGeneratorConfig = {
   proxy?: string;
   baseUrl?: string;
   customHeaders?: Record<string, string>;
+  selectedOpenAIModel?: string;
 };
 
 export async function createContentGeneratorConfig(
@@ -123,6 +135,11 @@ export async function createContentGeneratorConfig(
     baseUrl,
     customHeaders,
   };
+
+  // OpenAI-compatible mode: no Google-specific validation needed
+  if (authType === AuthType.OPENAI_COMPATIBLE) {
+    return contentGeneratorConfig;
+  }
 
   // If we are using Google auth or we are in Cloud Shell, there is nothing else to validate for now
   if (
@@ -242,6 +259,27 @@ export async function createContentGenerator(
       });
       return new LoggingContentGenerator(googleGenAI.models, gcConfig);
     }
+    if (config.authType === AuthType.OPENAI_COMPATIBLE) {
+      const selectedModelName =
+        config.selectedOpenAIModel ?? gcConfig.getModel();
+      const modelConfig = getModelByName(selectedModelName);
+      const apiKeyEnv = modelConfig?.apiKeyEnv ?? 'OPENAI_API_KEY';
+      const apiKey = process.env[apiKeyEnv] ?? config.apiKey ?? '';
+      const baseURL =
+        modelConfig?.url ?? config.baseUrl ?? 'https://api.openai.com/v1';
+      const modelToSend =
+        modelConfig?.modelAlias ?? modelConfig?.model ?? selectedModelName;
+
+      const generator = new OpenAIContentGenerator({
+        baseURL,
+        apiKey,
+        model: modelToSend,
+        extraBody: modelConfig?.extraBody,
+        defaultHeaders: modelConfig?.defaultHeaders,
+      });
+      return new LoggingContentGenerator(generator, gcConfig);
+    }
+
     throw new Error(
       `Error creating contentGenerator: Unsupported authType: ${config.authType}`,
     );
