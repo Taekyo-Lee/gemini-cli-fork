@@ -258,6 +258,24 @@ cd ~/workspace/gemini-cli-fork
 node packages/cli
 ```
 
+### `npm install` fails with `UNABLE_TO_VERIFY_LEAF_SIGNATURE` (company network)
+
+Your company's SSL proxy/firewall is intercepting HTTPS traffic. Tell npm to skip SSL verification:
+
+```bash
+npm config set strict-ssl false
+npm install
+```
+
+### `npm install` fails with `ENOTEMPTY` error
+
+A previous partial install left stale files. Clean and retry:
+
+```bash
+rm -rf node_modules
+npm install
+```
+
 ### TLS warning on startup
 
 ```
