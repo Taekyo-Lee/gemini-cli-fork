@@ -16,6 +16,7 @@ import {
   type Content,
   scheduleAgentTools,
   getAuthTypeFromEnv,
+  getAvailableModels,
   type ToolRegistry,
   loadSkillsFromDir,
   ActivateSkillTool,
@@ -93,6 +94,14 @@ export class GeminiCliSession {
     if (this.initialized) return;
 
     const authType = getAuthTypeFromEnv() || AuthType.COMPUTE_ADC;
+
+    // For OpenAI-compatible mode, default to first available model
+    if (authType === AuthType.OPENAI_COMPATIBLE) {
+      const models = getAvailableModels();
+      if (models.length > 0) {
+        this.config.setModel(models[0].model, false);
+      }
+    }
 
     await this.config.refreshAuth(authType);
     await this.config.initialize();

@@ -215,53 +215,52 @@ Findings from code scrutiny — 16 issues (3 critical, 7 medium, 6 minor).
 
 ### 7.1 Critical (cause real failures)
 
-- [ ] **Fix global mutable state in `openaiTypeMapper.ts`** — ROOT CAUSE of
-      multi-turn failures. `toolCallIdMap`/`toolCallCounter` (lines 40-41) are
-      module-level singletons. When same tool is called twice, IDs get
-      overwritten causing ID mismatches and OpenAI API rejections. Fix:
-      encapsulate in a `ToolCallIdTracker` class, instantiate per-request in
-      `OpenAIContentGenerator`.
+- [x] **Fix global mutable state in `openaiTypeMapper.ts`** — Replaced global
+      `toolCallIdMap`/`toolCallCounter` with `ToolCallIdTracker` class. Each
+      `OpenAIContentGenerator` instance now has its own tracker, passed to all
+      mapper functions. Tests pass with no global state.
 
-- [ ] **Fix streaming tool calls dropped on `finish_reason: "stop"`** —
-      `openaiContentGenerator.ts` lines 189-193. `pendingToolCalls.clear()`
-      without emitting. Some providers (OpenRouter, vLLM) return `"stop"` even
-      with tool calls. Fix: emit pending tool calls when
-      `pendingToolCalls.size > 0` regardless of finish_reason.
+- [x] **Fix streaming tool calls dropped on `finish_reason: "stop"`** —
+      `streamToAsyncGenerator()` now emits accumulated tool calls when
+      `pendingToolCalls.size > 0` at end of stream, regardless of finish_reason.
+      Added test verifying tool calls emitted with finish_reason "stop".
 
-- [ ] **Add `OPENAI_COMPATIBLE` to `validateAuthMethod()`** —
-      `packages/cli/src/config/auth.ts` line 45 falls through to
-      `'Invalid auth method selected.'`. Breaks non-interactive mode
-      (`gemini --prompt "..."`, piped input). Fix: add early return `null` for
-      `OPENAI_COMPATIBLE`.
+- [x] **Add `OPENAI_COMPATIBLE` to `validateAuthMethod()`** — Added early return
+      `null` for `OPENAI_COMPATIBLE` in `packages/cli/src/config/auth.ts`. Added
+      test. Non-interactive mode now works.
 
 ### 7.2 Medium (incorrect behavior)
 
-- [ ] Add `apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY'` to
+- [x] Add `apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY'` to
       `dev-claude-haiku-4.5-generic` in `llmRegistry.ts`
-- [ ] Defer GaussO `defaultHeaders` from module-load to factory-time in
-      `contentGenerator.ts` (env vars empty at import)
-- [ ] Send `max_tokens` to OpenAI API (read from `LLMModelConfig.maxTokens`,
-      pass through `OpenAIContentGeneratorConfig`)
-- [ ] Fix `extraBody` spread ordering — spread before explicit fields, or filter
-      reserved keys (`model`, `messages`, `stream`)
-- [ ] Improve `countTokens()` — extract text from parts before counting, not
-      `JSON.stringify` whole request
+- [x] Defer GaussO `defaultHeaders` from module-load to factory-time — changed
+      to a getter property on the model config so env vars are read when
+      accessed, not at import time
+- [x] Send `max_tokens` to OpenAI API — added `maxTokens` to
+      `OpenAIContentGeneratorConfig`, wired from `modelConfig.maxTokens` in
+      `contentGenerator.ts` factory
+- [x] Fix `extraBody` spread ordering — `extraBody` now spread before explicit
+      fields (`model`, `messages`, `stream`) so they cannot be overridden
+- [x] Improve `countTokens()` — extracts text from parts instead of
+      `JSON.stringify` on entire request
 - [ ] Document corp model API key resolution (no `apiKeyEnv`, relies on fallback
       chain)
-- [ ] Fix SDK `session.ts` — default to first available model when
+- [x] Fix SDK `session.ts` — defaults to first available model when
       `OPENAI_COMPATIBLE` detected
 
 ### 7.3 Minor / Design
 
-- [ ] Investigate `mapFinishReason('tool_calls') -> STOP` — may prevent tool
-      execution trigger in geminiChat loop
+- [x] Investigate `mapFinishReason('tool_calls') -> STOP` — NOT a bug.
+      `geminiChat.ts` triggers tool execution from `resp.functionCalls` (parts),
+      not from `finishReason`. Mapping to STOP is correct.
 - [ ] Handle or remove unused `custom` field on model configs
 - [ ] Model persistence (save last selection to `~/.gemini/settings.json`) —
       also in Phase 6
 - [ ] Document auth detection priority (OpenAI mode silently wins over
       GEMINI_API_KEY)
-- [ ] Fix test isolation for global typeMapper state (resolved by
-      ToolCallIdTracker from 7.1)
+- [x] Fix test isolation for global typeMapper state — resolved by
+      `ToolCallIdTracker` class from 7.1. Each function creates a fresh tracker
+      when none is provided; `OpenAIContentGenerator` uses a per-instance one.
 - [ ] Audit `turn.ts` fallback ID generation (`name_Date.now()_callCounter++`)
       vs typeMapper IDs
 

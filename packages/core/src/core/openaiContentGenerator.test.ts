@@ -12,19 +12,17 @@ import type { LlmRole } from '../telemetry/llmRole.js';
 const mockCreate = vi.fn();
 
 vi.mock('openai', () => ({
-    default: vi.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: mockCreate,
-        },
+  default: vi.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: mockCreate,
       },
-    })),
-  }));
+    },
+  })),
+}));
 
 // Now import after mock is set up
-const { OpenAIContentGenerator } = await import(
-  './openaiContentGenerator.js'
-);
+const { OpenAIContentGenerator } = await import('./openaiContentGenerator.js');
 
 describe('OpenAIContentGenerator', () => {
   let generator: InstanceType<typeof OpenAIContentGenerator>;
@@ -300,12 +298,8 @@ describe('OpenAIContentGenerator', () => {
       }
 
       expect(results.length).toBe(2);
-      expect(results[0].candidates![0].content!.parts![0].text).toBe(
-        'Hello',
-      );
-      expect(results[1].candidates![0].content!.parts![0].text).toBe(
-        ' world',
-      );
+      expect(results[0].candidates![0].content!.parts![0].text).toBe('Hello');
+      expect(results[1].candidates![0].content!.parts![0].text).toBe(' world');
     });
 
     it('accumulates tool call fragments and emits on finish', async () => {
@@ -383,6 +377,85 @@ describe('OpenAIContentGenerator', () => {
       const parts = results[0].candidates![0].content!.parts!;
       expect(parts).toHaveLength(1);
       expect(parts[0].functionCall!.name).toBe('search');
+      expect(parts[0].functionCall!.id).toBe('call_1');
+    });
+
+    it('emits pending tool calls when finish_reason is stop instead of tool_calls', async () => {
+      const chunks = [
+        {
+          id: 'chatcmpl-stream',
+          object: 'chat.completion.chunk',
+          created: 1234567890,
+          model: 'test-model',
+          choices: [
+            {
+              index: 0,
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_1',
+                    type: 'function',
+                    function: { name: 'read_file', arguments: '{"path":' },
+                  },
+                ],
+              },
+              finish_reason: null,
+              logprobs: null,
+            },
+          ],
+        },
+        {
+          id: 'chatcmpl-stream',
+          object: 'chat.completion.chunk',
+          created: 1234567890,
+          model: 'test-model',
+          choices: [
+            {
+              index: 0,
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { arguments: '"/tmp/test.txt"}' },
+                  },
+                ],
+              },
+              // Some providers (OpenRouter, vLLM) return "stop" instead of "tool_calls"
+              finish_reason: 'stop',
+              logprobs: null,
+            },
+          ],
+        },
+      ];
+
+      async function* asyncChunks() {
+        for (const chunk of chunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreate.mockResolvedValue(asyncChunks());
+
+      const stream = await generator.generateContentStream(
+        {
+          model: 'ignored',
+          contents: [{ role: 'user', parts: [{ text: 'read the file' }] }],
+        },
+        'prompt-stop-tool',
+        role,
+      );
+
+      const results = [];
+      for await (const response of stream) {
+        results.push(response);
+      }
+
+      // Tool calls should still be emitted even with finish_reason "stop"
+      expect(results.length).toBe(1);
+      const parts = results[0].candidates![0].content!.parts!;
+      expect(parts).toHaveLength(1);
+      expect(parts[0].functionCall!.name).toBe('read_file');
       expect(parts[0].functionCall!.id).toBe('call_1');
     });
 

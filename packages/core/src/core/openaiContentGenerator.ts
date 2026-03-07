@@ -33,12 +33,14 @@ import {
   geminiToolsToOpenAITools,
   openaiResponseToGeminiResponse,
   openaiStreamChunkToGeminiResponse,
+  ToolCallIdTracker,
 } from './openaiTypeMapper.js';
 
 export interface OpenAIContentGeneratorConfig {
   baseURL: string;
   apiKey: string;
   model: string;
+  maxTokens?: number;
   extraBody?: Record<string, unknown>;
   defaultHeaders?: Record<string, string>;
 }
@@ -47,6 +49,8 @@ export class OpenAIContentGenerator implements ContentGenerator {
   private readonly client: OpenAI;
   private readonly modelName: string;
   private readonly extraBody?: Record<string, unknown>;
+  private readonly maxTokens?: number;
+  private readonly tracker = new ToolCallIdTracker();
 
   userTier?: UserTierId;
   userTierName?: string;
@@ -59,6 +63,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
       defaultHeaders: config.defaultHeaders,
     });
     this.modelName = config.model;
+    this.maxTokens = config.maxTokens;
     this.extraBody = config.extraBody;
   }
 
@@ -73,19 +78,23 @@ export class OpenAIContentGenerator implements ContentGenerator {
       contents,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- systemInstruction type is wider than needed
       systemInstruction as Content | string | undefined,
+      this.tracker,
     );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
-    const tools = geminiToolsToOpenAITools(request.config?.tools as Tool[] | undefined);
+    const tools = geminiToolsToOpenAITools(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
+      request.config?.tools as Tool[] | undefined,
+    );
 
     const response = await this.client.chat.completions.create({
+      ...(this.extraBody && { ...this.extraBody }),
       model: this.modelName,
       messages,
       ...(tools && { tools }),
+      ...(this.maxTokens && { max_tokens: this.maxTokens }),
       stream: false,
-      ...(this.extraBody && { ...this.extraBody }),
     });
 
-    return openaiResponseToGeminiResponse(response);
+    return openaiResponseToGeminiResponse(response, this.tracker);
   }
 
   async generateContentStream(
@@ -99,17 +108,21 @@ export class OpenAIContentGenerator implements ContentGenerator {
       contents,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- systemInstruction type is wider than needed
       systemInstruction as Content | string | undefined,
+      this.tracker,
     );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
-    const tools = geminiToolsToOpenAITools(request.config?.tools as Tool[] | undefined);
+    const tools = geminiToolsToOpenAITools(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
+      request.config?.tools as Tool[] | undefined,
+    );
 
     const stream = await this.client.chat.completions.create({
+      ...(this.extraBody && { ...this.extraBody }),
       model: this.modelName,
       messages,
       ...(tools && { tools }),
+      ...(this.maxTokens && { max_tokens: this.maxTokens }),
       stream: true,
       stream_options: { include_usage: true },
-      ...(this.extraBody && { ...this.extraBody }),
     });
 
     return this.streamToAsyncGenerator(stream);
@@ -167,7 +180,10 @@ export class OpenAIContentGenerator implements ContentGenerator {
               ],
             };
             pendingToolCalls.clear();
-            yield openaiStreamChunkToGeminiResponse(completedChunk);
+            yield openaiStreamChunkToGeminiResponse(
+              completedChunk,
+              this.tracker,
+            );
             continue;
           }
 
@@ -182,23 +198,57 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
       // For text content chunks, yield immediately
       if (choice?.delta?.content || !choice || chunk.usage) {
-        yield openaiStreamChunkToGeminiResponse(chunk);
+        yield openaiStreamChunkToGeminiResponse(chunk, this.tracker);
       }
     }
 
-    // If there are still pending tool calls (e.g., finish_reason was 'stop' instead of 'tool_calls'),
-    // this shouldn't normally happen but handle it gracefully
+    // Some providers (OpenRouter, vLLM) return finish_reason "stop" even when
+    // tool calls are present. Emit any accumulated tool calls before ending.
     if (pendingToolCalls.size > 0) {
+      const finalChunk: OpenAI.Chat.Completions.ChatCompletionChunk = {
+        id: '',
+        object: 'chat.completion.chunk',
+        created: 0,
+        model: this.modelName,
+        choices: [
+          {
+            index: 0,
+            delta: {
+              tool_calls: Array.from(pendingToolCalls.entries()).map(
+                ([idx, tc]) => ({
+                  index: idx,
+                  id: tc.id,
+                  type: 'function' as const,
+                  function: {
+                    name: tc.name,
+                    arguments: tc.arguments,
+                  },
+                }),
+              ),
+            },
+            finish_reason: 'tool_calls',
+            logprobs: null,
+          },
+        ],
+      };
       pendingToolCalls.clear();
+      yield openaiStreamChunkToGeminiResponse(finalChunk, this.tracker);
     }
   }
 
   async countTokens(
     request: CountTokensParameters,
   ): Promise<CountTokensResponse> {
-    // Heuristic: ~4 chars per token
-    const text = JSON.stringify(request.contents);
-    const totalTokens = Math.ceil(text.length / 4);
+    // Heuristic: ~4 chars per token. Extract text from parts for a better
+    // estimate instead of JSON.stringify which overestimates due to metadata.
+    const contents = normalizeContents(request.contents);
+    let text = '';
+    for (const c of contents) {
+      for (const p of c.parts ?? []) {
+        if (p.text) text += p.text;
+      }
+    }
+    const totalTokens = Math.ceil(text.length / 4) || 1;
     return { totalTokens };
   }
 

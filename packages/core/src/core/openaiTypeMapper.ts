@@ -33,21 +33,30 @@ import type {
 // ---------------------------------------------------------------------------
 
 /**
- * Map from function call name+index to a deterministic tool_call_id.
+ * Tracks tool_call_id mappings for a single conversation/generator instance.
  * OpenAI requires tool_call_id on tool responses; Gemini uses name-based
  * matching. We generate stable IDs so round-tripping works.
+ *
+ * Previously this was module-level global state, which caused ID mismatches
+ * when the same tool was called twice or multiple generators existed.
  */
-const toolCallIdMap = new Map<string, string>();
-let toolCallCounter = 0;
+export class ToolCallIdTracker {
+  private readonly idMap = new Map<string, string>();
+  private counter = 0;
 
-function getOrCreateToolCallId(name: string): string {
-  const id = `call_${name}_${toolCallCounter++}`;
-  toolCallIdMap.set(name, id);
-  return id;
-}
+  getOrCreateId(name: string): string {
+    const id = `call_${name}_${this.counter++}`;
+    this.idMap.set(name, id);
+    return id;
+  }
 
-function getLastToolCallId(name: string): string {
-  return toolCallIdMap.get(name) ?? `call_${name}_0`;
+  getLastId(name: string): string {
+    return this.idMap.get(name) ?? `call_${name}_0`;
+  }
+
+  trackId(name: string, id: string): void {
+    this.idMap.set(name, id);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -56,17 +65,22 @@ function getLastToolCallId(name: string): string {
 
 function partsToText(parts: Part[]): string {
   return parts
-    .filter((p) => p.text !== undefined && !p.functionCall && !p.functionResponse)
+    .filter(
+      (p) => p.text !== undefined && !p.functionCall && !p.functionResponse,
+    )
     .map((p) => p.text ?? '')
     .join('');
 }
 
-function partsFunctionCalls(parts: Part[]): ChatCompletionMessageToolCall[] {
+function partsFunctionCalls(
+  parts: Part[],
+  tracker: ToolCallIdTracker,
+): ChatCompletionMessageToolCall[] {
   return parts
     .filter((p) => p.functionCall)
     .map((p) => {
       const fc = p.functionCall!;
-      const id = fc.id ?? getOrCreateToolCallId(fc.name ?? 'unknown');
+      const id = fc.id ?? tracker.getOrCreateId(fc.name ?? 'unknown');
       return {
         id,
         type: 'function' as const,
@@ -81,6 +95,7 @@ function partsFunctionCalls(parts: Part[]): ChatCompletionMessageToolCall[] {
 export function geminiContentsToOpenAIMessages(
   contents: Content[],
   systemInstruction?: Content | string,
+  tracker: ToolCallIdTracker = new ToolCallIdTracker(),
 ): ChatCompletionMessageParam[] {
   const messages: ChatCompletionMessageParam[] = [];
 
@@ -110,13 +125,13 @@ export function geminiContentsToOpenAIMessages(
           const fr = part.functionResponse;
           messages.push({
             role: 'tool',
-            tool_call_id: fr.id ?? getLastToolCallId(fr.name ?? 'unknown'),
+            tool_call_id: fr.id ?? tracker.getLastId(fr.name ?? 'unknown'),
             content: JSON.stringify(fr.response ?? {}),
           });
         }
       }
     } else if (role === 'model') {
-      const toolCalls = partsFunctionCalls(parts);
+      const toolCalls = partsFunctionCalls(parts, tracker);
       const text = partsToText(parts);
 
       if (toolCalls.length > 0) {
@@ -135,7 +150,7 @@ export function geminiContentsToOpenAIMessages(
           const fr = part.functionResponse;
           messages.push({
             role: 'tool',
-            tool_call_id: fr.id ?? getLastToolCallId(fr.name ?? 'unknown'),
+            tool_call_id: fr.id ?? tracker.getLastId(fr.name ?? 'unknown'),
             content: JSON.stringify(fr.response ?? {}),
           });
         }
@@ -182,6 +197,7 @@ export function geminiToolsToOpenAITools(
 
 export function openaiResponseToGeminiResponse(
   response: ChatCompletion,
+  tracker: ToolCallIdTracker = new ToolCallIdTracker(),
 ): GeminiResponse {
   const choice = response.choices[0];
   if (!choice) {
@@ -216,7 +232,7 @@ export function openaiResponseToGeminiResponse(
         },
       });
       // Track the ID for future tool responses
-      toolCallIdMap.set(tc.function.name, tc.id);
+      tracker.trackId(tc.function.name, tc.id);
     }
   }
 
@@ -251,6 +267,7 @@ export function openaiResponseToGeminiResponse(
 
 export function openaiStreamChunkToGeminiResponse(
   chunk: ChatCompletionChunk,
+  tracker: ToolCallIdTracker = new ToolCallIdTracker(),
 ): GeminiResponse {
   const choice = chunk.choices[0];
   if (!choice) {
@@ -285,15 +302,12 @@ export function openaiStreamChunkToGeminiResponse(
         try {
           if (tc.function.arguments) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns unknown
-            args = JSON.parse(tc.function.arguments) as Record<
-              string,
-              unknown
-            >;
+            args = JSON.parse(tc.function.arguments) as Record<string, unknown>;
           }
         } catch {
           // Partial JSON during streaming — send what we have
         }
-        const id = tc.id ?? getOrCreateToolCallId(tc.function.name);
+        const id = tc.id ?? tracker.getOrCreateId(tc.function.name);
         parts.push({
           functionCall: {
             id,
@@ -302,7 +316,7 @@ export function openaiStreamChunkToGeminiResponse(
           },
         });
         if (tc.id) {
-          toolCallIdMap.set(tc.function.name, tc.id);
+          tracker.trackId(tc.function.name, tc.id);
         }
       }
     }

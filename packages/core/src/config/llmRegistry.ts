@@ -32,9 +32,7 @@ export interface LLMModelConfig {
 export type EnvironmentType = 'CORP' | 'DEV' | 'HOME';
 
 export function detectLocation(): EnvironmentType {
-  const envLocation = (
-    process.env['PROJECT_A2G_LOCATION'] ?? ''
-  ).toUpperCase();
+  const envLocation = (process.env['PROJECT_A2G_LOCATION'] ?? '').toUpperCase();
 
   if (['COMPANY', 'PRODUCTION', 'CORP'].includes(envLocation)) {
     return 'CORP';
@@ -157,13 +155,19 @@ const corpModels: LLMModelConfig[] = [
     home: false,
     dev: false,
     reasoningModel: false,
-    defaultHeaders: {
-      'x-dep-ticket':
-        (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ?? '',
-      'Send-System-Name':
-        (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ?? '',
-      'User-Id': process.env['PROJECT_AD_ID'] ?? '',
-      'User-Type': 'AD_ID',
+    // Headers are built lazily via getDefaultHeaders() — env vars may not be
+    // set at module-load time.
+    get defaultHeaders(): Record<string, string> {
+      return {
+        'x-dep-ticket':
+          (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ??
+          '',
+        'Send-System-Name':
+          (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ??
+          '',
+        'User-Id': process.env['PROJECT_AD_ID'] ?? '',
+        'User-Type': 'AD_ID',
+      };
     },
   },
 ];
@@ -227,6 +231,7 @@ const devModels: LLMModelConfig[] = [
     modelAlias: 'anthropic/claude-haiku-4.5',
     url: 'https://openrouter.ai/api/v1',
     modality: { input: ['text', 'image'], output: ['text'] },
+    apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY',
     contextLength: 200000,
     maxTokens: 64000,
     supportsResponsesApi: false,

@@ -42,5 +42,9 @@ export function validateAuthMethod(authMethod: string): string | null {
     return null;
   }
 
+  if (authMethod === AuthType.OPENAI_COMPATIBLE) {
+    return null;
+  }
+
   return 'Invalid auth method selected.';
 }
