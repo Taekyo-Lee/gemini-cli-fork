@@ -6,6 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { FinishReason } from '@google/genai';
+import { Type } from '@google/genai';
 import type { Content, Tool } from '@google/genai';
 import type {
   ChatCompletion,
@@ -172,9 +173,9 @@ describe('geminiToolsToOpenAITools', () => {
             name: 'get_weather',
             description: 'Gets the weather for a city',
             parameters: {
-              type: 'object',
+              type: Type.OBJECT,
               properties: {
-                city: { type: 'string' },
+                city: { type: Type.STRING },
               },
             },
           },
