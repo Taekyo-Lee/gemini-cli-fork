@@ -165,7 +165,7 @@ Replace the Gemini auth prompt with an LLM selection list. When user runs `$ gem
 - [ ] Remember last selected model (save to `~/.gemini/settings.json`)
 - [ ] Show model details in selection list (context length, reasoning capability)
 - [ ] Handle connection errors gracefully (model unavailable, invalid API key)
-- [x] Update `INSTALL_GUIDE.md` with OpenAI-compatible setup (added Mode A: model picker, env file instructions, test script usage, mode switching)
+- [x] Update `INSTALL_GUIDE.md` with OpenAI-compatible setup (Mode A/B, `set -a` for env export, troubleshooting section for common issues)
 - [ ] Create `docs/openai-compatible.md` with full documentation
 
 ---
