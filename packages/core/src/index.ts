@@ -46,6 +46,8 @@ export * from './scheduler/scheduler.js';
 export * from './scheduler/types.js';
 export * from './scheduler/tool-executor.js';
 export * from './core/recordingContentGenerator.js';
+export * from './core/openaiContentGenerator.js';
+export * from './core/openaiTypeMapper.js';
 
 export * from './fallback/types.js';
 
