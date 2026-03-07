@@ -22,6 +22,7 @@ import type {
   EmbedContentResponse,
   Content,
   ContentListUnion,
+  Part,
   Tool,
 } from '@google/genai';
 import type { ContentGenerator } from './contentGenerator.js';
@@ -223,8 +224,9 @@ function normalizeContents(contents: ContentListUnion): Content[] {
       if ('role' in c && 'parts' in c) {
         return c;
       }
-      // PartUnion
-      return { role: 'user', parts: [c] };
+      // PartUnion — cast needed because c is Part|Content but we know it's Part here
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      return { role: 'user', parts: [c as Part] };
     });
   }
   if (typeof contents === 'string') {
@@ -233,6 +235,7 @@ function normalizeContents(contents: ContentListUnion): Content[] {
   if ('role' in contents && 'parts' in contents) {
     return [contents];
   }
-  // Single PartUnion
-  return [{ role: 'user', parts: [contents] }];
+  // Single PartUnion — cast needed because contents is Part|Content but we know it's Part here
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  return [{ role: 'user', parts: [contents as Part] }];
 }
