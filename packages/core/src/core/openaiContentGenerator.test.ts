@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Type } from '@google/genai';
 import type { LlmRole } from '../telemetry/llmRole.js';
 
 // We need to capture the mock _before_ importing the module under test
@@ -124,8 +125,8 @@ describe('OpenAIContentGenerator', () => {
                     name: 'test_fn',
                     description: 'A test function',
                     parameters: {
-                      type: 'object',
-                      properties: { x: { type: 'string' } },
+                      type: Type.OBJECT,
+                      properties: { x: { type: Type.STRING } },
                     },
                   },
                 ],
