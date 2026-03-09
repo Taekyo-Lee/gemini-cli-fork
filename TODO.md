@@ -273,6 +273,40 @@ Findings from code scrutiny — 16 issues (3 critical, 7 medium, 6 minor).
 
 ---
 
+## Phase 8: GLM-5 Streaming Tool Call Fix
+
+- [x] **Diagnosed GLM-5 tool-calling loop** — Both GLM-5-Thinking and
+      GLM-5-Non-Thinking entered infinite tool-call loops on CORP vLLM endpoint.
+      Other models (KIMI, Qwen, gpt-oss-120b) worked fine.
+
+- [x] **Root cause: vLLM/GLM-5 sends duplicate streaming tool call chunks** —
+      During streaming, vLLM sends two chunks for the same tool call index, both
+      with `tc.id` set. The accumulator was blindly concatenating arguments,
+      producing garbled JSON like `{"command":"date"{"command": "date"}`. When
+      `JSON.parse` failed, args became `{}`, the model got meaningless results,
+      and re-requested the same tool → loop detection fired.
+
+- [x] **Fix 1 (primary): Replace instead of append when `tc.id` is set** — In
+      `openaiContentGenerator.ts` `streamToAsyncGenerator()`, when a streaming
+      chunk has `tc.id` set for an existing tool call index, replace the entry
+      instead of appending. Per OpenAI spec, `tc.id` is only set on the first
+      chunk of a tool call; if vLLM sends it again, it's a new/duplicate call.
+
+- [x] **Fix 2 (safety net): `sanitizeToolCallArgs()` helper** — Validates
+      accumulated JSON. If invalid, tries to extract the last valid JSON object
+      from the string. Falls back to `{}` with a warning log.
+
+- [x] **Created `scripts/test_glm5_tools.py`** — Standalone Python test for
+      multi-turn tool calling via OpenAI API. Confirmed non-streaming works
+      perfectly, streaming had the argument duplication bug. Applied same fix
+      logic in the Python test.
+
+- [x] **Debug logging added** — `openaiContentGenerator.ts` now logs messages
+      sent to API and streaming chunks via `debugLogger` (visible with `--debug`
+      flag or `GEMINI_DEBUG_LOG_FILE` env var).
+
+---
+
 ## Key Technical Notes
 
 ### Streaming Response Shape
