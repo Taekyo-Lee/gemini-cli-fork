@@ -158,7 +158,14 @@ for chunk in stream:
                     "arguments": tc.function.arguments if tc.function and tc.function.arguments else "",
                 }
             else:
-                if tc.function and tc.function.arguments:
+                # FIX: If tc.id is set, vLLM/GLM-5 is sending a new complete
+                # tool call on the same index — replace, don't append.
+                if tc.id:
+                    accumulated_tool_calls[tc.index]["id"] = tc.id
+                    if tc.function and tc.function.name:
+                        accumulated_tool_calls[tc.index]["name"] = tc.function.name
+                    accumulated_tool_calls[tc.index]["arguments"] = tc.function.arguments if tc.function and tc.function.arguments else ""
+                elif tc.function and tc.function.arguments:
                     accumulated_tool_calls[tc.index]["arguments"] += tc.function.arguments
 
     if finish_reason:
@@ -169,6 +176,20 @@ print(f"  Accumulated tool_calls: {json.dumps(accumulated_tool_calls, indent=2)}
 
 if accumulated_tool_calls:
     tc_data = accumulated_tool_calls[0]
+    # Sanitize arguments - if JSON is garbled, try to extract last valid JSON
+    try:
+        json.loads(tc_data["arguments"])
+    except json.JSONDecodeError:
+        last_brace = tc_data["arguments"].rfind("{")
+        if last_brace > 0:
+            candidate = tc_data["arguments"][last_brace:]
+            try:
+                json.loads(candidate)
+                print(f"  ⚠️  Repaired garbled args: {tc_data['arguments']} → {candidate}")
+                tc_data["arguments"] = candidate
+            except json.JSONDecodeError:
+                print(f"  ⚠️  Could not repair args: {tc_data['arguments']}")
+                tc_data["arguments"] = "{}"
     print(f"\n  Streaming tool call: id={tc_data['id']}, name={tc_data['name']}, args={tc_data['arguments']}")
 
     # Turn 2 with streaming results
