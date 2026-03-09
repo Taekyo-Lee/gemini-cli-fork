@@ -352,6 +352,15 @@ npm install --ignore-scripts
 npm run build
 ```
 
+### `npm install` fails with `EEXIST` on `bundle/docs` (Node.js v25+)
+
+Node.js v25 changed `cpSync` behavior. Clean the bundle directory and retry:
+
+```bash
+rm -rf bundle
+npm install
+```
+
 ### TLS warning on startup
 
 ```
