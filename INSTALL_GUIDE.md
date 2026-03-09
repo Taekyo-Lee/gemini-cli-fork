@@ -15,9 +15,8 @@ repo so you can type `gemini` anywhere in your terminal — just like `claude`.
     # Option 1: nvm (no sudo needed — installs to your home dir, best for company PCs)
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
     source ~/.bashrc
-    nvm install 20
-    nvm use 20
-
+    nvm install node
+    
     # Option 2: NodeSource (requires sudo)
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt install -y nodejs
