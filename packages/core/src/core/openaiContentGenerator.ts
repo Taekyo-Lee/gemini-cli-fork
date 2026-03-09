@@ -184,7 +184,15 @@ export class OpenAIContentGenerator implements ContentGenerator {
         for (const tc of choice.delta.tool_calls) {
           const existing = pendingToolCalls.get(tc.index);
           if (existing) {
-            existing.arguments += tc.function?.arguments ?? '';
+            // If tc.id is set, some providers (vLLM/GLM-5) send a new
+            // complete tool call on the same index — replace, don't append.
+            if (tc.id) {
+              existing.id = tc.id;
+              if (tc.function?.name) existing.name = tc.function.name;
+              existing.arguments = tc.function?.arguments ?? '';
+            } else {
+              existing.arguments += tc.function?.arguments ?? '';
+            }
           } else {
             pendingToolCalls.set(tc.index, {
               id: tc.id ?? '',
@@ -210,7 +218,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
                         type: 'function' as const,
                         function: {
                           name: tc.name,
-                          arguments: tc.arguments,
+                          arguments: sanitizeToolCallArgs(tc.arguments),
                         },
                       }),
                     ),
@@ -260,7 +268,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
                   type: 'function' as const,
                   function: {
                     name: tc.name,
-                    arguments: tc.arguments,
+                    arguments: sanitizeToolCallArgs(tc.arguments),
                   },
                 }),
               ),
@@ -303,6 +311,39 @@ export class OpenAIContentGenerator implements ContentGenerator {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Validates accumulated tool call arguments JSON. Some providers (vLLM with
+ * GLM-5) send duplicate argument chunks during streaming, producing garbled
+ * JSON like `{"command":"date"{"command": "date"}`. This function tries to
+ * extract valid JSON, falling back to empty object.
+ */
+function sanitizeToolCallArgs(args: string): string {
+  // Fast path: already valid
+  try {
+    JSON.parse(args);
+    return args;
+  } catch {
+    // Try to find the last valid JSON object in the string
+    const lastBrace = args.lastIndexOf('{');
+    if (lastBrace > 0) {
+      const candidate = args.substring(lastBrace);
+      try {
+        JSON.parse(candidate);
+        debugLogger.log(
+          `[OpenAI] Repaired garbled tool call args: "${args}" → "${candidate}"`,
+        );
+        return candidate;
+      } catch {
+        // fall through
+      }
+    }
+    debugLogger.warn(
+      `[OpenAI] Could not parse tool call args: "${args}", using empty object`,
+    );
+    return '{}';
+  }
+}
 
 function normalizeContents(contents: ContentListUnion): Content[] {
   if (Array.isArray(contents)) {
