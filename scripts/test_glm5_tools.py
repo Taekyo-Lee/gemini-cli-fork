@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# /// script
+# dependencies = [
+#   "openai>=1.0.0",
+# ]
+# ///
 """
 Quick test to see if GLM-5 handles multi-turn tool calling properly
 via the OpenAI-compatible API (vLLM endpoint).
@@ -6,7 +11,7 @@ via the OpenAI-compatible API (vLLM endpoint).
 Run with:
   set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
   cd ~/workspace/gemini-cli-fork
-  python3 scripts/test_glm5_tools.py
+  uv run scripts/test_glm5_tools.py
 """
 
 import json
