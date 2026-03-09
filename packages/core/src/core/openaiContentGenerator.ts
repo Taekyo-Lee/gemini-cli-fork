@@ -35,6 +35,7 @@ import {
   openaiStreamChunkToGeminiResponse,
   ToolCallIdTracker,
 } from './openaiTypeMapper.js';
+import { debugLogger } from '../utils/debugLogger.js';
 
 export interface OpenAIContentGeneratorConfig {
   baseURL: string;
@@ -115,6 +116,27 @@ export class OpenAIContentGenerator implements ContentGenerator {
       request.config?.tools as Tool[] | undefined,
     );
 
+    // Debug: log the exact messages being sent to the API
+    debugLogger.log(
+      `[OpenAI] Sending ${messages.length} messages to ${this.modelName}:`,
+    );
+    for (const msg of messages) {
+      if (msg.role === 'tool') {
+        debugLogger.log(
+          `  [${msg.role}] tool_call_id=${msg.tool_call_id} content=${String(msg.content).substring(0, 200)}`,
+        );
+      } else if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) {
+        debugLogger.log(
+          `  [${msg.role}] tool_calls=${JSON.stringify(msg.tool_calls.map((tc) => ({ id: tc.id, name: tc.function.name })))}`,
+        );
+      } else {
+        const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+        debugLogger.log(
+          `  [${msg.role}] ${(content ?? '').substring(0, 100)}`,
+        );
+      }
+    }
+
     const stream = await this.client.chat.completions.create({
       ...(this.extraBody && { ...this.extraBody }),
       model: this.modelName,
@@ -139,6 +161,23 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
     for await (const chunk of stream) {
       const choice = chunk.choices[0];
+
+      // Debug: log each chunk summary
+      if (choice?.delta?.tool_calls) {
+        for (const tc of choice.delta.tool_calls) {
+          debugLogger.log(
+            `[OpenAI] Stream chunk: tool_call idx=${tc.index} id=${tc.id ?? '(none)'} name=${tc.function?.name ?? '(cont)'} args=${(tc.function?.arguments ?? '').substring(0, 100)} finish=${choice.finish_reason ?? '(none)'}`,
+          );
+        }
+      } else if (choice?.delta?.content) {
+        debugLogger.log(
+          `[OpenAI] Stream chunk: text="${choice.delta.content.substring(0, 80)}" finish=${choice.finish_reason ?? '(none)'}`,
+        );
+      } else if (choice?.finish_reason) {
+        debugLogger.log(
+          `[OpenAI] Stream chunk: finish_reason=${choice.finish_reason}`,
+        );
+      }
 
       // Accumulate tool call deltas
       if (choice?.delta?.tool_calls) {
