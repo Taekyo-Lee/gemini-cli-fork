@@ -574,6 +574,10 @@ export async function loadCliConfig(
     );
   }
 
+  // Capture YOLO intent before trust override may downgrade approvalMode.
+  // Used later to auto-enable sandbox in YOLO mode.
+  const yoloRequested = approvalMode === ApprovalMode.YOLO;
+
   // Force approval mode to default if the folder is not trusted.
   if (!trustedFolder && approvalMode !== ApprovalMode.DEFAULT) {
     debugLogger.warn(
@@ -657,7 +661,22 @@ export async function loadCliConfig(
     specifiedModel === GEMINI_MODEL_ALIAS_AUTO
       ? defaultModel
       : specifiedModel || defaultModel;
-  const sandboxConfig = await loadSandboxConfig(settings, argv);
+  // Auto-enable sandbox in YOLO mode (best-effort: don't fail if no runtime found)
+  // Note: use yoloRequested (captured before trust override) since approvalMode
+  // may have been downgraded to DEFAULT for untrusted folders.
+  const userExplicitlySandboxed =
+    argv.sandbox !== undefined ||
+    process.env['GEMINI_SANDBOX'] !== undefined ||
+    settings.tools?.sandbox !== undefined;
+  const yoloAutoSandbox = yoloRequested && !userExplicitlySandboxed;
+  const sandboxArgv = yoloAutoSandbox
+    ? { ...argv, sandbox: true as boolean | string | undefined }
+    : argv;
+  const sandboxConfig = await loadSandboxConfig(
+    settings,
+    sandboxArgv,
+    yoloAutoSandbox,
+  );
   const screenReader =
     argv.screenReader !== undefined
       ? argv.screenReader
