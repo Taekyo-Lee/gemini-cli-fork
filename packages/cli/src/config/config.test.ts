@@ -2658,7 +2658,7 @@ describe('loadCliConfig approval mode', () => {
       });
     });
 
-    it('should override --approval-mode=yolo to DEFAULT', async () => {
+    it('should keep YOLO when --approval-mode=yolo in untrusted folder (explicit --yolo bypasses trust)', async () => {
       process.argv = ['node', 'script.js', '--approval-mode', 'yolo'];
       const argv = await parseArguments(createTestMergedSettings());
       const config = await loadCliConfig(
@@ -2666,7 +2666,7 @@ describe('loadCliConfig approval mode', () => {
         'test-session',
         argv,
       );
-      expect(config.getApprovalMode()).toBe(ServerConfig.ApprovalMode.DEFAULT);
+      expect(config.getApprovalMode()).toBe(ServerConfig.ApprovalMode.YOLO);
     });
 
     it('should override --approval-mode=auto_edit to DEFAULT', async () => {
@@ -2680,7 +2680,7 @@ describe('loadCliConfig approval mode', () => {
       expect(config.getApprovalMode()).toBe(ServerConfig.ApprovalMode.DEFAULT);
     });
 
-    it('should override --yolo flag to DEFAULT', async () => {
+    it('should keep YOLO when --yolo flag in untrusted folder (explicit --yolo bypasses trust)', async () => {
       process.argv = ['node', 'script.js', '--yolo'];
       const argv = await parseArguments(createTestMergedSettings());
       const config = await loadCliConfig(
@@ -2688,7 +2688,7 @@ describe('loadCliConfig approval mode', () => {
         'test-session',
         argv,
       );
-      expect(config.getApprovalMode()).toBe(ServerConfig.ApprovalMode.DEFAULT);
+      expect(config.getApprovalMode()).toBe(ServerConfig.ApprovalMode.YOLO);
     });
 
     it('should remain DEFAULT when --approval-mode=default', async () => {
