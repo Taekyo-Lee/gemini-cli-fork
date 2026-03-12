@@ -59,16 +59,18 @@ const CwdIndicator: React.FC<CwdIndicatorProps> = ({
 
 interface SandboxIndicatorProps {
   isTrustedFolder: boolean | undefined;
+  configuredSandbox?: string;
 }
 
 const SandboxIndicator: React.FC<SandboxIndicatorProps> = ({
   isTrustedFolder,
+  configuredSandbox,
 }) => {
   if (isTrustedFolder === false) {
     return <Text color={theme.status.warning}>untrusted</Text>;
   }
 
-  const sandbox = process.env['SANDBOX'];
+  const sandbox = process.env['SANDBOX'] ?? configuredSandbox;
   if (sandbox && sandbox !== 'sandbox-exec') {
     return (
       <Text color="green">{sandbox.replace(/^gemini-(?:cli-)?/, '')}</Text>
@@ -191,6 +193,8 @@ export const Footer: React.FC = () => {
     quotaStats: uiState.quota.stats,
   };
 
+  const configuredSandbox = config.getSandbox()?.command;
+
   const isFullErrorVerbosity = settings.merged.ui.errorVerbosity === 'full';
   const showErrorSummary =
     !showErrorDetails &&
@@ -275,7 +279,7 @@ export const Footer: React.FC = () => {
       }
       case 'sandbox': {
         let str = 'no sandbox';
-        const sandbox = process.env['SANDBOX'];
+        const sandbox = process.env['SANDBOX'] ?? configuredSandbox;
         if (isTrustedFolder === false) str = 'untrusted';
         else if (sandbox === 'sandbox-exec')
           str = `macOS Seatbelt (${process.env['SEATBELT_PROFILE']})`;
@@ -284,7 +288,12 @@ export const Footer: React.FC = () => {
         addCol(
           id,
           header,
-          () => <SandboxIndicator isTrustedFolder={isTrustedFolder} />,
+          () => (
+            <SandboxIndicator
+              isTrustedFolder={isTrustedFolder}
+              configuredSandbox={configuredSandbox}
+            />
+          ),
           str.length,
         );
         break;
