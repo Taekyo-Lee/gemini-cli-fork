@@ -247,8 +247,16 @@ export class OpenAIContentGenerator implements ContentGenerator {
         }
       }
 
-      // For text content chunks, yield immediately
-      if (choice?.delta?.content || !choice || chunk.usage) {
+      // For text content chunks and finish-only chunks, yield immediately.
+      // The finish-only chunk (finish_reason set, no content/tool_calls) must
+      // be yielded so geminiChat captures the finishReason and avoids
+      // throwing InvalidStreamError('NO_FINISH_REASON').
+      if (
+        choice?.delta?.content ||
+        !choice ||
+        chunk.usage ||
+        (choice?.finish_reason && !choice?.delta?.tool_calls)
+      ) {
         yield openaiStreamChunkToGeminiResponse(chunk, this.tracker);
       }
     }
