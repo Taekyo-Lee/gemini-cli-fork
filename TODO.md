@@ -367,3 +367,32 @@ Each `generateContentStream()` yield must be a valid `GenerateContentResponse`:
 | `packages/cli/src/ui/auth/AuthDialog.tsx`    | Split into OpenAIModelPicker + GoogleAuthDialog                 |
 | `packages/cli/src/core/initializer.ts`       | Skip Google auth in OpenAI mode                                 |
 | `packages/cli/src/ui/auth/useAuth.ts`        | Skip Google auth effect in OpenAI mode                          |
+
+---
+
+## Phase 9: Auto-enable Sandbox in YOLO Mode
+
+Per docs, "Sandbox is enabled when using `--yolo` by default." But the codebase
+had no logic connecting YOLO → sandbox, and the Footer UI only checked
+`process.env['SANDBOX']` (set inside the container), not the config object.
+
+- [x] **Add `bestEffort` parameter to `sandboxConfig.ts`** — When
+      `sandbox === true` and no runtime found: `bestEffort` → return `''`
+      (graceful fallback); otherwise → throw `FatalSandboxError` (existing
+      behavior preserved)
+
+- [x] **Add YOLO auto-enable logic in `config.ts`** — Captures `yoloRequested`
+      flag before trust override can downgrade `approvalMode`. If YOLO was
+      requested and user did NOT explicitly configure sandbox, calls
+      `loadSandboxConfig()` with `sandbox: true, bestEffort: true`
+
+- [x] **Fix Footer sandbox display** — `Footer.tsx` `SandboxIndicator` now
+      also checks `config.getSandbox()?.command` (not just `process.env['SANDBOX']`),
+      so the status bar shows the configured sandbox command (e.g. `docker`)
+
+- [x] **Add tests** — `sandboxConfig.test.ts`: 4 bestEffort tests (42 total);
+      `config.test.ts`: 7 YOLO sandbox tests (202 total, including untrusted
+      folder case)
+
+- [x] **Build and verify** — `npm run build` succeeds, all tests pass,
+      `gemini --yolo` shows `docker` in status bar
