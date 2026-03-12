@@ -935,7 +935,7 @@ export class Config implements McpContext {
     this.useBackgroundColor = params.useBackgroundColor ?? true;
     this.useAlternateBuffer = params.useAlternateBuffer ?? false;
     this.enableInteractiveShell = params.enableInteractiveShell ?? false;
-    this.skipNextSpeakerCheck = params.skipNextSpeakerCheck ?? true;
+    this.skipNextSpeakerCheck = params.skipNextSpeakerCheck ?? false;
     this.shellExecutionConfig = {
       terminalWidth: params.shellExecutionConfig?.terminalWidth ?? 80,
       terminalHeight: params.shellExecutionConfig?.terminalHeight ?? 24,
