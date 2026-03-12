@@ -806,7 +806,20 @@ export class GeminiClient {
       }
     }
 
-    if (!turn.pendingToolCalls.length && signal && !signal.aborted) {
+    // Only run nextSpeakerCheck when the model just responded to tool results.
+    // For text-only turns (e.g. user says "Hello"), skip the check to avoid
+    // the model looping with "Please continue." on simple conversations.
+    const requestParts = Array.isArray(request) ? request : [request];
+    const isToolResponseTurn = requestParts.some(
+      (p) => typeof p !== 'string' && 'functionResponse' in p,
+    );
+
+    if (
+      !turn.pendingToolCalls.length &&
+      signal &&
+      !signal.aborted &&
+      isToolResponseTurn
+    ) {
       if (
         !this.config.getQuotaErrorOccurred() &&
         !this.config.getSkipNextSpeakerCheck()
