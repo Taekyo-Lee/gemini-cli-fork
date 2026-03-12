@@ -1220,11 +1220,11 @@ ${JSON.stringify(
       expect(finalResult).toBeInstanceOf(Turn);
     });
 
-    it('should stop infinite loop after MAX_TURNS when nextSpeaker always returns model', async () => {
+    it('should run nextSpeakerCheck only when request contains functionResponse', async () => {
       vi.spyOn(client['config'], 'getContinueOnFailedApiCall').mockReturnValue(
         true,
       );
-      // Get the mocked checkNextSpeaker function and configure it to trigger infinite loop
+      // Get the mocked checkNextSpeaker function
       const { checkNextSpeaker } = await import(
         '../utils/nextSpeakerChecker.js'
       );
@@ -1234,11 +1234,10 @@ ${JSON.stringify(
         reasoning: 'Test case - always continue',
       });
 
-      // Mock Turn to have no pending tool calls (which would allow nextSpeaker check)
-      const mockStream = (async function* () {
+      // Mock Turn to have no pending tool calls
+      mockTurnRunFn.mockImplementation(async function* () {
         yield { type: 'content', value: 'Continue...' };
-      })();
-      mockTurnRunFn.mockReturnValue(mockStream);
+      });
 
       const mockChat: Partial<GeminiChat> = {
         addHistory: vi.fn(),
@@ -1248,50 +1247,22 @@ ${JSON.stringify(
       };
       client['chat'] = mockChat as GeminiChat;
 
-      // Use a signal that never gets aborted
-      const abortController = new AbortController();
-      const signal = abortController.signal;
+      const signal = new AbortController().signal;
 
-      // Act - Start the stream that should loop
+      // Act - Send a tool response (functionResponse) request
       const stream = client.sendMessageStream(
-        [{ text: 'Start conversation' }],
+        [{ functionResponse: { name: 'test_tool', response: { result: 'ok' } } }],
         signal,
         'prompt-id-2',
       );
-
-      // Count how many stream events we get
-      let eventCount = 0;
-      let finalResult: Turn | undefined;
-
-      // Consume the stream and count iterations
-      while (true) {
-        const result = await stream.next();
-        if (result.done) {
-          finalResult = result.value;
-          break;
-        }
-        eventCount++;
-
-        // Safety check to prevent actual infinite loop in test
-        if (eventCount > 200) {
-          abortController.abort();
-          throw new Error(
-            'Test exceeded expected event limit - possible actual infinite loop',
-          );
-        }
+      for await (const _ of stream) {
+        // consume stream
       }
 
-      // Assert
-      expect(finalResult).toBeInstanceOf(Turn);
-
-      // If infinite loop protection is working, checkNextSpeaker should be called many times
-      // but stop at MAX_TURNS (100). Since each recursive call should trigger checkNextSpeaker,
-      // we expect it to be called multiple times before hitting the limit
-      expect(mockCheckNextSpeaker).toHaveBeenCalled();
-
-      // The stream should produce events and eventually terminate
-      expect(eventCount).toBeGreaterThanOrEqual(1);
-      expect(eventCount).toBeLessThan(200); // Should not exceed our safety limit
+      // Assert - nextSpeakerCheck fires for functionResponse request
+      expect(mockCheckNextSpeaker).toHaveBeenCalledTimes(1);
+      // Two turns: initial (functionResponse) + continuation ("Please continue.")
+      expect(mockTurnRunFn).toHaveBeenCalledTimes(2);
     });
 
     it('should yield MaxSessionTurns and stop when session turn limit is reached', async () => {
@@ -1344,11 +1315,10 @@ ${JSON.stringify(
       expect(mockTurnRunFn).toHaveBeenCalledTimes(MAX_SESSION_TURNS);
     });
 
-    it('should respect MAX_TURNS limit even when turns parameter is set to a large value', async () => {
-      // This test verifies that the infinite loop protection works even when
-      // someone tries to bypass it by calling with a very large turns value
+    it('should NOT run nextSpeakerCheck for text-only requests', async () => {
+      // nextSpeakerCheck should only fire when the model is responding to tool
+      // results (functionResponse), not for regular text-only conversations.
 
-      // Get the mocked checkNextSpeaker function and configure it to trigger infinite loop
       const { checkNextSpeaker } = await import(
         '../utils/nextSpeakerChecker.js'
       );
@@ -1358,11 +1328,9 @@ ${JSON.stringify(
         reasoning: 'Test case - always continue',
       });
 
-      // Mock Turn to have no pending tool calls (which would allow nextSpeaker check)
-      const mockStream = (async function* () {
-        yield { type: 'content', value: 'Continue...' };
-      })();
-      mockTurnRunFn.mockReturnValue(mockStream);
+      mockTurnRunFn.mockImplementation(async function* () {
+        yield { type: 'content', value: 'Hello!' };
+      });
 
       const mockChat: Partial<GeminiChat> = {
         addHistory: vi.fn(),
@@ -1372,50 +1340,21 @@ ${JSON.stringify(
       };
       client['chat'] = mockChat as GeminiChat;
 
-      // Use a signal that never gets aborted
-      const abortController = new AbortController();
-      const signal = abortController.signal;
+      const signal = new AbortController().signal;
 
-      // Act - Start the stream with an extremely high turns value
-      // This simulates a case where the turns protection is bypassed
+      // Act - Send a text-only request
       const stream = client.sendMessageStream(
-        [{ text: 'Start conversation' }],
+        [{ text: 'Hello' }],
         signal,
         'prompt-id-3',
-        Number.MAX_SAFE_INTEGER, // Bypass the MAX_TURNS protection
       );
-
-      // Count how many stream events we get
-      let eventCount = 0;
-      const maxTestIterations = 1000; // Higher limit to show the loop continues
-
-      // Consume the stream and count iterations
-      try {
-        while (true) {
-          const result = await stream.next();
-          if (result.done) {
-            break;
-          }
-          eventCount++;
-
-          // This test should hit this limit, demonstrating the infinite loop
-          if (eventCount > maxTestIterations) {
-            abortController.abort();
-            // This is the expected behavior - we hit the infinite loop
-            break;
-          }
-        }
-      } catch (_) {
-        // If the test framework times out, that also demonstrates the infinite loop
+      for await (const _ of stream) {
+        // consume stream
       }
 
-      // Assert that the fix works - the loop should stop at MAX_TURNS
-      const callCount = mockCheckNextSpeaker.mock.calls.length;
-
-      // With the fix: even when turns is set to a very high value,
-      // the loop should stop at MAX_TURNS (100)
-      expect(callCount).toBeLessThanOrEqual(100); // Should not exceed MAX_TURNS
-      expect(eventCount).toBeLessThanOrEqual(200); // Should have reasonable number of events
+      // Assert - nextSpeakerCheck should NOT be called for text-only requests
+      expect(mockCheckNextSpeaker).not.toHaveBeenCalled();
+      expect(mockTurnRunFn).toHaveBeenCalledTimes(1);
     });
 
     it('should yield ContextWindowWillOverflow when the context window is about to overflow', async () => {
@@ -3337,7 +3276,8 @@ ${JSON.stringify(
           .mockResolvedValueOnce(null);
 
         const promptId = 'test-prompt-hook-recursive';
-        const request = { text: 'Recursion Test' };
+        // Use functionResponse to trigger nextSpeakerCheck (only fires for tool response turns)
+        const request = [{ functionResponse: { name: 'test_tool', response: { result: 'ok' } } }];
         const signal = new AbortController().signal;
 
         let callCount = 0;
@@ -3378,7 +3318,8 @@ ${JSON.stringify(
           .mockResolvedValueOnce(null);
 
         const promptId = 'test-prompt-hook-original-req';
-        const request = { text: 'Do something' };
+        // Use functionResponse to trigger nextSpeakerCheck (only fires for tool response turns)
+        const request = [{ functionResponse: { name: 'do_something', response: { done: true } } }];
         const signal = new AbortController().signal;
 
         mockTurnRunFn.mockImplementation(async function* (
@@ -3392,7 +3333,7 @@ ${JSON.stringify(
         while (!(await stream.next()).done);
 
         expect(mockHookSystem.fireAfterAgentEvent).toHaveBeenCalledWith(
-          partToString(request), // Should be 'Do something'
+          partToString(request), // Should be '[Function Response: do_something]'
           expect.stringContaining('Ok'),
           false,
         );
