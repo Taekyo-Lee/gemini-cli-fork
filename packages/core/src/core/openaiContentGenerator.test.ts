@@ -187,6 +187,84 @@ describe('OpenAIContentGenerator', () => {
       );
     });
 
+    it('passes response_format when responseMimeType is application/json', async () => {
+      const mockResponse = {
+        id: 'chatcmpl-test',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'test-model',
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: '{"next_speaker": "model"}',
+              refusal: null,
+            },
+            finish_reason: 'stop',
+            logprobs: null,
+          },
+        ],
+      };
+
+      mockCreate.mockResolvedValue(mockResponse);
+
+      const result = await generator.generateContent(
+        {
+          model: 'ignored',
+          contents: [{ role: 'user', parts: [{ text: 'Who speaks next?' }] }],
+          config: {
+            responseMimeType: 'application/json',
+          },
+        },
+        'prompt-json',
+        role,
+      );
+
+      expect(result.candidates).toHaveLength(1);
+      expect(result.candidates![0].content!.parts![0].text).toBe(
+        '{"next_speaker": "model"}',
+      );
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          response_format: { type: 'json_object' },
+          stream: false,
+        }),
+      );
+    });
+
+    it('does not pass response_format when responseMimeType is not set', async () => {
+      const mockResponse = {
+        id: 'chatcmpl-test',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'test-model',
+        choices: [
+          {
+            index: 0,
+            message: { role: 'assistant', content: 'ok', refusal: null },
+            finish_reason: 'stop',
+            logprobs: null,
+          },
+        ],
+      };
+
+      mockCreate.mockResolvedValue(mockResponse);
+
+      await generator.generateContent(
+        {
+          model: 'ignored',
+          contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
+        },
+        'prompt-no-json',
+        role,
+      );
+
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.response_format).toBeUndefined();
+    });
+
     it('handles string contents', async () => {
       const mockResponse = {
         id: 'chatcmpl-test',
