@@ -4,149 +4,161 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import {
-  getContainerPath,
-  parseImageName,
-  ports,
-  entrypoint,
-  shouldUseCurrentUserInSandbox,
-} from './sandboxUtils.js';
+import { quote } from 'shell-quote';
+import { debugLogger, GEMINI_DIR } from '@google/gemini-cli-core';
 
-vi.mock('node:os');
-vi.mock('node:fs');
-vi.mock('node:fs/promises');
-vi.mock('@google/gemini-cli-core', () => ({
-  debugLogger: {
-    log: vi.fn(),
-    warn: vi.fn(),
-  },
-  GEMINI_DIR: '.gemini',
-}));
+export const LOCAL_DEV_SANDBOX_IMAGE_NAME = 'gemini-cli-sandbox';
+export const SANDBOX_NETWORK_NAME = 'gemini-cli-sandbox';
+export const SANDBOX_PROXY_NAME = 'gemini-cli-sandbox-proxy';
+export const BUILTIN_SEATBELT_PROFILES = [
+  'permissive-open',
+  'permissive-proxied',
+  'restrictive-open',
+  'restrictive-proxied',
+  'strict-open',
+  'strict-proxied',
+];
 
-describe('sandboxUtils', () => {
-  const originalEnv = process.env;
+export function getContainerPath(hostPath: string): string {
+  if (os.platform() !== 'win32') {
+    return hostPath;
+  }
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    process.env = { ...originalEnv };
-    // Clean up these env vars that might affect tests
-    delete process.env['NODE_ENV'];
-    delete process.env['DEBUG'];
-  });
+  const withForwardSlashes = hostPath.replace(/\\/g, '/');
+  const match = withForwardSlashes.match(/^([A-Z]):\/(.*)/i);
+  if (match) {
+    return `/${match[1].toLowerCase()}/${match[2]}`;
+  }
+  return withForwardSlashes;
+}
 
-  afterEach(() => {
-    process.env = originalEnv;
-  });
+export async function shouldUseCurrentUserInSandbox(): Promise<boolean> {
+  const envVar = process.env['SANDBOX_SET_UID_GID']?.toLowerCase().trim();
 
-  describe('getContainerPath', () => {
-    it('should return same path on non-Windows', () => {
-      vi.mocked(os.platform).mockReturnValue('linux');
-      expect(getContainerPath('/home/user')).toBe('/home/user');
-    });
+  if (envVar === '1' || envVar === 'true') {
+    return true;
+  }
+  if (envVar === '0' || envVar === 'false') {
+    return false;
+  }
 
-    it('should convert Windows path to container path', () => {
-      vi.mocked(os.platform).mockReturnValue('win32');
-      expect(getContainerPath('C:\\Users\\user')).toBe('/c/Users/user');
-    });
-
-    it('should handle Windows path without drive letter', () => {
-      vi.mocked(os.platform).mockReturnValue('win32');
-      expect(getContainerPath('\\Users\\user')).toBe('/Users/user');
-    });
-  });
-
-  describe('parseImageName', () => {
-    it('should parse image name with tag', () => {
-      expect(parseImageName('my-image:latest')).toBe('my-image-latest');
-    });
-
-    it('should parse image name without tag', () => {
-      expect(parseImageName('my-image')).toBe('my-image');
-    });
-
-    it('should handle registry path', () => {
-      expect(parseImageName('gcr.io/my-project/my-image:v1')).toBe(
-        'my-image-v1',
+  // If environment variable is not explicitly set, check for Debian/Ubuntu Linux
+  if (os.platform() === 'linux') {
+    try {
+      const osReleaseContent = await readFile('/etc/os-release', 'utf8');
+      if (
+        osReleaseContent.includes('ID=debian') ||
+        osReleaseContent.includes('ID=ubuntu') ||
+        osReleaseContent.match(/^ID_LIKE=.*debian.*/m) || // Covers derivatives
+        osReleaseContent.match(/^ID_LIKE=.*ubuntu.*/m) // Covers derivatives
+      ) {
+        debugLogger.log(
+          'Defaulting to use current user UID/GID for Debian/Ubuntu-based Linux.',
+        );
+        return true;
+      }
+    } catch (_err) {
+      // Silently ignore if /etc/os-release is not found or unreadable.
+      // The default (false) will be applied in this case.
+      debugLogger.warn(
+        'Warning: Could not read /etc/os-release to auto-detect Debian/Ubuntu for UID/GID default.',
       );
-    });
-  });
+    }
+  }
+  return false; // Default to false if no other condition is met
+}
 
-  describe('ports', () => {
-    it('should return empty array if SANDBOX_PORTS is not set', () => {
-      delete process.env['SANDBOX_PORTS'];
-      expect(ports()).toEqual([]);
-    });
+export function parseImageName(image: string): string {
+  const [fullName, tag] = image.split(':');
+  const name = fullName.split('/').at(-1) ?? 'unknown-image';
+  return tag ? `${name}-${tag}` : name;
+}
 
-    it('should parse comma-separated ports', () => {
-      process.env['SANDBOX_PORTS'] = '8080, 3000 , 9000';
-      expect(ports()).toEqual(['8080', '3000', '9000']);
-    });
-  });
+export function ports(): string[] {
+  return (process.env['SANDBOX_PORTS'] ?? '')
+    .split(',')
+    .filter((p) => p.trim())
+    .map((p) => p.trim());
+}
 
-  describe('entrypoint', () => {
-    beforeEach(() => {
-      vi.mocked(os.platform).mockReturnValue('linux');
-      vi.mocked(fs.existsSync).mockReturnValue(false);
-    });
+export function entrypoint(workdir: string, cliArgs: string[]): string[] {
+  const isWindows = os.platform() === 'win32';
+  const containerWorkdir = getContainerPath(workdir);
+  const shellCmds = [];
+  const pathSeparator = isWindows ? ';' : ':';
 
-    it('should generate default entrypoint', () => {
-      const args = entrypoint('/work', ['node', 'gemini', 'arg1']);
-      expect(args).toEqual(['bash', '-c', 'gemini arg1']);
-    });
+  let pathSuffix = '';
+  if (process.env['PATH']) {
+    const paths = process.env['PATH'].split(pathSeparator);
+    for (const p of paths) {
+      const containerPath = getContainerPath(p);
+      if (
+        containerPath.toLowerCase().startsWith(containerWorkdir.toLowerCase())
+      ) {
+        pathSuffix += `:${containerPath}`;
+      }
+    }
+  }
+  if (pathSuffix) {
+    shellCmds.push(`export PATH="$PATH${pathSuffix}";`);
+  }
 
-    it('should include PATH and PYTHONPATH if set', () => {
-      process.env['PATH'] = '/work/bin:/usr/bin';
-      process.env['PYTHONPATH'] = '/work/lib';
-      const args = entrypoint('/work', ['node', 'gemini', 'arg1']);
-      expect(args[2]).toContain('export PATH="$PATH:/work/bin"');
-      expect(args[2]).toContain('export PYTHONPATH="$PYTHONPATH:/work/lib"');
-    });
+  let pythonPathSuffix = '';
+  if (process.env['PYTHONPATH']) {
+    const paths = process.env['PYTHONPATH'].split(pathSeparator);
+    for (const p of paths) {
+      const containerPath = getContainerPath(p);
+      if (
+        containerPath.toLowerCase().startsWith(containerWorkdir.toLowerCase())
+      ) {
+        pythonPathSuffix += `:${containerPath}`;
+      }
+    }
+  }
+  if (pythonPathSuffix) {
+    shellCmds.push(`export PYTHONPATH="$PYTHONPATH${pythonPathSuffix}";`);
+  }
 
-    it('should source sandbox.bashrc if exists', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      const args = entrypoint('/work', ['node', 'gemini', 'arg1']);
-      expect(args[2]).toContain('source .gemini/sandbox.bashrc');
-    });
+  // Source a2g env file if mounted into the container
+  shellCmds.push(
+    `if [ -f "$A2G_ENV_FILE" ]; then set -a; source "$A2G_ENV_FILE"; set +a; fi;`,
+  );
 
-    it('should include socat commands for ports', () => {
-      process.env['SANDBOX_PORTS'] = '8080';
-      const args = entrypoint('/work', ['node', 'gemini', 'arg1']);
-      expect(args[2]).toContain('socat TCP4-LISTEN:8080');
-    });
+  const projectSandboxBashrc = `${GEMINI_DIR}/sandbox.bashrc`;
+  if (fs.existsSync(projectSandboxBashrc)) {
+    shellCmds.push(`source ${getContainerPath(projectSandboxBashrc)};`);
+  }
 
-    it('should use development command if NODE_ENV is development', () => {
-      process.env['NODE_ENV'] = 'development';
-      const args = entrypoint('/work', ['node', 'gemini', 'arg1']);
-      expect(args[2]).toContain('npm rebuild && npm run start --');
-    });
-  });
+  ports().forEach((p) =>
+    shellCmds.push(
+      `socat TCP4-LISTEN:${p},bind=$(hostname -i),fork,reuseaddr TCP4:127.0.0.1:${p} 2> /dev/null &`,
+    ),
+  );
 
-  describe('shouldUseCurrentUserInSandbox', () => {
-    it('should return true if SANDBOX_SET_UID_GID is 1', async () => {
-      process.env['SANDBOX_SET_UID_GID'] = '1';
-      expect(await shouldUseCurrentUserInSandbox()).toBe(true);
-    });
+  const quotedCliArgs = cliArgs.slice(2).map((arg) => quote([arg]));
+  const isDebugMode =
+    process.env['DEBUG'] === 'true' || process.env['DEBUG'] === '1';
+  // When running from a local git clone (e.g. `node packages/cli`), use the
+  // same entry point inside the container instead of the globally installed
+  // `gemini` binary, which may be the upstream version.
+  const scriptPath = cliArgs[1] ?? '';
+  const isLocalClone =
+    scriptPath.includes('packages/cli') ||
+    scriptPath.includes('packages\\cli');
+  const cliCmd =
+    process.env['NODE_ENV'] === 'development'
+      ? isDebugMode
+        ? 'npm run debug --'
+        : 'npm rebuild && npm run start --'
+      : isDebugMode
+        ? `node --inspect-brk=0.0.0.0:${process.env['DEBUG_PORT'] || '9229'} $(which gemini)`
+        : isLocalClone
+          ? `node ${getContainerPath(scriptPath)}`
+          : 'gemini';
 
-    it('should return false if SANDBOX_SET_UID_GID is 0', async () => {
-      process.env['SANDBOX_SET_UID_GID'] = '0';
-      expect(await shouldUseCurrentUserInSandbox()).toBe(false);
-    });
-
-    it('should return true on Debian Linux', async () => {
-      delete process.env['SANDBOX_SET_UID_GID'];
-      vi.mocked(os.platform).mockReturnValue('linux');
-      vi.mocked(readFile).mockResolvedValue('ID=debian\n');
-      expect(await shouldUseCurrentUserInSandbox()).toBe(true);
-    });
-
-    it('should return false on non-Linux', async () => {
-      delete process.env['SANDBOX_SET_UID_GID'];
-      vi.mocked(os.platform).mockReturnValue('darwin');
-      expect(await shouldUseCurrentUserInSandbox()).toBe(false);
-    });
-  });
-});
+  const args = [...shellCmds, cliCmd, ...quotedCliArgs];
+  return ['bash', '-c', args.join(' ')];
+}
