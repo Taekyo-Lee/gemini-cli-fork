@@ -1122,8 +1122,8 @@ describe('GeminiChat', () => {
   });
 
   describe('sendMessageStream with retries', () => {
-    it('should not retry on invalid content if model does not start with gemini-2', async () => {
-      // Mock the stream to fail.
+    it('should retry on invalid content even for non-Gemini-2 models', async () => {
+      // Mock the stream to always fail with empty content.
       vi.mocked(mockContentGenerator.generateContentStream).mockImplementation(
         async () =>
           (async function* () {
@@ -1136,7 +1136,7 @@ describe('GeminiChat', () => {
       const stream = await chat.sendMessageStream(
         { model: 'gemini-1.5-pro' },
         'test',
-        'prompt-id-no-retry',
+        'prompt-id-retry-all',
         new AbortController().signal,
         LlmRole.MAIN,
       );
@@ -1149,11 +1149,11 @@ describe('GeminiChat', () => {
         })(),
       ).rejects.toThrow(InvalidStreamError);
 
-      // Should be called only 1 time (no retry)
+      // Should be called 2 times (initial + 1 retry) for all model types
       expect(mockContentGenerator.generateContentStream).toHaveBeenCalledTimes(
-        1,
+        2,
       );
-      expect(mockLogContentRetry).not.toHaveBeenCalled();
+      expect(mockLogContentRetry).toHaveBeenCalled();
     });
 
     it('should yield a RETRY event when an invalid stream is encountered', async () => {
