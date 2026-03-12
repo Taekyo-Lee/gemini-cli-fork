@@ -224,6 +224,42 @@ describe('loadSandboxConfig', () => {
     });
   });
 
+  describe('bestEffort mode', () => {
+    it('should return undefined instead of throwing when no runtime found and bestEffort is true', async () => {
+      mockedOsPlatform.mockReturnValue('linux');
+      mockedCommandExistsSync.mockReturnValue(false);
+      const config = await loadSandboxConfig({}, { sandbox: true }, true);
+      expect(config).toBeUndefined();
+    });
+
+    it('should still return sandbox config when runtime is available and bestEffort is true', async () => {
+      mockedOsPlatform.mockReturnValue('linux');
+      mockedCommandExistsSync.mockImplementation((cmd) => cmd === 'docker');
+      const config = await loadSandboxConfig({}, { sandbox: true }, true);
+      expect(config).toEqual({ command: 'docker', image: 'default/image' });
+    });
+
+    it('should still throw when bestEffort is false (default)', async () => {
+      mockedOsPlatform.mockReturnValue('linux');
+      mockedCommandExistsSync.mockReturnValue(false);
+      await expect(loadSandboxConfig({}, { sandbox: true })).rejects.toThrow(
+        'GEMINI_SANDBOX is true but failed to determine command for sandbox',
+      );
+    });
+
+    it('should use sandbox-exec on darwin even with bestEffort', async () => {
+      mockedOsPlatform.mockReturnValue('darwin');
+      mockedCommandExistsSync.mockImplementation(
+        (cmd) => cmd === 'sandbox-exec',
+      );
+      const config = await loadSandboxConfig({}, { sandbox: true }, true);
+      expect(config).toEqual({
+        command: 'sandbox-exec',
+        image: 'default/image',
+      });
+    });
+  });
+
   describe('truthy/falsy sandbox values', () => {
     beforeEach(() => {
       mockedOsPlatform.mockReturnValue('linux');
