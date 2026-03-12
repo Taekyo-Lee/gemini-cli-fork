@@ -579,7 +579,12 @@ export async function loadCliConfig(
   const yoloRequested = approvalMode === ApprovalMode.YOLO;
 
   // Force approval mode to default if the folder is not trusted.
-  if (!trustedFolder && approvalMode !== ApprovalMode.DEFAULT) {
+  // Exception: explicit --yolo flag should not be silently downgraded.
+  if (
+    !trustedFolder &&
+    approvalMode !== ApprovalMode.DEFAULT &&
+    !yoloRequested
+  ) {
     debugLogger.warn(
       `Approval mode overridden to "default" because the current folder is not trusted.`,
     );
