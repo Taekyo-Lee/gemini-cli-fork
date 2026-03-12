@@ -479,3 +479,61 @@ inside the container exactly as they do outside.
 | `packages/cli/src/utils/sandboxUtils.ts` | Env sourcing, local clone detection |
 | `packages/cli/src/config/sandboxConfig.test.ts` | 4 bestEffort tests |
 | `packages/cli/src/config/config.test.ts` | 7 YOLO sandbox tests |
+
+---
+
+## Phase 10: Multi-Turn Fix (Premature Stop + Silent Response)
+
+**Status: COMPLETE**
+
+Two issues reported with KIMI and other OpenAI-compatible models:
+1. Model stops after one tool call when it should continue (premature stopping)
+2. Model sometimes returns empty/no response (silent response)
+
+### 10.1 Enable nextSpeakerCheck by default
+
+- [x] **`packages/core/src/config/config.ts`**: Change `skipNextSpeakerCheck` default from `true` to `false`
+  - Enables auto-continuation for all model types after tool call responses
+  - Users can still disable via `settings.model.skipNextSpeakerCheck: true`
+
+### 10.2 Support `response_format` in OpenAI adapter
+
+- [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Add `response_format: { type: 'json_object' }` when `responseMimeType === 'application/json'`
+  - Makes `baseLlmClient.generateJson()` work for OpenAI models (used by nextSpeakerCheck, editCorrector, etc.)
+
+### 10.3 Enable retry for empty responses from all models
+
+- [x] **`packages/core/src/core/geminiChat.ts`**: Remove `isGemini2Model` gate on `InvalidStreamError` retry
+  - All models now get 1 retry (500ms delay) for empty/invalid stream responses
+  - Also ungated the retry failure logging
+
+### 10.4 Enable "Please continue" recovery for all models
+
+- [x] **`packages/core/src/core/client.ts`**: Remove `isGemini2Model` gate on `continueOnFailedApiCall`
+  - After retries exhausted, sends "System: Please continue." for all model types
+
+### 10.5 UI feedback for InvalidStream events
+
+- [x] **`packages/cli/src/ui/hooks/useGeminiStream.ts`**: Replace empty handler with info message
+  - Shows "Model returned an empty response. Retrying..." instead of silent failure
+
+### 10.6 Tests
+
+- [x] **`openaiContentGenerator.test.ts`**: 2 new tests for `response_format` (present when JSON requested, absent otherwise)
+- [x] **`geminiChat.test.ts`**: Updated test to verify retry fires for non-Gemini-2 models
+- [x] **`client.test.ts`**: Updated test to verify "Please continue." recovery fires for non-Gemini-2 models
+- [x] All core tests pass (299 files, 5590 tests)
+- [x] useGeminiStream tests pass (72 tests)
+
+### 10.7 Files Modified
+
+| File | Change |
+|---|---|
+| `packages/core/src/config/config.ts` | Default `skipNextSpeakerCheck` to `false` |
+| `packages/core/src/core/openaiContentGenerator.ts` | Add `response_format` support |
+| `packages/core/src/core/geminiChat.ts` | Remove `isGemini2Model` gate on retry |
+| `packages/core/src/core/client.ts` | Remove `isGemini2Model` gate on recovery |
+| `packages/cli/src/ui/hooks/useGeminiStream.ts` | Add InvalidStream UI feedback |
+| `packages/core/src/core/openaiContentGenerator.test.ts` | 2 new response_format tests |
+| `packages/core/src/core/geminiChat.test.ts` | Updated retry test for all models |
+| `packages/core/src/core/client.test.ts` | Updated recovery test for all models |
