@@ -92,6 +92,10 @@ export class OpenAIContentGenerator implements ContentGenerator {
       messages,
       ...(tools && { tools }),
       ...(this.maxTokens && { max_tokens: this.maxTokens }),
+      // Support JSON output for utility calls (nextSpeakerCheck, editCorrector, etc.)
+      ...(request.config?.responseMimeType === 'application/json' && {
+        response_format: { type: 'json_object' as const },
+      }),
       stream: false,
     });
 
