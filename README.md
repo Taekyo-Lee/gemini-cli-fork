@@ -60,7 +60,7 @@ Full registry:
 ```bash
 # Clone and build
 cd ~/workspace/gemini-cli-fork
-npm install
+npm install --ignore-scripts
 npm run build
 
 # Link globally (so `gemini` works from anywhere)
@@ -74,7 +74,13 @@ gemini
 Select a model from the picker and start chatting.
 
 For detailed setup (Node.js upgrade, troubleshooting, switching modes), see the
-**[Install Guide](./INSTALL_GUIDE.md)**.
+**[Install Guide](./docs-fork/install-guide.md)**.
+
+> **Tip:** You can also use a shell alias instead of `npm link`:
+> ```bash
+> echo 'alias gemini="node ~/workspace/gemini-cli-fork/packages/cli"' >> ~/.bashrc
+> source ~/.bashrc
+> ```
 
 ## Usage
 
@@ -138,14 +144,32 @@ All upstream Gemini CLI features work with any model:
 See the upstream [documentation](https://github.com/google-gemini/gemini-cli)
 for full feature reference.
 
+## Documentation
+
+| Document | What It Covers |
+| --- | --- |
+| [Install Guide](./docs-fork/install-guide.md) | Step-by-step setup, troubleshooting |
+| [Fork Philosophy](./docs-fork/fork-philosophy.md) | Why this fork exists, core principles |
+| [OpenAI-Compatible Mode](./docs-fork/openai-compatible.md) | Technical deep-dive: env detection, auth flow, API mapping |
+| [Model Registry](./docs-fork/model-registry-reference.md) | Complete model tables with specs |
+| [TODO](./docs-fork/todo.md) | Implementation phases, bug fixes, current status |
+
 ## Current Status
 
-**Working:** Single-turn conversations, model picker, streaming responses, basic
-tool calling.
+**Fully working.** Model picker, streaming, multi-turn tool calling, YOLO mode
+with auto-sandbox — all stable. See [TODO](./docs-fork/todo.md) for the full
+history of fixes across Phase 7-9.
 
-**Known issues:** Multi-turn tool-calling conversations have bugs due to global
-state in the type mapper. See [TODO.md](./TODO.md) Phase 7 for the full list of
-16 tracked issues and fixes.
+### YOLO Mode with Auto-Sandbox
+
+```bash
+gemini --yolo
+```
+
+When `--yolo` is passed, sandbox (Docker/Podman) auto-enables for tool
+isolation. If no container runtime is available, it continues without sandbox
+rather than crashing. Env vars are forwarded into the container so the model
+picker works identically inside and outside.
 
 ## Development
 
