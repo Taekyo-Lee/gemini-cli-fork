@@ -509,7 +509,25 @@ export async function main() {
     const memoryArgs = settings.merged.advanced.autoConfigureMemory
       ? getNodeMemoryArgs(isDebugMode)
       : [];
-    const sandboxConfig = await loadSandboxConfig(settings.merged, argv);
+    // Auto-enable sandbox in YOLO mode (best-effort: don't fail if no runtime)
+    const rawApprovalMode =
+      argv.approvalMode ??
+      (argv.yolo ? 'yolo' : undefined) ??
+      settings.merged.general?.defaultApprovalMode;
+    const isYolo = rawApprovalMode === 'yolo';
+    const userExplicitlySandboxed =
+      argv.sandbox !== undefined ||
+      process.env['GEMINI_SANDBOX'] !== undefined ||
+      settings.merged.tools?.sandbox !== undefined;
+    const yoloAutoSandbox = isYolo && !userExplicitlySandboxed;
+    const sandboxArgv = yoloAutoSandbox
+      ? { ...argv, sandbox: true as boolean | string | undefined }
+      : argv;
+    const sandboxConfig = await loadSandboxConfig(
+      settings.merged,
+      sandboxArgv,
+      yoloAutoSandbox,
+    );
     // We intentionally omit the list of extensions here because extensions
     // should not impact auth or setting up the sandbox.
     // TODO(jacobr): refactor loadCliConfig so there is a minimal version
