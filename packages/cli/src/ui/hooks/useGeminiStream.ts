@@ -1306,8 +1306,15 @@ export const useGeminiStream = (
             loopDetectedRef.current = true;
             break;
           case ServerGeminiEventType.Retry:
+            break;
           case ServerGeminiEventType.InvalidStream:
-            // Will add the missing logic later
+            addItem(
+              {
+                type: MessageType.INFO,
+                text: 'Model returned an empty response. Retrying...',
+              },
+              userMessageTimestamp,
+            );
             break;
           default: {
             // enforces exhaustive switch-case
