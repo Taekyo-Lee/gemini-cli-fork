@@ -308,9 +308,10 @@ export async function start_sandbox(
     // mount current directory as working directory in sandbox (set via --workdir)
     args.push('--volume', `${workdir}:${containerWorkdir}`);
 
-    // When running from a local git clone, also mount the fork repo so
-    // `node packages/cli` works inside the container from any working dir.
-    const scriptPath = path.resolve(cliArgs[1] ?? '');
+    // When running from a local git clone (or via `npm link`), also mount
+    // the fork repo so `node packages/cli` works inside the container.
+    // Resolve symlinks so npm-linked paths are detected correctly.
+    const scriptPath = fs.realpathSync(path.resolve(cliArgs[1] ?? ''));
     if (
       scriptPath.includes(`packages${path.sep}cli`) &&
       !scriptPath.startsWith(workdir)
