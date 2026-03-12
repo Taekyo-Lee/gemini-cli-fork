@@ -24,7 +24,6 @@ import type { ValidationRequiredError } from '../utils/googleQuotaErrors.js';
 import type { Config } from '../config/config.js';
 import {
   resolveModel,
-  isGemini2Model,
   supportsModernFeatures,
 } from '../config/models.js';
 import { hasCycleInSchema } from '../tools/tools.js';
@@ -418,10 +417,7 @@ export class GeminiChat {
             lastError = error;
             const isContentError = error instanceof InvalidStreamError;
 
-            if (
-              (isContentError && isGemini2Model(model)) ||
-              (isRetryable && !signal.aborted)
-            ) {
+            if (isContentError || (isRetryable && !signal.aborted)) {
               // Check if we have more attempts left.
               if (attempt < maxAttempts - 1) {
                 const delayMs = INVALID_CONTENT_RETRY_OPTIONS.initialDelayMs;
@@ -449,10 +445,7 @@ export class GeminiChat {
         }
 
         if (lastError) {
-          if (
-            lastError instanceof InvalidStreamError &&
-            isGemini2Model(model)
-          ) {
+          if (lastError instanceof InvalidStreamError) {
             logContentRetryFailure(
               this.config,
               new ContentRetryFailureEvent(maxAttempts, lastError.type, model),
