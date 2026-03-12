@@ -122,6 +122,11 @@ export function entrypoint(workdir: string, cliArgs: string[]): string[] {
     shellCmds.push(`export PYTHONPATH="$PYTHONPATH${pythonPathSuffix}";`);
   }
 
+  // Source a2g env file if mounted into the container
+  shellCmds.push(
+    `if [ -f "$A2G_ENV_FILE" ]; then set -a; source "$A2G_ENV_FILE"; set +a; fi;`,
+  );
+
   const projectSandboxBashrc = `${GEMINI_DIR}/sandbox.bashrc`;
   if (fs.existsSync(projectSandboxBashrc)) {
     shellCmds.push(`source ${getContainerPath(projectSandboxBashrc)};`);
@@ -136,6 +141,24 @@ export function entrypoint(workdir: string, cliArgs: string[]): string[] {
   const quotedCliArgs = cliArgs.slice(2).map((arg) => quote([arg]));
   const isDebugMode =
     process.env['DEBUG'] === 'true' || process.env['DEBUG'] === '1';
+  // When running from a local git clone (e.g. `node packages/cli` or via
+  // `npm link`), use the same entry point inside the container instead of
+  // the container image's `gemini` binary, which is the upstream version.
+  // Resolve symlinks so `npm link` paths (e.g. ~/.npm-global/bin/gemini
+  // → /home/user/workspace/gemini-cli-fork/packages/cli/dist/index.js)
+  // are detected correctly.
+  const rawScriptPath = cliArgs[1] ?? '';
+  let scriptPath = rawScriptPath;
+  try {
+    if (rawScriptPath) {
+      scriptPath = fs.realpathSync(rawScriptPath);
+    }
+  } catch {
+    // If realpathSync fails, fall back to the raw path
+  }
+  const isLocalClone =
+    scriptPath.includes('packages/cli') ||
+    scriptPath.includes('packages\\cli');
   const cliCmd =
     process.env['NODE_ENV'] === 'development'
       ? isDebugMode
@@ -143,7 +166,9 @@ export function entrypoint(workdir: string, cliArgs: string[]): string[] {
         : 'npm rebuild && npm run start --'
       : isDebugMode
         ? `node --inspect-brk=0.0.0.0:${process.env['DEBUG_PORT'] || '9229'} $(which gemini)`
-        : 'gemini';
+        : isLocalClone
+          ? `node ${getContainerPath(scriptPath)}`
+          : 'gemini';
 
   const args = [...shellCmds, cliCmd, ...quotedCliArgs];
   return ['bash', '-c', args.join(' ')];
