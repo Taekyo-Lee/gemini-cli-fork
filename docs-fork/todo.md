@@ -500,10 +500,13 @@ Two issues reported with KIMI and other OpenAI-compatible models:
   - Now only fires when the request contains `functionResponse` parts (model responding to tool results)
   - Prevents loop: functionResponse → text → continue("Please continue.") → text → **stop** (no functionResponse in "Please continue." request)
 
-### 10.2 Support `response_format` in OpenAI adapter
+### 10.2 Support `response_format` in OpenAI adapter + yield stop chunks
 
 - [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Add `response_format: { type: 'json_object' }` when `responseMimeType === 'application/json'`
   - Makes `baseLlmClient.generateJson()` work for OpenAI models (used by nextSpeakerCheck, editCorrector, etc.)
+- [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Yield stop-only chunks in `streamToAsyncGenerator`
+  - **Bug fix**: OpenAI sends `finish_reason: 'stop'` in a separate chunk with no content; this chunk was dropped, causing `geminiChat` to throw `InvalidStreamError('NO_FINISH_REASON')` → retry + recovery → 4+ duplicate responses
+  - Fix: yield chunks when `choice.finish_reason` is set (and no tool_calls) so `finishReason` is captured
 
 ### 10.3 Enable retry for empty responses from all models
 
