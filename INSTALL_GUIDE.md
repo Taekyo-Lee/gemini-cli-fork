@@ -38,18 +38,17 @@ first run:
 mkdir -p ~/.gemini
 ```
 
-## Step 2: Install Dependencies
+## Step 2: Install Dependencies & Build
 
 ```bash
 cd ~/workspace/gemini-cli-fork
-npm install
-```
-
-## Step 3: Build
-
-```bash
+npm install --ignore-scripts
 npm run build
 ```
+
+`--ignore-scripts` skips the postinstall bundling step that can fail before the
+core package is compiled. Since we run `npm run build` right after, this is
+always safe.
 
 This compiles all TypeScript packages (`core`, `cli`, `sdk`, etc.) into `dist/`
 directories.
@@ -74,9 +73,16 @@ gemini --version
 You should see `0.34.0-nightly.20260304.28af4e127` (or similar with your fork's
 date/hash). This works in any terminal, any directory.
 
-> **Tip:** If you don't want to touch your global install, you can always run
-> `node ~/workspace/gemini-cli-fork/packages/cli` from anywhere instead of
-> `gemini`.
+> **Tip:** If you don't want to touch your global install, you can use a shell
+> alias instead:
+>
+> ```bash
+> # Add to ~/.bashrc (persists across terminals)
+> echo 'alias gemini="node ~/workspace/gemini-cli-fork/packages/cli"' >> ~/.bashrc
+> source ~/.bashrc
+> ```
+>
+> Then `gemini --yolo` works from anywhere, no `npm link` needed.
 
 ### If `gemini` stops working (shows Google auth instead of model picker)
 
@@ -213,7 +219,7 @@ npm start
 # Full setup (run once)
 mkdir -p ~/.gemini
 cd ~/workspace/gemini-cli-fork
-npm install
+npm install --ignore-scripts
 npm run build
 npm link ./packages/cli     # or use alias method above
 
@@ -345,10 +351,10 @@ npm install
 ### `npm install` fails with `No matching export for import "getAvailableModels"`
 
 The postinstall script tries to bundle the CLI before the core package is
-compiled. Fix by skipping scripts and building manually:
+compiled. This won't happen if you followed Step 2 (which uses
+`--ignore-scripts`). If you ran `npm install` without the flag, just rebuild:
 
 ```bash
-npm install --ignore-scripts
 npm run build
 ```
 
