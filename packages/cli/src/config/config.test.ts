@@ -29,10 +29,13 @@ import {
   createTestMergedSettings,
 } from './settings.js';
 import * as ServerConfig from '@google/gemini-cli-core';
+import { loadSandboxConfig } from './sandboxConfig.js';
 
 import { isWorkspaceTrusted } from './trustedFolders.js';
 import { ExtensionManager } from './extension-manager.js';
 import { RESUME_LATEST } from '../utils/sessionUtils.js';
+
+const mockedLoadSandboxConfig = vi.mocked(loadSandboxConfig);
 
 vi.mock('./trustedFolders.js', () => ({
   isWorkspaceTrusted: vi.fn(() => ({ isTrusted: true, source: 'file' })), // Default to trusted
@@ -3614,5 +3617,111 @@ describe('loadCliConfig mcpEnabled', () => {
         ),
       );
     });
+  });
+});
+
+describe('YOLO mode auto-enables sandbox', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(os.homedir).mockReturnValue('/mock/home/user');
+    vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+    vi.spyOn(ExtensionManager.prototype, 'getExtensions').mockReturnValue([]);
+    mockedLoadSandboxConfig.mockResolvedValue(undefined);
+    // Clean up GEMINI_SANDBOX which may be set by config.ts line 426-428
+    delete process.env['GEMINI_SANDBOX'];
+  });
+
+  afterEach(() => {
+    delete process.env['GEMINI_SANDBOX'];
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('should call loadSandboxConfig with bestEffort=true when --yolo and no explicit sandbox config', async () => {
+    process.argv = ['node', 'script.js', '--yolo'];
+    const argv = await parseArguments(createTestMergedSettings());
+    await loadCliConfig(createTestMergedSettings(), 'test-session', argv);
+
+    expect(mockedLoadSandboxConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sandbox: true }),
+      true,
+    );
+  });
+
+  it('should not set bestEffort when user explicitly passes --sandbox', async () => {
+    process.argv = ['node', 'script.js', '--yolo', '--sandbox'];
+    const argv = await parseArguments(createTestMergedSettings());
+    await loadCliConfig(createTestMergedSettings(), 'test-session', argv);
+
+    expect(mockedLoadSandboxConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sandbox: true }),
+      false,
+    );
+  });
+
+  it('should not set bestEffort when user explicitly passes --sandbox=false', async () => {
+    process.argv = ['node', 'script.js', '--yolo', '--sandbox=false'];
+    const argv = await parseArguments(createTestMergedSettings());
+    await loadCliConfig(createTestMergedSettings(), 'test-session', argv);
+
+    expect(mockedLoadSandboxConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sandbox: false }),
+      false,
+    );
+  });
+
+  it('should not set bestEffort when GEMINI_SANDBOX env var is set', async () => {
+    vi.stubEnv('GEMINI_SANDBOX', 'docker');
+    process.argv = ['node', 'script.js', '--yolo'];
+    const argv = await parseArguments(createTestMergedSettings());
+    await loadCliConfig(createTestMergedSettings(), 'test-session', argv);
+
+    expect(mockedLoadSandboxConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      false,
+    );
+  });
+
+  it('should not set bestEffort when settings.tools.sandbox is configured', async () => {
+    process.argv = ['node', 'script.js', '--yolo'];
+    const argv = await parseArguments(createTestMergedSettings());
+    const settings = createTestMergedSettings({
+      tools: { sandbox: 'docker' },
+    });
+    await loadCliConfig(settings, 'test-session', argv);
+
+    expect(mockedLoadSandboxConfig).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      false,
+    );
+  });
+
+  it('should still auto-enable sandbox when --yolo in untrusted folder (approvalMode downgraded)', async () => {
+    vi.mocked(isWorkspaceTrusted).mockReturnValue({
+      isTrusted: false,
+      source: 'file',
+    });
+    process.argv = ['node', 'script.js', '--yolo'];
+    const argv = await parseArguments(createTestMergedSettings());
+    await loadCliConfig(createTestMergedSettings(), 'test-session', argv);
+
+    const call = mockedLoadSandboxConfig.mock.calls[0]!;
+    expect(call[1].sandbox).toBe(true);
+    expect(call[2]).toBe(true);
+  });
+
+  it('should not auto-enable sandbox when not in YOLO mode', async () => {
+    process.argv = ['node', 'script.js'];
+    const argv = await parseArguments(createTestMergedSettings());
+    await loadCliConfig(createTestMergedSettings(), 'test-session', argv);
+
+    const call = mockedLoadSandboxConfig.mock.calls[0]!;
+    expect(call[1].sandbox).toBeUndefined();
+    expect(call[2]).toBe(false);
   });
 });
