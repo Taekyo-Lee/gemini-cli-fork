@@ -380,6 +380,70 @@ describe('OpenAIContentGenerator', () => {
       expect(results[1].candidates![0].content!.parts![0].text).toBe(' world');
     });
 
+    it('yields separate stop chunk so finishReason is captured', async () => {
+      // Some providers send finish_reason: 'stop' in a separate chunk with no
+      // content. This chunk must be yielded so geminiChat captures finishReason
+      // and doesn't throw InvalidStreamError('NO_FINISH_REASON').
+      const chunks = [
+        {
+          id: 'chatcmpl-stream',
+          object: 'chat.completion.chunk',
+          created: 1234567890,
+          model: 'test-model',
+          choices: [
+            {
+              index: 0,
+              delta: { content: 'Hello' },
+              finish_reason: null,
+              logprobs: null,
+            },
+          ],
+        },
+        {
+          id: 'chatcmpl-stream',
+          object: 'chat.completion.chunk',
+          created: 1234567890,
+          model: 'test-model',
+          choices: [
+            {
+              index: 0,
+              delta: {},
+              finish_reason: 'stop',
+              logprobs: null,
+            },
+          ],
+        },
+      ];
+
+      async function* asyncChunks() {
+        for (const chunk of chunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreate.mockResolvedValue(asyncChunks());
+
+      const stream = await generator.generateContentStream(
+        {
+          model: 'ignored',
+          contents: [{ role: 'user', parts: [{ text: 'Hi' }] }],
+        },
+        'prompt-stop-chunk',
+        role,
+      );
+
+      const results = [];
+      for await (const response of stream) {
+        results.push(response);
+      }
+
+      // Both chunks should be yielded: text chunk + stop chunk
+      expect(results.length).toBe(2);
+      expect(results[0].candidates![0].content!.parts![0].text).toBe('Hello');
+      // Stop chunk has finishReason but empty parts
+      expect(results[1].candidates![0].finishReason).toBe('STOP');
+    });
+
     it('accumulates tool call fragments and emits on finish', async () => {
       const chunks = [
         {
