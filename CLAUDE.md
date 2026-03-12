@@ -3,7 +3,7 @@
 ## Fork Purpose
 
 This is a fork of
-[Google's Gemini CLI](https://github.com/GoogleCloudPlatform/gemini-cli)
+[Google's Gemini CLI](https://github.com/google-gemini/gemini-cli)
 customized to support **on-prem LLMs** (KIMI, DeepSeek, GLM, Qwen, etc.) and
 public OpenAI-compatible APIs via the **a2g_models** registry. Instead of
 prompting for Google authentication on startup, the CLI should display a **model
@@ -17,9 +17,9 @@ use.
 
 ## Workflow Rule
 
-**After completing any Phase (or sub-phase), always update `TODO.md`** — mark
+**After completing any Phase (or sub-phase), always update `docs-fork/todo.md`** — mark
 completed items with `[x]`, add notes on what was done, and ensure the status
-accurately reflects reality. This keeps TODO.md as the single source of truth
+accurately reflects reality. This keeps `docs-fork/todo.md` as the single source of truth
 for project progress.
 
 ## Architecture
@@ -62,7 +62,7 @@ LLMs. Our TypeScript registry must mirror this data.
 See `packages/core/src/config/llmRegistry.ts` for the full model registry (27
 models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
 1 Anthropic. For the original Python source, see
-`docs/model-registry-reference.md`.
+`docs-fork/model-registry-reference.md`.
 
 ### Env File Location
 
@@ -80,7 +80,7 @@ models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
 ## Known Issues
 
 All critical, medium, and minor issues from Phase 7 have been resolved. See
-TODO.md for the full history of fixes. Key fixes applied:
+`docs-fork/todo.md` for the full history of fixes. Key fixes applied:
 
 - Per-instance `ToolCallIdTracker` (was global mutable state)
 - Streaming tool call emission at end-of-stream (was silently dropped)
@@ -139,7 +139,7 @@ capture).
 ## Build / Run / Test
 
 ```bash
-npm install                        # Install dependencies
+npm install --ignore-scripts       # Install dependencies
 npm run build                      # Build all packages
 npm start                          # Dev mode (auto-checks build)
 npm test                           # All unit tests
@@ -183,7 +183,19 @@ npm run build && node packages/cli  # Build and run
 
 ---
 
-## Files Created (Phase 1-5, complete)
+## Fork Documentation
+
+All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
+
+| File                                    | Purpose                                    |
+| --------------------------------------- | ------------------------------------------ |
+| `docs-fork/install-guide.md`            | Step-by-step setup, troubleshooting        |
+| `docs-fork/fork-philosophy.md`          | Why this fork exists, core principles      |
+| `docs-fork/openai-compatible.md`        | Env detection, auth flow, API mapping      |
+| `docs-fork/model-registry-reference.md` | Complete model tables with specs           |
+| `docs-fork/todo.md`                     | Implementation phases, bug fixes, status   |
+
+## Files Created by Fork
 
 | File                                               | Purpose                                             |
 | -------------------------------------------------- | --------------------------------------------------- |
@@ -191,6 +203,18 @@ npm run build && node packages/cli  # Build and run
 | `packages/core/src/core/openaiTypeMapper.ts`       | Gemini <> OpenAI type conversion                    |
 | `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator impl using OpenAI SDK              |
 | `scripts/test_openai_adapter.sh`                   | Build/test/run script                               |
+| `scripts/test_glm5_tools.py`                       | GLM-5 multi-turn tool call test                     |
+
+## Files Modified by Fork (Phase 9: Sandbox)
+
+| File                                        | Change                                           |
+| ------------------------------------------- | ------------------------------------------------ |
+| `packages/cli/src/config/sandboxConfig.ts`  | `bestEffort` parameter for graceful fallback     |
+| `packages/cli/src/config/config.ts`         | YOLO auto-enables sandbox, bypasses folder trust |
+| `packages/cli/src/gemini.tsx`               | YOLO auto-enable for process-level sandbox       |
+| `packages/cli/src/ui/components/Footer.tsx` | Sandbox indicator from config, not just env var  |
+| `packages/cli/src/utils/sandbox.ts`         | Env file mount, fork repo volume mount           |
+| `packages/cli/src/utils/sandboxUtils.ts`    | Env file sourcing, local clone detection         |
 
 ## Files NOT to Modify
 
