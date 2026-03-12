@@ -308,6 +308,19 @@ export async function start_sandbox(
     // mount current directory as working directory in sandbox (set via --workdir)
     args.push('--volume', `${workdir}:${containerWorkdir}`);
 
+    // When running from a local git clone, also mount the fork repo so
+    // `node packages/cli` works inside the container from any working dir.
+    const scriptPath = path.resolve(cliArgs[1] ?? '');
+    if (
+      scriptPath.includes(`packages${path.sep}cli`) &&
+      !scriptPath.startsWith(workdir)
+    ) {
+      // Walk up from packages/cli to the repo root
+      const repoRoot = path.resolve(scriptPath, '..', '..');
+      const containerRepoRoot = getContainerPath(repoRoot);
+      args.push('--volume', `${repoRoot}:${containerRepoRoot}:ro`);
+    }
+
     // mount user settings directory inside container, after creating if missing
     // note user/home changes inside sandbox and we mount at BOTH paths for consistency
     const userHomeDirOnHost = homedir();
@@ -550,6 +563,20 @@ export async function start_sandbox(
       if (process.env[envVar]) {
         args.push('--env', `${envVar}=${process.env[envVar]}`);
       }
+    }
+
+    // Mount and source a2g env file inside the container (OpenAI-compatible mode).
+    // This forwards all PROJECT_*, API key, and other env vars automatically.
+    const a2gEnvFile = process.env['A2G_ENV_FILE'] ??
+      `${homedir()}/workspace/main/research/a2g_packages/envs/.env`;
+    if (fs.existsSync(a2gEnvFile)) {
+      const containerEnvPath = '/tmp/.a2g_env';
+      args.push('--volume', `${a2gEnvFile}:${containerEnvPath}:ro`);
+      args.push('--env', `A2G_ENV_FILE=${containerEnvPath}`);
+    }
+    // Also forward NODE_TLS_REJECT_UNAUTHORIZED for on-prem endpoints
+    if (process.env['NODE_TLS_REJECT_UNAUTHORIZED']) {
+      args.push('--env', `NODE_TLS_REJECT_UNAUTHORIZED=${process.env['NODE_TLS_REJECT_UNAUTHORIZED']}`);
     }
 
     // copy VIRTUAL_ENV if under working directory
@@ -886,6 +913,7 @@ async function start_lxc_sandbox(
     GEMINI_MODEL: process.env['GEMINI_MODEL'],
     TERM: process.env['TERM'],
     COLORTERM: process.env['COLORTERM'],
+    NODE_TLS_REJECT_UNAUTHORIZED: process.env['NODE_TLS_REJECT_UNAUTHORIZED'],
     GEMINI_CLI_IDE_SERVER_PORT: process.env['GEMINI_CLI_IDE_SERVER_PORT'],
     GEMINI_CLI_IDE_WORKSPACE_PATH: process.env['GEMINI_CLI_IDE_WORKSPACE_PATH'],
     TERM_PROGRAM: process.env['TERM_PROGRAM'],
