@@ -2061,7 +2061,7 @@ ${JSON.stringify(
       expect(mockTurnRunFn).toHaveBeenCalledTimes(1);
     });
 
-    it('should not retry with "Please continue." when InvalidStream event is received for non-Gemini-2 models', async () => {
+    it('should retry with "Please continue." when InvalidStream event is received for non-Gemini-2 models', async () => {
       vi.spyOn(client['config'], 'getContinueOnFailedApiCall').mockReturnValue(
         true,
       );
@@ -2071,11 +2071,17 @@ ${JSON.stringify(
         reason: 'test',
       });
 
+      // First call: invalid stream; second call: success
       const mockStream1 = (async function* () {
         yield { type: GeminiEventType.InvalidStream };
       })();
+      const mockStream2 = (async function* () {
+        yield { type: GeminiEventType.Content, value: 'Continued content' };
+      })();
 
-      mockTurnRunFn.mockReturnValueOnce(mockStream1);
+      mockTurnRunFn
+        .mockReturnValueOnce(mockStream1)
+        .mockReturnValueOnce(mockStream2);
 
       const mockChat: Partial<GeminiChat> = {
         addHistory: vi.fn(),
@@ -2093,14 +2099,12 @@ ${JSON.stringify(
       const stream = client.sendMessageStream(initialRequest, signal, promptId);
       const events = await fromAsync(stream);
 
-      // Assert
-      expect(events).toEqual([
-        { type: GeminiEventType.ModelInfo, value: 'gemini-3.0-pro' },
-        { type: GeminiEventType.InvalidStream },
-      ]);
-
-      // Verify that turn.run was called only once (no retry)
-      expect(mockTurnRunFn).toHaveBeenCalledTimes(1);
+      // Assert — retry should fire for all model types
+      expect(mockTurnRunFn).toHaveBeenCalledTimes(2);
+      // Events should include model info, invalid stream, then retried content
+      expect(events.some((e) => e.type === GeminiEventType.InvalidStream)).toBe(
+        true,
+      );
     });
 
     it('should stop recursing after one retry when InvalidStream events are repeatedly received', async () => {
