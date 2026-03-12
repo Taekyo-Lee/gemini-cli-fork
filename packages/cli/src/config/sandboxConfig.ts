@@ -37,6 +37,7 @@ function isSandboxCommand(value: string): value is SandboxConfig['command'] {
 
 function getSandboxCommand(
   sandbox?: boolean | string | null,
+  bestEffort?: boolean,
 ): SandboxConfig['command'] | '' {
   // If the SANDBOX env var is set, we're already inside the sandbox.
   if (process.env['SANDBOX']) {
@@ -99,6 +100,9 @@ function getSandboxCommand(
 
   // throw an error if user requested sandbox but no command was found
   if (sandbox === true) {
+    if (bestEffort) {
+      return '';
+    }
     throw new FatalSandboxError(
       'GEMINI_SANDBOX is true but failed to determine command for sandbox; ' +
         'install docker or podman or specify command in GEMINI_SANDBOX',
@@ -114,9 +118,10 @@ function getSandboxCommand(
 export async function loadSandboxConfig(
   settings: Settings,
   argv: SandboxCliArgs,
+  bestEffort?: boolean,
 ): Promise<SandboxConfig | undefined> {
   const sandboxOption = argv.sandbox ?? settings.tools?.sandbox;
-  const command = getSandboxCommand(sandboxOption);
+  const command = getSandboxCommand(sandboxOption, bestEffort);
 
   const packageJson = await getPackageJson(__dirname);
   const image =
