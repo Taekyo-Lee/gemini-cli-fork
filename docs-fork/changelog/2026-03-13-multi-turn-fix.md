@@ -25,6 +25,7 @@ Two issues with KIMI and other OpenAI-compatible models:
 ## Details
 
 - **nextSpeakerCheck** was disabled by default (`skipNextSpeakerCheck: true`). Flipped to `false` so the system auto-decides if the model should keep going after a tool result.
+- **nextSpeakerCheck guard (Phase 10.1)**: The check was firing for ALL text responses, causing infinite continuation loops on simple "Hello" messages. Added `isToolResponseTurn` guard in `client.ts` so `nextSpeakerCheck` only fires when the model is responding to tool results (`functionResponse` parts), not for text-only conversations.
 - **response_format** was missing from the OpenAI adapter's non-streaming path, causing JSON utility calls (nextSpeakerCheck, editCorrector) to fail silently.
 - **Retry & recovery** for empty responses were gated behind `isGemini2Model()`. Removed the gate so all models benefit.
 - **UI** silently swallowed `InvalidStream` events. Now shows "Model returned an empty response. Retrying...".
