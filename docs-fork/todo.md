@@ -495,6 +495,10 @@ Two issues reported with KIMI and other OpenAI-compatible models:
 - [x] **`packages/core/src/config/config.ts`**: Change `skipNextSpeakerCheck` default from `true` to `false`
   - Enables auto-continuation for all model types after tool call responses
   - Users can still disable via `settings.model.skipNextSpeakerCheck: true`
+- [x] **`packages/core/src/core/client.ts`**: Gate `nextSpeakerCheck` on `isToolResponseTurn`
+  - **Bug fix**: nextSpeakerCheck was firing for ALL text responses, causing infinite "Please continue." loops on simple "Hello" messages
+  - Now only fires when the request contains `functionResponse` parts (model responding to tool results)
+  - Prevents loop: functionResponse → text → continue("Please continue.") → text → **stop** (no functionResponse in "Please continue." request)
 
 ### 10.2 Support `response_format` in OpenAI adapter
 
@@ -532,7 +536,7 @@ Two issues reported with KIMI and other OpenAI-compatible models:
 | `packages/core/src/config/config.ts` | Default `skipNextSpeakerCheck` to `false` |
 | `packages/core/src/core/openaiContentGenerator.ts` | Add `response_format` support |
 | `packages/core/src/core/geminiChat.ts` | Remove `isGemini2Model` gate on retry |
-| `packages/core/src/core/client.ts` | Remove `isGemini2Model` gate on recovery |
+| `packages/core/src/core/client.ts` | Remove `isGemini2Model` gate on recovery + gate `nextSpeakerCheck` on `isToolResponseTurn` |
 | `packages/cli/src/ui/hooks/useGeminiStream.ts` | Add InvalidStream UI feedback |
 | `packages/core/src/core/openaiContentGenerator.test.ts` | 2 new response_format tests |
 | `packages/core/src/core/geminiChat.test.ts` | Updated retry test for all models |
