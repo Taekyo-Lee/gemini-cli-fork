@@ -370,49 +370,112 @@ Each `generateContentStream()` yield must be a valid `GenerateContentResponse`:
 
 ---
 
-## Phase 9: Auto-enable Sandbox in YOLO Mode
+## Phase 9: Sandbox in YOLO Mode
 
-Per docs, "Sandbox is enabled when using `--yolo` by default." But the codebase
-had no logic connecting YOLO → sandbox, and the Footer UI only checked
-`process.env['SANDBOX']` (set inside the container), not the config object.
+When `gemini --yolo` is run, the CLI should automatically isolate tool execution
+inside a Docker/Podman container. If no container runtime is available, continue
+gracefully without sandbox. All API keys, env vars, and fork code must work
+inside the container exactly as they do outside.
 
-- [x] **Add `bestEffort` parameter to `sandboxConfig.ts`** — When
-      `sandbox === true` and no runtime found: `bestEffort` → return `''`
-      (graceful fallback); otherwise → throw `FatalSandboxError` (existing
-      behavior preserved)
+### 9.1 Sandbox Auto-Enable
 
-- [x] **Add YOLO auto-enable logic in `config.ts`** — Captures `yoloRequested`
-      flag before trust override can downgrade `approvalMode`. If YOLO was
-      requested and user did NOT explicitly configure sandbox, calls
-      `loadSandboxConfig()` with `sandbox: true, bestEffort: true`
+- [x] **`sandboxConfig.ts` — `bestEffort` parameter**
+  - `getSandboxCommand(sandbox, bestEffort)` and `loadSandboxConfig(settings, argv, bestEffort)`
+  - When `bestEffort=true` and no Docker/Podman found → return `''` (no crash)
+  - When `bestEffort=false` (default) → throw `FatalSandboxError` (explicit request honored)
 
-- [x] **Fix Footer sandbox display** — `Footer.tsx` `SandboxIndicator` now
-      also checks `config.getSandbox()?.command` (not just `process.env['SANDBOX']`),
-      so the status bar shows the configured sandbox command (e.g. `docker`)
+- [x] **`config.ts` — YOLO detection and auto-enable**
+  - Capture `yoloRequested` flag **before** folder trust check can downgrade
+    `approvalMode` from YOLO to DEFAULT
+  - If YOLO was requested and user did NOT explicitly configure sandbox
+    (`--sandbox`, `GEMINI_SANDBOX`, `settings.tools.sandbox` all absent),
+    call `loadSandboxConfig()` with `sandbox: true, bestEffort: true`
+  - Behavior matrix:
+    | Scenario | bestEffort | Result |
+    |---|---|---|
+    | `--yolo` (no sandbox config) | true | Auto-detect; if none found, continue |
+    | `--yolo --sandbox` | false | Auto-detect; throw if none found |
+    | `--yolo --sandbox=false` | false | No sandbox (user opted out) |
+    | No `--yolo` | false | No change from existing behavior |
 
-- [x] **YOLO bypasses folder trust check** — Explicit `--yolo` flag no longer
-      silently downgraded to DEFAULT in untrusted folders. The user asked for
-      YOLO, they get YOLO.
+- [x] **`gemini.tsx` — Matching YOLO detection for process re-launch**
+  - `gemini.tsx` has its own `loadSandboxConfig()` call (for Docker re-launch).
+    Added the same YOLO detection logic here so the sandbox actually starts.
 
-- [x] **Add YOLO auto-enable in `gemini.tsx`** — The sandbox re-launch in
-      `gemini.tsx` had its own `loadSandboxConfig()` call that bypassed the
-      YOLO auto-enable logic. Added matching detection there.
+### 9.2 YOLO Bypasses Folder Trust
 
-- [x] **Forward env vars into Docker sandbox** — `sandbox.ts` only forwarded
-      Google-specific env vars. Now mounts the a2g env file
-      (`~/workspace/main/research/a2g_packages/envs/.env`) read-only into the
-      container and sources it in the entrypoint. Configurable via
-      `A2G_ENV_FILE` env var.
+- [x] **`config.ts` — Explicit `--yolo` is never silently downgraded**
+  - Before: untrusted folders override `approvalMode` from YOLO to DEFAULT
+  - After: `if (!trustedFolder && !yoloRequested)` — YOLO stays YOLO
 
-- [x] **Run fork code inside Docker** — Container was running upstream
-      `gemini` binary instead of our fork. `sandboxUtils.ts` now detects local
-      clone runs (`node packages/cli`) and uses `node <fork-path>` inside the
-      container. Also mounts the fork repo when running from a different
-      working directory.
+### 9.3 Footer Sandbox Indicator
 
-- [x] **Add tests** — `sandboxConfig.test.ts`: 4 bestEffort tests (42 total);
-      `config.test.ts`: 7 YOLO sandbox tests (202 total, including untrusted
-      folder case)
+- [x] **`Footer.tsx` — Show sandbox status before entering container**
+  - `SandboxIndicator` now accepts `configuredSandbox` prop from
+    `config.getSandbox()?.command`
+  - Previously only checked `process.env['SANDBOX']` (set inside container),
+    so "no sandbox" was shown before the container launched
 
-- [x] **Build and verify** — `npm run build` succeeds, all tests pass,
-      `gemini --yolo` runs inside Docker sandbox with model picker
+### 9.4 Env Var Forwarding into Docker
+
+- [x] **`sandbox.ts` — Mount a2g env file read-only**
+  - Mounts `~/workspace/main/research/a2g_packages/envs/.env` (or
+    `$A2G_ENV_FILE`) to `/tmp/.a2g_env` inside the container
+  - Sets `A2G_ENV_FILE=/tmp/.a2g_env` env var in the container
+  - Also forwards `NODE_TLS_REJECT_UNAUTHORIZED` for on-prem endpoints
+
+- [x] **`sandboxUtils.ts` — Source env file in entrypoint**
+  - Added `if [ -f "$A2G_ENV_FILE" ]; then set -a; source "$A2G_ENV_FILE"; set +a; fi`
+    to the entrypoint shell commands
+  - All `PROJECT_*` API keys, `PROJECT_A2G_LOCATION`, etc. are available
+    inside the container without listing them individually
+
+### 9.5 Run Fork Code Inside Docker
+
+- [x] **`sandboxUtils.ts` — Detect local clone and use `node <path>`**
+  - When `cliArgs[1]` resolves (via `fs.realpathSync`) to a path containing
+    `packages/cli`, use `node <containerized-path>` instead of the container
+    image's `gemini` binary
+  - Resolving symlinks is critical: `npm link` creates a symlink at
+    `~/.npm-global/bin/gemini` → `packages/cli/dist/index.js`. Without
+    resolving, the symlink path doesn't contain `packages/cli` and the
+    container falls back to the image's built-in `gemini` (which is the
+    unmodified version with no OpenAI-compatible mode)
+  - Prevents the container from running a different version
+
+- [x] **`sandbox.ts` — Mount fork repo volume with symlink resolution**
+  - When running from a different working directory (e.g. `cd /some/project &&
+    gemini --yolo`), the fork repo is mounted read-only so
+    `node packages/cli/dist/index.js` works inside the container
+  - Uses `fs.realpathSync` to resolve `npm link` symlinks before checking
+    if the script path is under the working directory
+
+### 9.6 Tests
+
+- [x] **`sandboxConfig.test.ts`** — 4 bestEffort tests:
+  - Returns `undefined` (not throw) when no runtime and `bestEffort=true`
+  - Still returns config when runtime available and `bestEffort=true`
+  - Still throws when `bestEffort=false`
+  - Uses `sandbox-exec` on darwin even with `bestEffort`
+
+- [x] **`config.test.ts`** — 7 YOLO sandbox tests:
+  - `--yolo` calls `loadSandboxConfig` with `bestEffort=true`
+  - `--yolo --sandbox` does NOT use bestEffort
+  - `--yolo --sandbox=false` does NOT auto-enable
+  - `GEMINI_SANDBOX` env var does NOT trigger bestEffort
+  - `settings.tools.sandbox` does NOT trigger bestEffort
+  - `--yolo` in untrusted folder still auto-enables sandbox
+  - No YOLO → no auto-enable
+
+### 9.7 Files Modified
+
+| File | Change |
+|---|---|
+| `packages/cli/src/config/sandboxConfig.ts` | `bestEffort` parameter |
+| `packages/cli/src/config/config.ts` | YOLO auto-enable, folder trust bypass |
+| `packages/cli/src/gemini.tsx` | YOLO auto-enable for process re-launch |
+| `packages/cli/src/ui/components/Footer.tsx` | `configuredSandbox` prop |
+| `packages/cli/src/utils/sandbox.ts` | Env file mount, fork repo volume |
+| `packages/cli/src/utils/sandboxUtils.ts` | Env sourcing, local clone detection |
+| `packages/cli/src/config/sandboxConfig.test.ts` | 4 bestEffort tests |
+| `packages/cli/src/config/config.test.ts` | 7 YOLO sandbox tests |
