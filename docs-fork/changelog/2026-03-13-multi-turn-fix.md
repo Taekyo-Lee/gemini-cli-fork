@@ -31,3 +31,4 @@ Two issues with KIMI and other OpenAI-compatible models:
 - **Retry & recovery** for empty responses were gated behind `isGemini2Model()`. Removed the gate so all models benefit.
 - **UI** silently swallowed `InvalidStream` events. Now shows "Model returned an empty response. Retrying...".
 - **Korean IME character drop (Phase 10.3)**: When typing Korean (or other IME-composed input), the last character was dropped on submit. The IME-committed character and Enter arrive in the same stdin `data` event. React `useReducer` dispatches the insert synchronously but `buffer.text` still returns stale state. Fixed by adding `latestLinesRef` (synced inside the reducer) and `getLatestText()` which reads directly from the ref. All `handleSubmit(buffer.text)` calls in `InputPrompt.tsx` now use `buffer.getLatestText()`.
+
