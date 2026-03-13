@@ -544,3 +544,18 @@ Two issues reported with KIMI and other OpenAI-compatible models:
 | `packages/core/src/core/openaiContentGenerator.test.ts` | 2 new response_format tests |
 | `packages/core/src/core/geminiChat.test.ts` | Updated retry test for all models |
 | `packages/core/src/core/client.test.ts` | Updated recovery test for all models |
+
+---
+
+## Phase 10.3: Korean IME Character Drop Fix
+
+**Status: COMPLETE**
+
+When typing Korean (or other IME-composed languages), the last character was dropped on submit. The IME-committed character and Enter arrive in the same stdin `data` event. React `useReducer` dispatches the insert synchronously but `buffer.text` still returns the pre-dispatch state in the same tick, so the submit handler reads stale text missing the final character.
+
+- [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add `useRef` import, `latestLinesRef` synced inside reducer wrapper, `getLatestText()` function that reads directly from the ref
+- [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add `getLatestText` to `TextBuffer` interface and `returnValue` object
+- [x] **`packages/cli/src/ui/components/InputPrompt.tsx`**: Change all `handleSubmit(buffer.text)` → `handleSubmit(buffer.getLatestText())`
+- [x] **`packages/cli/src/ui/components/InputPrompt.test.tsx`**: Add `getLatestText` mock to `mockBuffer`
+- [x] All text-buffer tests pass (219 tests)
+- [x] All InputPrompt tests pass (189 tests)
