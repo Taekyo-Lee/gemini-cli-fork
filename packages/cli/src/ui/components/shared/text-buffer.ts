@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import pathMod from 'node:path';
 import * as path from 'node:path';
-import { useState, useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useState, useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { LRUCache } from 'mnemonist';
 import {
   coreEvents,
@@ -2729,9 +2729,20 @@ export function useTextBuffer({
     };
   }, [initialText, initialCursorOffset, viewport.width, viewport.height]);
 
+  // Keep a ref that is updated synchronously inside the reducer so callers
+  // (e.g. the submit handler) can read the *latest* text even before React
+  // re-renders.  This fixes a race where an IME-committed character and Enter
+  // arrive in the same stdin data event: dispatch(insert) runs the reducer
+  // synchronously but the React state binding is still stale when
+  // handleSubmit reads buffer.text.
+  const latestLinesRef = useRef(initialState.lines);
+
   const [state, dispatch] = useReducer(
-    (s: TextBufferState, a: TextBufferAction) =>
-      textBufferReducer(s, a, { inputFilter, singleLine }),
+    (s: TextBufferState, a: TextBufferAction) => {
+      const next = textBufferReducer(s, a, { inputFilter, singleLine });
+      latestLinesRef.current = next.lines;
+      return next;
+    },
     initialState,
   );
   const {
@@ -2747,6 +2758,15 @@ export function useTextBuffer({
   } = state;
 
   const text = useMemo(() => lines.join('\n'), [lines]);
+
+  // Returns the text including any pending reducer updates that React hasn't
+  // rendered yet.  Use this instead of `text` when you need the absolute
+  // latest value (e.g. inside a submit handler that runs in the same tick
+  // as an insert dispatch).
+  const getLatestText = useCallback(
+    () => latestLinesRef.current.join('\n'),
+    [],
+  );
 
   const visualCursor = useMemo(
     () => calculateVisualCursorFromLayout(visualLayout, [cursorRow, cursorCol]),
@@ -3489,6 +3509,7 @@ export function useTextBuffer({
       getExpandedPasteAtLine: getExpandedPasteAtLineCallback,
       togglePasteExpansion,
       expandedPaste,
+      getLatestText,
       deleteWordLeft,
       deleteWordRight,
 
@@ -3641,6 +3662,13 @@ export interface TextBuffer {
   // State
   lines: string[]; // Logical lines
   text: string;
+  /**
+   * Returns the buffer text synchronously from a ref that is updated inside
+   * the reducer — bypassing React's deferred state update.  Use this in the
+   * submit handler so IME-committed characters (Korean, etc.) that arrive in
+   * the same stdin event as Enter are not lost.
+   */
+  getLatestText: () => string;
   cursor: [number, number]; // Logical cursor [row, col]
   /**
    * When the user moves the caret vertically we try to keep their original
