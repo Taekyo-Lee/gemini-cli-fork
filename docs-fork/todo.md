@@ -551,11 +551,15 @@ Two issues reported with KIMI and other OpenAI-compatible models:
 
 **Status: COMPLETE**
 
-When typing Korean (or other IME-composed languages), the last character was dropped on submit. The IME-committed character and Enter arrive in the same stdin `data` event. React `useReducer` dispatches the insert synchronously but `buffer.text` still returns the pre-dispatch state in the same tick, so the submit handler reads stale text missing the final character.
+When typing Korean (or other IME-composed languages), the last character was dropped on submit. Two root causes:
+1. **Stdin char ordering**: Some terminals send `\r` (Enter) before the IME-committed character in a single `data` event (e.g. `"\r니"`), so the submit fires before the character is inserted.
+2. **React state timing**: `useReducer` dispatch runs the reducer synchronously but the state binding is stale in the same tick, so the submit handler reads stale text.
 
+- [x] **`packages/cli/src/ui/contexts/KeypressContext.tsx`**: Reorder `\r`/`\n` before non-ASCII chars (> U+007F) in `createDataListener` so IME-committed chars are processed before Enter. Only non-ASCII triggers reorder to avoid affecting normal paste text.
 - [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add `useRef` import, `latestLinesRef` synced inside reducer wrapper, `getLatestText()` function that reads directly from the ref
 - [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add `getLatestText` to `TextBuffer` interface and `returnValue` object
 - [x] **`packages/cli/src/ui/components/InputPrompt.tsx`**: Change all `handleSubmit(buffer.text)` → `handleSubmit(buffer.getLatestText())`
 - [x] **`packages/cli/src/ui/components/InputPrompt.test.tsx`**: Add `getLatestText` mock to `mockBuffer`
+- [x] All KeypressContext tests pass (127 tests)
 - [x] All text-buffer tests pass (219 tests)
 - [x] All InputPrompt tests pass (189 tests)
