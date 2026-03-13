@@ -182,6 +182,45 @@ export function geminiContentsToOpenAIMessages(
   return messages;
 }
 
+/**
+ * Gemini Schema uses uppercase type strings (e.g. "OBJECT", "STRING") while
+ * OpenAI / JSON Schema expects lowercase ("object", "string").  Recursively
+ * walk a schema object and lowercase any `type` field that matches.
+ */
+const GEMINI_TYPES = new Set([
+  'TYPE_UNSPECIFIED',
+  'STRING',
+  'NUMBER',
+  'INTEGER',
+  'BOOLEAN',
+  'ARRAY',
+  'OBJECT',
+  'NULL',
+]);
+
+function normalizeSchemaTypes(obj: unknown): unknown {
+  if (Array.isArray(obj)) {
+    return obj.map(normalizeSchemaTypes);
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const out: Record<string, unknown> = {};
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- obj is a plain object at this point
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      if (
+        key === 'type' &&
+        typeof value === 'string' &&
+        GEMINI_TYPES.has(value)
+      ) {
+        out[key] = value.toLowerCase();
+      } else {
+        out[key] = normalizeSchemaTypes(value);
+      }
+    }
+    return out;
+  }
+  return obj;
+}
+
 export function geminiToolsToOpenAITools(
   tools?: Tool[],
   tracker?: ToolCallIdTracker,
@@ -199,16 +238,26 @@ export function geminiToolsToOpenAITools(
         const name = tracker
           ? tracker.sanitizeName(fd.name ?? '')
           : (fd.name ?? '').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        // Prefer parametersJsonSchema (standard JSON Schema, used by most
+        // tools) over parameters (legacy Gemini Schema with uppercase types
+        // like "OBJECT", "STRING").  Normalize any Gemini types to lowercase.
+        const rawParams = fd.parametersJsonSchema ??
+          fd.parameters ?? {
+            type: 'object',
+            properties: {},
+          };
+
         result.push({
           type: 'function',
           function: {
             name,
             description: fd.description ?? '',
             // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Schema objects are opaque JSON
-            parameters: (fd.parameters ?? {
-              type: 'object',
-              properties: {},
-            }) as Record<string, unknown>,
+            parameters: normalizeSchemaTypes(rawParams) as Record<
+              string,
+              unknown
+            >,
           },
         });
       }

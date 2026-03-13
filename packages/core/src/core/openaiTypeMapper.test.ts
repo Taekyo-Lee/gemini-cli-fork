@@ -231,6 +231,66 @@ describe('geminiToolsToOpenAITools', () => {
     expect(tracker.restoreName('ns_colon_tool')).toBe('ns:colon:tool');
     expect(tracker.restoreName('clean_name-ok')).toBe('clean_name-ok');
   });
+
+  it('uses parametersJsonSchema when parameters is absent', () => {
+    const jsonSchema = {
+      type: 'object',
+      properties: {
+        file_path: { type: 'string', description: 'Path to read' },
+      },
+      required: ['file_path'],
+    };
+    const tools: Tool[] = [
+      {
+        functionDeclarations: [
+          {
+            name: 'read_file',
+            description: 'Read a file',
+            parametersJsonSchema: jsonSchema,
+          },
+        ],
+      },
+    ];
+    const result = geminiToolsToOpenAITools(tools);
+    expect(result).toHaveLength(1);
+    const params = result![0].function.parameters as Record<string, unknown>;
+    expect(params).toEqual(jsonSchema);
+    expect(
+      (params['properties'] as Record<string, unknown>)['file_path'],
+    ).toBeDefined();
+  });
+
+  it('normalizes uppercase Gemini types to lowercase JSON Schema types', () => {
+    const tools: Tool[] = [
+      {
+        functionDeclarations: [
+          {
+            name: 'complete_task',
+            description: 'Complete the task',
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                result: {
+                  type: Type.STRING,
+                  description: 'The result',
+                },
+              },
+              required: ['result'],
+            },
+          },
+        ],
+      },
+    ];
+    const result = geminiToolsToOpenAITools(tools);
+    expect(result).toHaveLength(1);
+    const params = result![0].function.parameters as Record<string, unknown>;
+    expect(params['type']).toBe('object');
+    const props = params['properties'] as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(props['result']['type']).toBe('string');
+  });
 });
 
 describe('openaiResponseToGeminiResponse', () => {

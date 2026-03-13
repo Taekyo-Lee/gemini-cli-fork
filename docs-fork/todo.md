@@ -677,3 +677,25 @@ colons. When these names flow through `geminiToolsToOpenAITools()` in
 - [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Passes tracker to
       `geminiToolsToOpenAITools()`
 - [x] All openaiTypeMapper tests pass (26 tests, +1 new for sanitization)
+
+---
+
+## Phase 10.7: OpenAI Tool Schema Fix (parametersJsonSchema)
+
+**Status: COMPLETE**
+
+OpenAI models called tools with wrong parameter names (e.g. `path` instead of
+`file_path`, empty `{}` for required params) because the model received **empty
+schemas** with no parameter definitions.
+
+**Root cause:** Tool definitions use `parametersJsonSchema` (standard JSON
+Schema format) but `geminiToolsToOpenAITools()` only read `fd.parameters`
+(legacy Gemini Schema format), which was `undefined` for all tools. The fallback
+was `{ type: 'object', properties: {} }` — an empty schema with no parameters.
+
+- [x] **`packages/core/src/core/openaiTypeMapper.ts`**: Read
+      `fd.parametersJsonSchema ?? fd.parameters` instead of just `fd.parameters`
+  - Now the full JSON Schema (property names, types, required fields,
+    descriptions) is sent to OpenAI
+- [x] All openaiTypeMapper tests pass (27 tests, +1 new for
+      parametersJsonSchema)

@@ -21,7 +21,7 @@ Two issues with KIMI and other OpenAI-compatible models:
 | `packages/core/src/core/client.ts`                      | Remove `isGemini2Model` gate on recovery; MAX_TOKENS auto-continue; null nextSpeakerCheck defaults to continue                                       |
 | `packages/core/src/core/contentGenerator.ts`            | `safeMaxTokens` guard: skip `max_tokens` when `maxTokens >= contextLength`                                                                           |
 | `packages/cli/src/ui/hooks/useGeminiStream.ts`          | Show info message on `InvalidStream` instead of silent swallow                                                                                       |
-| `packages/core/src/core/openaiTypeMapper.ts`            | `sanitizeName()`/`restoreName()` on `ToolCallIdTracker`: replace dots/colons with `_` for OpenAI, reverse-map on responses                           |
+| `packages/core/src/core/openaiTypeMapper.ts`            | `sanitizeName()`/`restoreName()` on `ToolCallIdTracker`; read `parametersJsonSchema` for tool schemas (was reading empty `parameters`)               |
 | `packages/core/src/core/openaiContentGenerator.ts`      | Pass tracker to `geminiToolsToOpenAITools()` for name sanitization                                                                                   |
 | `packages/core/src/core/openaiContentGenerator.test.ts` | 2 new tests for `response_format`                                                                                                                    |
 | `packages/core/src/core/openaiTypeMapper.test.ts`       | 1 new test for tool name sanitization (dots/colons)                                                                                                  |
