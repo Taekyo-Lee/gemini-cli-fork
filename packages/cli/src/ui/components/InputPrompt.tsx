@@ -934,7 +934,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           (completion.activeSuggestionIndex <= 0 &&
             !hasUserNavigatedSuggestions.current))
       ) {
-        handleSubmit(buffer.text);
+        handleSubmit(buffer.getLatestText());
         return true;
       }
 
@@ -985,7 +985,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
                 setExpandedSuggestionIndex(-1);
                 hasUserNavigatedSuggestions.current = false;
                 if (buffer.text.trim()) {
-                  handleSubmit(buffer.text);
+                  handleSubmit(buffer.getLatestText());
                 }
                 return true;
               }
@@ -1138,7 +1138,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
             buffer.backspace();
             buffer.newline();
           } else {
-            handleSubmit(buffer.text);
+            handleSubmit(buffer.getLatestText());
           }
         }
         return true;
