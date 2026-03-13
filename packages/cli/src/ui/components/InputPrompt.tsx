@@ -5,6 +5,7 @@
  */
 
 import type React from 'react';
+import fs from 'node:fs';
 import clipboardy from 'clipboardy';
 import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { Box, Text, useStdout, type DOMElement } from 'ink';
@@ -395,6 +396,8 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
   const handleSubmit = useCallback(
     (submittedValue: string) => {
+      // DEBUG: write submitted text to file for Korean IME debugging
+      try { fs.appendFileSync('/tmp/gemini_ime_debug.log', `[SUBMIT] raw=${JSON.stringify(submittedValue)} buf.text=${JSON.stringify(buffer.text)} latest=${JSON.stringify(buffer.getLatestText())}\n`); } catch {}
       const trimmedMessage = submittedValue.trim();
       const isSlash = isSlashCommand(trimmedMessage);
 
