@@ -820,6 +820,20 @@ export class GeminiClient {
       !signal.aborted &&
       isToolResponseTurn
     ) {
+      // If the model hit max_tokens, always continue — it was cut off mid-response.
+      if (turn.finishReason?.toString() === 'MAX_TOKENS') {
+        const nextRequest = [{ text: 'Please continue.' }];
+        turn = yield* this.sendMessageStream(
+          nextRequest,
+          signal,
+          prompt_id,
+          boundedTurns - 1,
+          false,
+          displayContent,
+        );
+        return turn;
+      }
+
       if (
         !this.config.getQuotaErrorOccurred() &&
         !this.config.getSkipNextSpeakerCheck()
@@ -838,7 +852,14 @@ export class GeminiClient {
             nextSpeakerCheck?.next_speaker || '',
           ),
         );
-        if (nextSpeakerCheck?.next_speaker === 'model') {
+        // Continue if the check explicitly says 'model', OR if the check
+        // failed (null) — on tool-response turns, failing to determine the
+        // next speaker almost always means the model should continue.
+        // The boundedTurns limit prevents infinite loops.
+        if (
+          nextSpeakerCheck?.next_speaker === 'model' ||
+          nextSpeakerCheck === null
+        ) {
           const nextRequest = [{ text: 'Please continue.' }];
           turn = yield* this.sendMessageStream(
             nextRequest,
