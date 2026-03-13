@@ -172,6 +172,7 @@ describe('InputPrompt', () => {
       text: '',
       cursor: [0, 0],
       lines: [''],
+      getLatestText: vi.fn(() => mockBuffer.text),
       setText: vi.fn(
         (newText: string, cursorPosition?: 'start' | 'end' | number) => {
           mockBuffer.text = newText;
