@@ -563,3 +563,37 @@ When typing Korean (or other IME-composed languages), the last character was dro
 - [x] All KeypressContext tests pass (127 tests)
 - [x] All text-buffer tests pass (219 tests)
 - [x] All InputPrompt tests pass (189 tests)
+
+---
+
+## Phase 10.4: Premature Stopping Fix (nextSpeakerCheck null default)
+
+**Status: COMPLETE**
+
+After tool-response turns, `checkNextSpeaker()` makes a separate LLM call to decide if the model should continue. When this call fails (returns `null` — timeout, malformed JSON, network error), the system silently stopped the model, forcing users to say "keep going" to resume.
+
+- [x] **`packages/core/src/core/client.ts`**: MAX_TOKENS auto-continue
+  - When `turn.finishReason` is `MAX_TOKENS`, bypass `checkNextSpeaker` entirely and auto-continue — the model was cut off mid-response
+- [x] **`packages/core/src/core/client.ts`**: Null defaults to continue
+  - When `checkNextSpeaker` returns `null` (LLM check failed), default to continuing instead of stopping
+  - Safe due to `boundedTurns` limit (MAX_TURNS = 100) preventing infinite loops
+  - Previous behavior: `null` → stop (model goes silent, user must say "continue")
+  - New behavior: `null` → continue (model keeps working, bounded by turn limit)
+- [x] All client.ts tests pass (79 tests)
+- [x] All nextSpeakerChecker tests pass (10 tests)
+
+---
+
+## Phase 10.5: GLM-5 max_tokens = contextLength Fix
+
+**Status: COMPLETE**
+
+GLM-5 failed on first message with `API Error: 400 ... context length is only 157248 tokens, resulting in a maximum input length of 248 tokens`. Even "hello" was too long.
+
+**Root cause:** The a2g_models Python registry sets `max_tokens = context_length` for open-source LLMs (GLM-5, KIMI, Qwen, DeepSeek, etc.) because these models have no distinct output limit — the value represents the context window size. The Python wrapper intentionally does NOT pass this to the API. But our TypeScript code was passing it directly as the OpenAI `max_tokens` parameter, which tells vLLM to reserve the entire context for output (157,000 of 157,248 tokens), leaving only 248 tokens for input.
+
+- [x] **`packages/core/src/core/contentGenerator.ts`**: `safeMaxTokens` guard
+  - When `maxTokens >= contextLength`, don't pass `max_tokens` to the API
+  - Affected models (all corp + some dev): GLM-5, KIMI, Qwen, gpt-oss-120b, GaussO, DeepSeek
+  - Unaffected models (real output limits): gpt-4o (16k/128k), gpt-5 (128k/400k), claude-haiku (64k/200k)
+- [x] All contentGenerator tests pass (20 tests)
