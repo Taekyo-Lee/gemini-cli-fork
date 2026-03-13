@@ -207,11 +207,23 @@ When you modify source code in this repo, rebuild before running:
 npm run build
 ```
 
-Or use dev mode (auto-checks build status) from the repo root:
+Or use the link script which builds, re-links, and verifies everything:
 
 ```bash
-npm start
+./scripts/link_global.sh           # build + link + verify (recommended)
+./scripts/link_global.sh --link    # link only (skip build)
+./scripts/link_global.sh --verify  # just check if gemini points to the fork
 ```
+
+> **When to use which:**
+>
+> - `npm run build` — fast, sufficient for day-to-day rebuilds (the link
+>   persists across builds)
+> - `./scripts/link_global.sh` — use if the link breaks (e.g. after
+>   accidentally installing the upstream package globally), or if you want a
+>   single command that always guarantees correctness
+> - `./scripts/link_global.sh --verify` — quick sanity check, run this if
+>   `gemini` starts behaving unexpectedly
 
 ## Quick Reference
 
@@ -241,7 +253,8 @@ gemini "explain this code"  # one-shot prompt
 
 # After editing source code
 cd ~/workspace/gemini-cli-fork
-npm run build               # rebuild, then run gemini again
+npm run build               # rebuild (link persists)
+./scripts/link_global.sh    # or: build + re-link + verify (safer)
 ```
 
 ## Switching Between Modes
