@@ -16,7 +16,8 @@ Two issues with KIMI and other OpenAI-compatible models:
 | `packages/core/src/config/config.ts` | Default `skipNextSpeakerCheck` to `false` (enables auto-continuation) |
 | `packages/core/src/core/openaiContentGenerator.ts` | Pass `response_format: { type: 'json_object' }` when `responseMimeType === 'application/json'`; yield stop-only chunks so `finishReason` is captured |
 | `packages/core/src/core/geminiChat.ts` | Remove `isGemini2Model` gate on `InvalidStreamError` retry + logging |
-| `packages/core/src/core/client.ts` | Remove `isGemini2Model` gate on "Please continue." recovery |
+| `packages/core/src/core/client.ts` | Remove `isGemini2Model` gate on recovery; MAX_TOKENS auto-continue; null nextSpeakerCheck defaults to continue |
+| `packages/core/src/core/contentGenerator.ts` | `safeMaxTokens` guard: skip `max_tokens` when `maxTokens >= contextLength` |
 | `packages/cli/src/ui/hooks/useGeminiStream.ts` | Show info message on `InvalidStream` instead of silent swallow |
 | `packages/core/src/core/openaiContentGenerator.test.ts` | 2 new tests for `response_format` |
 | `packages/core/src/core/geminiChat.test.ts` | Updated: retry now fires for all models |
@@ -33,4 +34,8 @@ Two issues with KIMI and other OpenAI-compatible models:
 - **Korean IME character drop (Phase 10.3)**: When typing Korean (or other IME-composed input), the last character was dropped on submit. Two root causes fixed:
   1. **Stdin char ordering**: Some terminals send `\r` (Enter) *before* the IME-committed character in a single `data` event (e.g. `"\r니"`). The submit fires before the character is inserted. Fixed by reordering `\r`/`\n` that precede non-ASCII characters in `createDataListener` so the IME char is processed first. Only non-ASCII chars (> U+007F) trigger reorder to avoid affecting normal paste text.
   2. **React state timing**: `useReducer` dispatch runs the reducer synchronously but the state binding is stale in the same tick. Fixed by adding `latestLinesRef` (synced inside the reducer) and `getLatestText()` which reads directly from the ref. All `handleSubmit(buffer.text)` calls in `InputPrompt.tsx` now use `buffer.getLatestText()`.
+- **Premature stopping — null nextSpeakerCheck (Phase 10.4)**: The `checkNextSpeaker()` LLM call is fragile — when it fails (returns `null` due to timeout, malformed JSON, or network error), the system silently stopped the model, forcing users to say "keep going". Two fixes:
+  1. **MAX_TOKENS auto-continue**: When `turn.finishReason` is `MAX_TOKENS`, bypass `checkNextSpeaker` entirely — the model was cut off mid-response and should always continue.
+  2. **Null defaults to continue**: When `checkNextSpeaker` returns `null`, default to continuing instead of stopping. Safe due to `boundedTurns` limit (MAX_TURNS = 100).
+- **GLM-5 max_tokens = contextLength (Phase 10.5)**: GLM-5 failed on first message with `API Error: 400 ... maximum input length of 248 tokens`. The a2g_models Python registry sets `max_tokens = context_length` for open-source LLMs (no distinct output limit) — the value represents the context window, not a safe output cap. The Python wrapper intentionally does NOT pass it to the API, but our TypeScript code was passing it directly as the OpenAI `max_tokens` parameter, telling vLLM to reserve 157,000 of 157,248 tokens for output. Fixed by adding a `safeMaxTokens` guard in `contentGenerator.ts`: when `maxTokens >= contextLength`, don't send `max_tokens` to the API.
 
