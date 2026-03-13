@@ -46,13 +46,20 @@ export function getInstallationInfo(
     const normalizedProjectRoot = projectRoot?.replace(/\\/g, '/');
     const isGit = isGitRepository(process.cwd());
 
-    // Check for local git clone first
-    if (
-      isGit &&
-      normalizedProjectRoot &&
-      realPath.startsWith(normalizedProjectRoot) &&
-      !realPath.includes('/node_modules/')
-    ) {
+    // Check for local git clone first.
+    // Also detect npm-linked clones: the resolved binary lives inside the
+    // repo (e.g. .../gemini-cli-fork/packages/cli/dist/index.js) even when
+    // CWD is somewhere else entirely.  In that case isGitRepository(cwd)
+    // returns false, but we still don't want auto-update to overwrite the
+    // link with a global install.
+    const isLocalClone =
+      (isGit &&
+        normalizedProjectRoot &&
+        realPath.startsWith(normalizedProjectRoot) &&
+        !realPath.includes('/node_modules/')) ||
+      (!realPath.includes('/node_modules/') &&
+        /\/packages\/cli\//.test(realPath));
+    if (isLocalClone) {
       return {
         packageManager: PackageManager.UNKNOWN, // Not managed by a package manager in this sense
         isGlobal: false,
