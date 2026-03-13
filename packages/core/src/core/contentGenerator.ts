@@ -275,11 +275,22 @@ export async function createContentGenerator(
       const modelToSend =
         modelConfig?.modelAlias ?? modelConfig?.model ?? selectedModelName;
 
+      // Don't pass maxTokens when it equals contextLength — in the a2g_models
+      // registry, max_tokens is often set to the context window size (not a safe
+      // output limit).  Passing it as max_tokens to the OpenAI API would reserve
+      // the entire context for output, leaving no room for input.
+      const safeMaxTokens =
+        modelConfig?.maxTokens != null &&
+        modelConfig.contextLength != null &&
+        modelConfig.maxTokens >= modelConfig.contextLength
+          ? undefined
+          : modelConfig?.maxTokens;
+
       const generator = new OpenAIContentGenerator({
         baseURL,
         apiKey,
         model: modelToSend,
-        maxTokens: modelConfig?.maxTokens,
+        maxTokens: safeMaxTokens,
         extraBody: modelConfig?.extraBody,
         defaultHeaders: modelConfig?.defaultHeaders,
       });
