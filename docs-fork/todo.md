@@ -380,23 +380,23 @@ inside the container exactly as they do outside.
 ### 9.1 Sandbox Auto-Enable
 
 - [x] **`sandboxConfig.ts` — `bestEffort` parameter**
-  - `getSandboxCommand(sandbox, bestEffort)` and `loadSandboxConfig(settings, argv, bestEffort)`
+  - `getSandboxCommand(sandbox, bestEffort)` and
+    `loadSandboxConfig(settings, argv, bestEffort)`
   - When `bestEffort=true` and no Docker/Podman found → return `''` (no crash)
-  - When `bestEffort=false` (default) → throw `FatalSandboxError` (explicit request honored)
+  - When `bestEffort=false` (default) → throw `FatalSandboxError` (explicit
+    request honored)
 
 - [x] **`config.ts` — YOLO detection and auto-enable**
   - Capture `yoloRequested` flag **before** folder trust check can downgrade
     `approvalMode` from YOLO to DEFAULT
   - If YOLO was requested and user did NOT explicitly configure sandbox
-    (`--sandbox`, `GEMINI_SANDBOX`, `settings.tools.sandbox` all absent),
-    call `loadSandboxConfig()` with `sandbox: true, bestEffort: true`
-  - Behavior matrix:
-    | Scenario | bestEffort | Result |
-    |---|---|---|
-    | `--yolo` (no sandbox config) | true | Auto-detect; if none found, continue |
-    | `--yolo --sandbox` | false | Auto-detect; throw if none found |
-    | `--yolo --sandbox=false` | false | No sandbox (user opted out) |
-    | No `--yolo` | false | No change from existing behavior |
+    (`--sandbox`, `GEMINI_SANDBOX`, `settings.tools.sandbox` all absent), call
+    `loadSandboxConfig()` with `sandbox: true, bestEffort: true`
+  - Behavior matrix: | Scenario | bestEffort | Result | |---|---|---| | `--yolo`
+    (no sandbox config) | true | Auto-detect; if none found, continue | |
+    `--yolo --sandbox` | false | Auto-detect; throw if none found | |
+    `--yolo --sandbox=false` | false | No sandbox (user opted out) | | No
+    `--yolo` | false | No change from existing behavior |
 
 - [x] **`gemini.tsx` — Matching YOLO detection for process re-launch**
   - `gemini.tsx` has its own `loadSandboxConfig()` call (for Docker re-launch).
@@ -413,8 +413,8 @@ inside the container exactly as they do outside.
 - [x] **`Footer.tsx` — Show sandbox status before entering container**
   - `SandboxIndicator` now accepts `configuredSandbox` prop from
     `config.getSandbox()?.command`
-  - Previously only checked `process.env['SANDBOX']` (set inside container),
-    so "no sandbox" was shown before the container launched
+  - Previously only checked `process.env['SANDBOX']` (set inside container), so
+    "no sandbox" was shown before the container launched
 
 ### 9.4 Env Var Forwarding into Docker
 
@@ -425,10 +425,11 @@ inside the container exactly as they do outside.
   - Also forwards `NODE_TLS_REJECT_UNAUTHORIZED` for on-prem endpoints
 
 - [x] **`sandboxUtils.ts` — Source env file in entrypoint**
-  - Added `if [ -f "$A2G_ENV_FILE" ]; then set -a; source "$A2G_ENV_FILE"; set +a; fi`
+  - Added
+    `if [ -f "$A2G_ENV_FILE" ]; then set -a; source "$A2G_ENV_FILE"; set +a; fi`
     to the entrypoint shell commands
-  - All `PROJECT_*` API keys, `PROJECT_A2G_LOCATION`, etc. are available
-    inside the container without listing them individually
+  - All `PROJECT_*` API keys, `PROJECT_A2G_LOCATION`, etc. are available inside
+    the container without listing them individually
 
 ### 9.5 Run Fork Code Inside Docker
 
@@ -438,17 +439,17 @@ inside the container exactly as they do outside.
     image's `gemini` binary
   - Resolving symlinks is critical: `npm link` creates a symlink at
     `~/.npm-global/bin/gemini` → `packages/cli/dist/index.js`. Without
-    resolving, the symlink path doesn't contain `packages/cli` and the
-    container falls back to the image's built-in `gemini` (which is the
-    unmodified version with no OpenAI-compatible mode)
+    resolving, the symlink path doesn't contain `packages/cli` and the container
+    falls back to the image's built-in `gemini` (which is the unmodified version
+    with no OpenAI-compatible mode)
   - Prevents the container from running a different version
 
 - [x] **`sandbox.ts` — Mount fork repo volume with symlink resolution**
-  - When running from a different working directory (e.g. `cd /some/project &&
-    gemini --yolo`), the fork repo is mounted read-only so
+  - When running from a different working directory (e.g.
+    `cd /some/project && gemini --yolo`), the fork repo is mounted read-only so
     `node packages/cli/dist/index.js` works inside the container
-  - Uses `fs.realpathSync` to resolve `npm link` symlinks before checking
-    if the script path is under the working directory
+  - Uses `fs.realpathSync` to resolve `npm link` symlinks before checking if the
+    script path is under the working directory
 
 ### 9.6 Tests
 
@@ -469,16 +470,16 @@ inside the container exactly as they do outside.
 
 ### 9.7 Files Modified
 
-| File | Change |
-|---|---|
-| `packages/cli/src/config/sandboxConfig.ts` | `bestEffort` parameter |
-| `packages/cli/src/config/config.ts` | YOLO auto-enable, folder trust bypass |
-| `packages/cli/src/gemini.tsx` | YOLO auto-enable for process re-launch |
-| `packages/cli/src/ui/components/Footer.tsx` | `configuredSandbox` prop |
-| `packages/cli/src/utils/sandbox.ts` | Env file mount, fork repo volume |
-| `packages/cli/src/utils/sandboxUtils.ts` | Env sourcing, local clone detection |
-| `packages/cli/src/config/sandboxConfig.test.ts` | 4 bestEffort tests |
-| `packages/cli/src/config/config.test.ts` | 7 YOLO sandbox tests |
+| File                                            | Change                                 |
+| ----------------------------------------------- | -------------------------------------- |
+| `packages/cli/src/config/sandboxConfig.ts`      | `bestEffort` parameter                 |
+| `packages/cli/src/config/config.ts`             | YOLO auto-enable, folder trust bypass  |
+| `packages/cli/src/gemini.tsx`                   | YOLO auto-enable for process re-launch |
+| `packages/cli/src/ui/components/Footer.tsx`     | `configuredSandbox` prop               |
+| `packages/cli/src/utils/sandbox.ts`             | Env file mount, fork repo volume       |
+| `packages/cli/src/utils/sandboxUtils.ts`        | Env sourcing, local clone detection    |
+| `packages/cli/src/config/sandboxConfig.test.ts` | 4 bestEffort tests                     |
+| `packages/cli/src/config/config.test.ts`        | 7 YOLO sandbox tests                   |
 
 ---
 
@@ -487,63 +488,85 @@ inside the container exactly as they do outside.
 **Status: COMPLETE**
 
 Two issues reported with KIMI and other OpenAI-compatible models:
+
 1. Model stops after one tool call when it should continue (premature stopping)
 2. Model sometimes returns empty/no response (silent response)
 
 ### 10.1 Enable nextSpeakerCheck by default
 
-- [x] **`packages/core/src/config/config.ts`**: Change `skipNextSpeakerCheck` default from `true` to `false`
+- [x] **`packages/core/src/config/config.ts`**: Change `skipNextSpeakerCheck`
+      default from `true` to `false`
   - Enables auto-continuation for all model types after tool call responses
   - Users can still disable via `settings.model.skipNextSpeakerCheck: true`
-- [x] **`packages/core/src/core/client.ts`**: Gate `nextSpeakerCheck` on `isToolResponseTurn`
-  - **Bug fix**: nextSpeakerCheck was firing for ALL text responses, causing infinite "Please continue." loops on simple "Hello" messages
-  - Now only fires when the request contains `functionResponse` parts (model responding to tool results)
-  - Prevents loop: functionResponse → text → continue("Please continue.") → text → **stop** (no functionResponse in "Please continue." request)
+- [x] **`packages/core/src/core/client.ts`**: Gate `nextSpeakerCheck` on
+      `isToolResponseTurn`
+  - **Bug fix**: nextSpeakerCheck was firing for ALL text responses, causing
+    infinite "Please continue." loops on simple "Hello" messages
+  - Now only fires when the request contains `functionResponse` parts (model
+    responding to tool results)
+  - Prevents loop: functionResponse → text → continue("Please continue.") → text
+    → **stop** (no functionResponse in "Please continue." request)
 
 ### 10.2 Support `response_format` in OpenAI adapter + yield stop chunks
 
-- [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Add `response_format: { type: 'json_object' }` when `responseMimeType === 'application/json'`
-  - Makes `baseLlmClient.generateJson()` work for OpenAI models (used by nextSpeakerCheck, editCorrector, etc.)
-- [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Yield stop-only chunks in `streamToAsyncGenerator`
-  - **Bug fix**: OpenAI sends `finish_reason: 'stop'` in a separate chunk with no content; this chunk was dropped, causing `geminiChat` to throw `InvalidStreamError('NO_FINISH_REASON')` → retry + recovery → 4+ duplicate responses
-  - Fix: yield chunks when `choice.finish_reason` is set (and no tool_calls) so `finishReason` is captured
+- [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Add
+      `response_format: { type: 'json_object' }` when
+      `responseMimeType === 'application/json'`
+  - Makes `baseLlmClient.generateJson()` work for OpenAI models (used by
+    nextSpeakerCheck, editCorrector, etc.)
+- [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Yield stop-only
+      chunks in `streamToAsyncGenerator`
+  - **Bug fix**: OpenAI sends `finish_reason: 'stop'` in a separate chunk with
+    no content; this chunk was dropped, causing `geminiChat` to throw
+    `InvalidStreamError('NO_FINISH_REASON')` → retry + recovery → 4+ duplicate
+    responses
+  - Fix: yield chunks when `choice.finish_reason` is set (and no tool_calls) so
+    `finishReason` is captured
 
 ### 10.3 Enable retry for empty responses from all models
 
-- [x] **`packages/core/src/core/geminiChat.ts`**: Remove `isGemini2Model` gate on `InvalidStreamError` retry
+- [x] **`packages/core/src/core/geminiChat.ts`**: Remove `isGemini2Model` gate
+      on `InvalidStreamError` retry
   - All models now get 1 retry (500ms delay) for empty/invalid stream responses
   - Also ungated the retry failure logging
 
 ### 10.4 Enable "Please continue" recovery for all models
 
-- [x] **`packages/core/src/core/client.ts`**: Remove `isGemini2Model` gate on `continueOnFailedApiCall`
-  - After retries exhausted, sends "System: Please continue." for all model types
+- [x] **`packages/core/src/core/client.ts`**: Remove `isGemini2Model` gate on
+      `continueOnFailedApiCall`
+  - After retries exhausted, sends "System: Please continue." for all model
+    types
 
 ### 10.5 UI feedback for InvalidStream events
 
-- [x] **`packages/cli/src/ui/hooks/useGeminiStream.ts`**: Replace empty handler with info message
-  - Shows "Model returned an empty response. Retrying..." instead of silent failure
+- [x] **`packages/cli/src/ui/hooks/useGeminiStream.ts`**: Replace empty handler
+      with info message
+  - Shows "Model returned an empty response. Retrying..." instead of silent
+    failure
 
 ### 10.6 Tests
 
-- [x] **`openaiContentGenerator.test.ts`**: 2 new tests for `response_format` (present when JSON requested, absent otherwise)
-- [x] **`geminiChat.test.ts`**: Updated test to verify retry fires for non-Gemini-2 models
-- [x] **`client.test.ts`**: Updated test to verify "Please continue." recovery fires for non-Gemini-2 models
+- [x] **`openaiContentGenerator.test.ts`**: 2 new tests for `response_format`
+      (present when JSON requested, absent otherwise)
+- [x] **`geminiChat.test.ts`**: Updated test to verify retry fires for
+      non-Gemini-2 models
+- [x] **`client.test.ts`**: Updated test to verify "Please continue." recovery
+      fires for non-Gemini-2 models
 - [x] All core tests pass (299 files, 5590 tests)
 - [x] useGeminiStream tests pass (72 tests)
 
 ### 10.7 Files Modified
 
-| File | Change |
-|---|---|
-| `packages/core/src/config/config.ts` | Default `skipNextSpeakerCheck` to `false` |
-| `packages/core/src/core/openaiContentGenerator.ts` | Add `response_format` support |
-| `packages/core/src/core/geminiChat.ts` | Remove `isGemini2Model` gate on retry |
-| `packages/core/src/core/client.ts` | Remove `isGemini2Model` gate on recovery + gate `nextSpeakerCheck` on `isToolResponseTurn` |
-| `packages/cli/src/ui/hooks/useGeminiStream.ts` | Add InvalidStream UI feedback |
-| `packages/core/src/core/openaiContentGenerator.test.ts` | 2 new response_format tests |
-| `packages/core/src/core/geminiChat.test.ts` | Updated retry test for all models |
-| `packages/core/src/core/client.test.ts` | Updated recovery test for all models |
+| File                                                    | Change                                                                                     |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `packages/core/src/config/config.ts`                    | Default `skipNextSpeakerCheck` to `false`                                                  |
+| `packages/core/src/core/openaiContentGenerator.ts`      | Add `response_format` support                                                              |
+| `packages/core/src/core/geminiChat.ts`                  | Remove `isGemini2Model` gate on retry                                                      |
+| `packages/core/src/core/client.ts`                      | Remove `isGemini2Model` gate on recovery + gate `nextSpeakerCheck` on `isToolResponseTurn` |
+| `packages/cli/src/ui/hooks/useGeminiStream.ts`          | Add InvalidStream UI feedback                                                              |
+| `packages/core/src/core/openaiContentGenerator.test.ts` | 2 new response_format tests                                                                |
+| `packages/core/src/core/geminiChat.test.ts`             | Updated retry test for all models                                                          |
+| `packages/core/src/core/client.test.ts`                 | Updated recovery test for all models                                                       |
 
 ---
 
@@ -551,15 +574,29 @@ Two issues reported with KIMI and other OpenAI-compatible models:
 
 **Status: COMPLETE**
 
-When typing Korean (or other IME-composed languages), the last character was dropped on submit. Two root causes:
-1. **Stdin char ordering**: Some terminals send `\r` (Enter) before the IME-committed character in a single `data` event (e.g. `"\r니"`), so the submit fires before the character is inserted.
-2. **React state timing**: `useReducer` dispatch runs the reducer synchronously but the state binding is stale in the same tick, so the submit handler reads stale text.
+When typing Korean (or other IME-composed languages), the last character was
+dropped on submit. Two root causes:
 
-- [x] **`packages/cli/src/ui/contexts/KeypressContext.tsx`**: Reorder `\r`/`\n` before non-ASCII chars (> U+007F) in `createDataListener` so IME-committed chars are processed before Enter. Only non-ASCII triggers reorder to avoid affecting normal paste text.
-- [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add `useRef` import, `latestLinesRef` synced inside reducer wrapper, `getLatestText()` function that reads directly from the ref
-- [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add `getLatestText` to `TextBuffer` interface and `returnValue` object
-- [x] **`packages/cli/src/ui/components/InputPrompt.tsx`**: Change all `handleSubmit(buffer.text)` → `handleSubmit(buffer.getLatestText())`
-- [x] **`packages/cli/src/ui/components/InputPrompt.test.tsx`**: Add `getLatestText` mock to `mockBuffer`
+1. **Stdin char ordering**: Some terminals send `\r` (Enter) before the
+   IME-committed character in a single `data` event (e.g. `"\r니"`), so the
+   submit fires before the character is inserted.
+2. **React state timing**: `useReducer` dispatch runs the reducer synchronously
+   but the state binding is stale in the same tick, so the submit handler reads
+   stale text.
+
+- [x] **`packages/cli/src/ui/contexts/KeypressContext.tsx`**: Reorder `\r`/`\n`
+      before non-ASCII chars (> U+007F) in `createDataListener` so IME-committed
+      chars are processed before Enter. Only non-ASCII triggers reorder to avoid
+      affecting normal paste text.
+- [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add `useRef`
+      import, `latestLinesRef` synced inside reducer wrapper, `getLatestText()`
+      function that reads directly from the ref
+- [x] **`packages/cli/src/ui/components/shared/text-buffer.ts`**: Add
+      `getLatestText` to `TextBuffer` interface and `returnValue` object
+- [x] **`packages/cli/src/ui/components/InputPrompt.tsx`**: Change all
+      `handleSubmit(buffer.text)` → `handleSubmit(buffer.getLatestText())`
+- [x] **`packages/cli/src/ui/components/InputPrompt.test.tsx`**: Add
+      `getLatestText` mock to `mockBuffer`
 - [x] All KeypressContext tests pass (127 tests)
 - [x] All text-buffer tests pass (219 tests)
 - [x] All InputPrompt tests pass (189 tests)
@@ -570,14 +607,20 @@ When typing Korean (or other IME-composed languages), the last character was dro
 
 **Status: COMPLETE**
 
-After tool-response turns, `checkNextSpeaker()` makes a separate LLM call to decide if the model should continue. When this call fails (returns `null` — timeout, malformed JSON, network error), the system silently stopped the model, forcing users to say "keep going" to resume.
+After tool-response turns, `checkNextSpeaker()` makes a separate LLM call to
+decide if the model should continue. When this call fails (returns `null` —
+timeout, malformed JSON, network error), the system silently stopped the model,
+forcing users to say "keep going" to resume.
 
 - [x] **`packages/core/src/core/client.ts`**: MAX_TOKENS auto-continue
-  - When `turn.finishReason` is `MAX_TOKENS`, bypass `checkNextSpeaker` entirely and auto-continue — the model was cut off mid-response
+  - When `turn.finishReason` is `MAX_TOKENS`, bypass `checkNextSpeaker` entirely
+    and auto-continue — the model was cut off mid-response
 - [x] **`packages/core/src/core/client.ts`**: Null defaults to continue
-  - When `checkNextSpeaker` returns `null` (LLM check failed), default to continuing instead of stopping
+  - When `checkNextSpeaker` returns `null` (LLM check failed), default to
+    continuing instead of stopping
   - Safe due to `boundedTurns` limit (MAX_TURNS = 100) preventing infinite loops
-  - Previous behavior: `null` → stop (model goes silent, user must say "continue")
+  - Previous behavior: `null` → stop (model goes silent, user must say
+    "continue")
   - New behavior: `null` → continue (model keeps working, bounded by turn limit)
 - [x] All client.ts tests pass (79 tests)
 - [x] All nextSpeakerChecker tests pass (10 tests)
@@ -588,12 +631,49 @@ After tool-response turns, `checkNextSpeaker()` makes a separate LLM call to dec
 
 **Status: COMPLETE**
 
-GLM-5 failed on first message with `API Error: 400 ... context length is only 157248 tokens, resulting in a maximum input length of 248 tokens`. Even "hello" was too long.
+GLM-5 failed on first message with
+`API Error: 400 ... context length is only 157248 tokens, resulting in a maximum input length of 248 tokens`.
+Even "hello" was too long.
 
-**Root cause:** The a2g_models Python registry sets `max_tokens = context_length` for open-source LLMs (GLM-5, KIMI, Qwen, DeepSeek, etc.) because these models have no distinct output limit — the value represents the context window size. The Python wrapper intentionally does NOT pass this to the API. But our TypeScript code was passing it directly as the OpenAI `max_tokens` parameter, which tells vLLM to reserve the entire context for output (157,000 of 157,248 tokens), leaving only 248 tokens for input.
+**Root cause:** The a2g_models Python registry sets
+`max_tokens = context_length` for open-source LLMs (GLM-5, KIMI, Qwen, DeepSeek,
+etc.) because these models have no distinct output limit — the value represents
+the context window size. The Python wrapper intentionally does NOT pass this to
+the API. But our TypeScript code was passing it directly as the OpenAI
+`max_tokens` parameter, which tells vLLM to reserve the entire context for
+output (157,000 of 157,248 tokens), leaving only 248 tokens for input.
 
 - [x] **`packages/core/src/core/contentGenerator.ts`**: `safeMaxTokens` guard
   - When `maxTokens >= contextLength`, don't pass `max_tokens` to the API
-  - Affected models (all corp + some dev): GLM-5, KIMI, Qwen, gpt-oss-120b, GaussO, DeepSeek
-  - Unaffected models (real output limits): gpt-4o (16k/128k), gpt-5 (128k/400k), claude-haiku (64k/200k)
+  - Affected models (all corp + some dev): GLM-5, KIMI, Qwen, gpt-oss-120b,
+    GaussO, DeepSeek
+  - Unaffected models (real output limits): gpt-4o (16k/128k), gpt-5
+    (128k/400k), claude-haiku (64k/200k)
 - [x] All contentGenerator tests pass (20 tests)
+
+---
+
+## Phase 10.6: OpenAI Tool Name Sanitization Fix
+
+**Status: COMPLETE**
+
+OpenAI models (via OpenRouter, direct API) failed with
+`400 Invalid 'tools[N].function.name': string does not match pattern '^[a-zA-Z0-9_-]+$'`.
+Tool names containing dots (`.`) or colons (`:`) are valid for Gemini's API but
+rejected by OpenAI.
+
+**Root cause:** `generateValidName()` in `mcp-tool.ts` sanitizes names for
+Gemini's pattern `^[a-zA-Z_][a-zA-Z0-9_\-.:]{0,63}$` which allows dots and
+colons. When these names flow through `geminiToolsToOpenAITools()` in
+`openaiTypeMapper.ts`, they're sent as-is to OpenAI which only allows
+`[a-zA-Z0-9_-]`.
+
+- [x] **`packages/core/src/core/openaiTypeMapper.ts`**: Added `sanitizeName()` /
+      `restoreName()` to `ToolCallIdTracker`
+  - Replaces any char not in `[a-zA-Z0-9_-]` with `_` when sending to OpenAI
+  - Stores reverse mapping to restore original Gemini names on responses
+  - Applied in: `geminiToolsToOpenAITools()`, `partsFunctionCalls()`, response
+    converters
+- [x] **`packages/core/src/core/openaiContentGenerator.ts`**: Passes tracker to
+      `geminiToolsToOpenAITools()`
+- [x] All openaiTypeMapper tests pass (26 tests, +1 new for sanitization)

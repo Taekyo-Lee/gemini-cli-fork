@@ -84,6 +84,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
     const tools = geminiToolsToOpenAITools(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
       request.config?.tools as Tool[] | undefined,
+      this.tracker,
     );
 
     const response = await this.client.chat.completions.create({
@@ -118,6 +119,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
     const tools = geminiToolsToOpenAITools(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ToolListUnion includes CallableTool which we don't use
       request.config?.tools as Tool[] | undefined,
+      this.tracker,
     );
 
     // Debug: log the exact messages being sent to the API
@@ -129,15 +131,20 @@ export class OpenAIContentGenerator implements ContentGenerator {
         debugLogger.log(
           `  [${msg.role}] tool_call_id=${msg.tool_call_id} content=${String(msg.content).substring(0, 200)}`,
         );
-      } else if (msg.role === 'assistant' && 'tool_calls' in msg && msg.tool_calls) {
+      } else if (
+        msg.role === 'assistant' &&
+        'tool_calls' in msg &&
+        msg.tool_calls
+      ) {
         debugLogger.log(
           `  [${msg.role}] tool_calls=${JSON.stringify(msg.tool_calls.map((tc) => ({ id: tc.id, name: tc.function.name })))}`,
         );
       } else {
-        const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
-        debugLogger.log(
-          `  [${msg.role}] ${(content ?? '').substring(0, 100)}`,
-        );
+        const content =
+          typeof msg.content === 'string'
+            ? msg.content
+            : JSON.stringify(msg.content);
+        debugLogger.log(`  [${msg.role}] ${(content ?? '').substring(0, 100)}`);
       }
     }
 

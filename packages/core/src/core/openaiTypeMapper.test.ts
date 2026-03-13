@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { FinishReason , Type } from '@google/genai';
+import { FinishReason, Type } from '@google/genai';
 import type { Content, Tool } from '@google/genai';
 import type {
   ChatCompletion,
@@ -16,13 +16,12 @@ import {
   geminiToolsToOpenAITools,
   openaiResponseToGeminiResponse,
   openaiStreamChunkToGeminiResponse,
+  ToolCallIdTracker,
 } from './openaiTypeMapper.js';
 
 describe('geminiContentsToOpenAIMessages', () => {
   it('converts user text content', () => {
-    const contents: Content[] = [
-      { role: 'user', parts: [{ text: 'Hello' }] },
-    ];
+    const contents: Content[] = [{ role: 'user', parts: [{ text: 'Hello' }] }];
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toEqual([{ role: 'user', content: 'Hello' }]);
   });
@@ -36,9 +35,7 @@ describe('geminiContentsToOpenAIMessages', () => {
   });
 
   it('adds system instruction from string', () => {
-    const contents: Content[] = [
-      { role: 'user', parts: [{ text: 'Hello' }] },
-    ];
+    const contents: Content[] = [{ role: 'user', parts: [{ text: 'Hello' }] }];
     const messages = geminiContentsToOpenAIMessages(
       contents,
       'You are a helpful assistant.',
@@ -51,9 +48,7 @@ describe('geminiContentsToOpenAIMessages', () => {
   });
 
   it('adds system instruction from Content object', () => {
-    const contents: Content[] = [
-      { role: 'user', parts: [{ text: 'Hello' }] },
-    ];
+    const contents: Content[] = [{ role: 'user', parts: [{ text: 'Hello' }] }];
     const systemContent: Content = {
       role: 'system',
       parts: [{ text: 'Be concise.' }],
@@ -79,7 +74,9 @@ describe('geminiContentsToOpenAIMessages', () => {
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toHaveLength(1);
     expect(messages[0].role).toBe('assistant');
-    const msg = messages[0] as { tool_calls: Array<{ function: { name: string; arguments: string } }> };
+    const msg = messages[0] as {
+      tool_calls: Array<{ function: { name: string; arguments: string } }>;
+    };
     expect(msg.tool_calls).toHaveLength(1);
     expect(msg.tool_calls[0].function.name).toBe('get_weather');
     expect(JSON.parse(msg.tool_calls[0].function.arguments)).toEqual({
@@ -144,15 +141,16 @@ describe('geminiContentsToOpenAIMessages', () => {
     ];
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toHaveLength(1);
-    const msg = messages[0] as { content: string | null; tool_calls: unknown[] };
+    const msg = messages[0] as {
+      content: string | null;
+      tool_calls: unknown[];
+    };
     expect(msg.content).toBe('Let me check the weather.');
     expect(msg.tool_calls).toHaveLength(1);
   });
 
   it('skips empty text content', () => {
-    const contents: Content[] = [
-      { role: 'user', parts: [] },
-    ];
+    const contents: Content[] = [{ role: 'user', parts: [] }];
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toHaveLength(0);
   });
@@ -185,9 +183,7 @@ describe('geminiToolsToOpenAITools', () => {
     expect(result).toHaveLength(1);
     expect(result![0].type).toBe('function');
     expect(result![0].function.name).toBe('get_weather');
-    expect(result![0].function.description).toBe(
-      'Gets the weather for a city',
-    );
+    expect(result![0].function.description).toBe('Gets the weather for a city');
   });
 
   it('flattens multiple declarations from multiple tools', () => {
@@ -209,6 +205,31 @@ describe('geminiToolsToOpenAITools', () => {
   it('returns undefined for tools without function declarations', () => {
     const tools: Tool[] = [{}];
     expect(geminiToolsToOpenAITools(tools)).toBeUndefined();
+  });
+
+  it('sanitizes dots and colons in tool names for OpenAI API', () => {
+    const tracker = new ToolCallIdTracker();
+    const tools: Tool[] = [
+      {
+        functionDeclarations: [
+          { name: 'server__tool.with.dots', description: 'has dots' },
+          { name: 'ns:colon:tool', description: 'has colons' },
+          { name: 'clean_name-ok', description: 'already valid' },
+        ],
+      },
+    ];
+    const result = geminiToolsToOpenAITools(tools, tracker);
+    expect(result).toHaveLength(3);
+    expect(result![0].function.name).toBe('server__tool_with_dots');
+    expect(result![1].function.name).toBe('ns_colon_tool');
+    expect(result![2].function.name).toBe('clean_name-ok');
+
+    // Reverse mapping restores originals
+    expect(tracker.restoreName('server__tool_with_dots')).toBe(
+      'server__tool.with.dots',
+    );
+    expect(tracker.restoreName('ns_colon_tool')).toBe('ns:colon:tool');
+    expect(tracker.restoreName('clean_name-ok')).toBe('clean_name-ok');
   });
 });
 
@@ -308,7 +329,8 @@ describe('openaiResponseToGeminiResponse', () => {
           {
             index: 0,
             message: { role: 'assistant', content: 'x', refusal: null },
-            finish_reason: openaiReason as ChatCompletion.Choice['finish_reason'],
+            finish_reason:
+              openaiReason as ChatCompletion.Choice['finish_reason'],
             logprobs: null,
           },
         ],

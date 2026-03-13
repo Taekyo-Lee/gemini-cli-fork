@@ -44,6 +44,9 @@ export class ToolCallIdTracker {
   private readonly idMap = new Map<string, string>();
   private counter = 0;
 
+  /** Maps sanitized OpenAI name → original Gemini name */
+  private readonly nameMap = new Map<string, string>();
+
   getOrCreateId(name: string): string {
     const id = `call_${name}_${this.counter++}`;
     this.idMap.set(name, id);
@@ -56,6 +59,23 @@ export class ToolCallIdTracker {
 
   trackId(name: string, id: string): void {
     this.idMap.set(name, id);
+  }
+
+  /**
+   * Sanitize a tool name for the OpenAI API which only allows [a-zA-Z0-9_-].
+   * Gemini allows dots and colons. Stores the mapping for reverse lookup.
+   */
+  sanitizeName(geminiName: string): string {
+    const openaiName = geminiName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (openaiName !== geminiName) {
+      this.nameMap.set(openaiName, geminiName);
+    }
+    return openaiName;
+  }
+
+  /** Restore original Gemini name from a sanitized OpenAI name. */
+  restoreName(openaiName: string): string {
+    return this.nameMap.get(openaiName) ?? openaiName;
   }
 }
 
@@ -80,12 +100,13 @@ function partsFunctionCalls(
     .filter((p) => p.functionCall)
     .map((p) => {
       const fc = p.functionCall!;
-      const id = fc.id ?? tracker.getOrCreateId(fc.name ?? 'unknown');
+      const name = tracker.sanitizeName(fc.name ?? 'unknown');
+      const id = fc.id ?? tracker.getOrCreateId(name);
       return {
         id,
         type: 'function' as const,
         function: {
-          name: fc.name ?? '',
+          name,
           arguments: JSON.stringify(fc.args ?? {}),
         },
       };
@@ -163,6 +184,7 @@ export function geminiContentsToOpenAIMessages(
 
 export function geminiToolsToOpenAITools(
   tools?: Tool[],
+  tracker?: ToolCallIdTracker,
 ): ChatCompletionTool[] | undefined {
   if (!tools || tools.length === 0) {
     return undefined;
@@ -172,10 +194,15 @@ export function geminiToolsToOpenAITools(
   for (const tool of tools) {
     if (tool.functionDeclarations) {
       for (const fd of tool.functionDeclarations) {
+        // Sanitize name: OpenAI only allows [a-zA-Z0-9_-], but Gemini
+        // allows dots and colons.  The tracker stores the reverse mapping.
+        const name = tracker
+          ? tracker.sanitizeName(fd.name ?? '')
+          : (fd.name ?? '').replace(/[^a-zA-Z0-9_-]/g, '_');
         result.push({
           type: 'function',
           function: {
-            name: fd.name ?? '',
+            name,
             description: fd.description ?? '',
             // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Schema objects are opaque JSON
             parameters: (fd.parameters ?? {
@@ -224,15 +251,17 @@ export function openaiResponseToGeminiResponse(
       } catch {
         // keep empty args
       }
+      // Restore original Gemini name (may differ if dots/colons were sanitized)
+      const originalName = tracker.restoreName(tc.function.name);
       parts.push({
         functionCall: {
           id: tc.id,
-          name: tc.function.name,
+          name: originalName,
           args,
         },
       });
-      // Track the ID for future tool responses
-      tracker.trackId(tc.function.name, tc.id);
+      // Track the ID using the original name for future tool responses
+      tracker.trackId(originalName, tc.id);
     }
   }
 
@@ -307,16 +336,18 @@ export function openaiStreamChunkToGeminiResponse(
         } catch {
           // Partial JSON during streaming — send what we have
         }
-        const id = tc.id ?? tracker.getOrCreateId(tc.function.name);
+        // Restore original Gemini name (may differ if dots/colons were sanitized)
+        const originalName = tracker.restoreName(tc.function.name);
+        const id = tc.id ?? tracker.getOrCreateId(originalName);
         parts.push({
           functionCall: {
             id,
-            name: tc.function.name,
+            name: originalName,
             args,
           },
         });
         if (tc.id) {
-          tracker.trackId(tc.function.name, tc.id);
+          tracker.trackId(originalName, tc.id);
         }
       }
     }
