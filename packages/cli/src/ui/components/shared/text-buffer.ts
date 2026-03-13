@@ -2736,11 +2736,13 @@ export function useTextBuffer({
   // synchronously but the React state binding is still stale when
   // handleSubmit reads buffer.text.
   const latestLinesRef = useRef(initialState.lines);
+  const latestStateRef = useRef(initialState);
 
   const [state, dispatch] = useReducer(
     (s: TextBufferState, a: TextBufferAction) => {
       const next = textBufferReducer(s, a, { inputFilter, singleLine });
       latestLinesRef.current = next.lines;
+      latestStateRef.current = next;
       return next;
     },
     initialState,
@@ -2850,7 +2852,21 @@ export function useTextBuffer({
         }
       }
       if (currentText.length > 0) {
-        dispatch({ type: 'insert', payload: currentText, isPaste: paste });
+        // Eagerly compute the next state and update latestLinesRef BEFORE
+        // dispatch, because stdin 'data' callbacks run outside React's
+        // event system and dispatch may not execute the reducer synchronously.
+        // This ensures getLatestText() returns the correct value when a
+        // submit handler runs in the same JS tick (e.g. Korean IME commit
+        // + Enter arriving in a single data event).
+        const action = { type: 'insert' as const, payload: currentText, isPaste: paste };
+        const nextState = textBufferReducer(
+          latestStateRef.current,
+          action,
+          { inputFilter, singleLine },
+        );
+        latestLinesRef.current = nextState.lines;
+        latestStateRef.current = nextState;
+        dispatch(action);
       }
     },
     [shellModeActive, escapePastedPaths],
