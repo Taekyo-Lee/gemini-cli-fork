@@ -37,7 +37,7 @@ function isSandboxCommand(value: string): value is SandboxConfig['command'] {
 
 function getSandboxCommand(
   sandbox?: boolean | string | null,
-  bestEffort?: boolean,
+  bestEffort?: boolean, // [FORK] graceful fallback when no container runtime found
 ): SandboxConfig['command'] | '' {
   // If the SANDBOX env var is set, we're already inside the sandbox.
   if (process.env['SANDBOX']) {
@@ -100,6 +100,7 @@ function getSandboxCommand(
 
   // throw an error if user requested sandbox but no command was found
   if (sandbox === true) {
+    // [FORK] bestEffort: don't fail if no container runtime found (YOLO auto-sandbox)
     if (bestEffort) {
       return '';
     }
@@ -118,7 +119,7 @@ function getSandboxCommand(
 export async function loadSandboxConfig(
   settings: Settings,
   argv: SandboxCliArgs,
-  bestEffort?: boolean,
+  bestEffort?: boolean, // [FORK] pass-through to getSandboxCommand
 ): Promise<SandboxConfig | undefined> {
   const sandboxOption = argv.sandbox ?? settings.tools?.sandbox;
   const command = getSandboxCommand(sandboxOption, bestEffort);
