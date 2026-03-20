@@ -319,15 +319,15 @@ function createDataListener(keypressHandler: KeypressHandler) {
   let timeoutId: NodeJS.Timeout;
   return (data: string) => {
     clearTimeout(timeoutId);
-    // When an IME commits a composed character at the same time as Enter,
-    // some terminals send \r *before* the committed character in a single
-    // data event (e.g. Korean: composing '니' + Enter → "\r니").  If we
-    // process them in that order the submit fires before the character is
-    // inserted and the last character is lost.  Re-order: move any \r or
-    // \n that immediately precedes a non-ASCII character (IME-committed
-    // chars like Korean/CJK are always > U+007F) to after it.  We only
-    // target non-ASCII so that normal paste text (ASCII newlines) is not
-    // affected.
+    // [FORK] Korean IME fix: When an IME commits a composed character at the
+    // same time as Enter, some terminals send \r *before* the committed
+    // character in a single data event (e.g. Korean: composing '니' + Enter
+    // → "\r니").  If we process them in that order the submit fires before
+    // the character is inserted and the last character is lost.  Re-order:
+    // move any \r or \n that immediately precedes a non-ASCII character
+    // (IME-committed chars like Korean/CJK are always > U+007F) to after it.
+    // We only target non-ASCII so that normal paste text (ASCII newlines) is
+    // not affected.
     const chars = [...data];
     for (let i = 0; i < chars.length - 1; i++) {
       const ch = chars[i];
@@ -830,7 +830,7 @@ export function KeypressProvider({
       const old = dataListener;
       dataListener = (data: string) => {
         if (data.length > 0) {
-          // Temporary: write raw stdin to file for Korean IME debugging
+          // [FORK] Temporary: write raw stdin to file for Korean IME debugging
           try { fs.appendFileSync('/tmp/gemini_ime_debug.log', `[STDIN] ${JSON.stringify(data)}\n`); } catch {}
         }
         old(data);
