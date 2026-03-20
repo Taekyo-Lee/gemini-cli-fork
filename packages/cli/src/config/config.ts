@@ -574,12 +574,12 @@ export async function loadCliConfig(
     );
   }
 
-  // Capture YOLO intent before trust override may downgrade approvalMode.
+  // [FORK] Capture YOLO intent before trust override may downgrade approvalMode.
   // Used later to auto-enable sandbox in YOLO mode.
   const yoloRequested = approvalMode === ApprovalMode.YOLO;
 
   // Force approval mode to default if the folder is not trusted.
-  // Exception: explicit --yolo flag should not be silently downgraded.
+  // [FORK] Exception: explicit --yolo flag should not be silently downgraded.
   if (
     !trustedFolder &&
     approvalMode !== ApprovalMode.DEFAULT &&
@@ -666,7 +666,7 @@ export async function loadCliConfig(
     specifiedModel === GEMINI_MODEL_ALIAS_AUTO
       ? defaultModel
       : specifiedModel || defaultModel;
-  // Auto-enable sandbox in YOLO mode (best-effort: don't fail if no runtime found)
+  // [FORK] Auto-enable sandbox in YOLO mode (best-effort: don't fail if no runtime found)
   // Note: use yoloRequested (captured before trust override) since approvalMode
   // may have been downgraded to DEFAULT for untrusted folders.
   const userExplicitlySandboxed =
@@ -817,7 +817,7 @@ export async function loadCliConfig(
     shellToolInactivityTimeout: settings.tools?.shell?.inactivityTimeout,
     enableShellOutputEfficiency:
       settings.tools?.shell?.enableShellOutputEfficiency ?? true,
-    skipNextSpeakerCheck: settings.model?.skipNextSpeakerCheck,
+    skipNextSpeakerCheck: settings.model?.skipNextSpeakerCheck, // [FORK]
     truncateToolOutputThreshold: settings.tools?.truncateToolOutputThreshold,
     eventEmitter: coreEvents,
     useWriteTodos: argv.useWriteTodos ?? settings.useWriteTodos,
