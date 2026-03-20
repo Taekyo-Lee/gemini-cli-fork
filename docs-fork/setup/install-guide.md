@@ -160,12 +160,12 @@ chatting.
 ```bash
 cd ~/workspace/gemini-cli-fork
 
-./scripts/test_openai_adapter.sh --quick      # build + run
-./scripts/test_openai_adapter.sh --run-only   # skip build, just run
-./scripts/test_openai_adapter.sh --build-only # just build
-./scripts/test_openai_adapter.sh --status     # check env vars and build status
-./scripts/test_openai_adapter.sh --list-models # show available models
-./scripts/test_openai_adapter.sh --python     # run Python LLM test (send "hello" to model)
+./scripts/fork/test_openai_adapter.sh --quick      # build + run
+./scripts/fork/test_openai_adapter.sh --run-only   # skip build, just run
+./scripts/fork/test_openai_adapter.sh --build-only # just build
+./scripts/fork/test_openai_adapter.sh --status     # check env vars and build status
+./scripts/fork/test_openai_adapter.sh --list-models # show available models
+./scripts/fork/test_openai_adapter.sh --python     # run Python LLM test (send "hello" to model)
 ```
 
 ### Mode B: Original Google Auth (unchanged)
@@ -210,19 +210,19 @@ npm run build
 Or use the link script which builds, re-links, and verifies everything:
 
 ```bash
-./scripts/link_global.sh           # build + link + verify (recommended)
-./scripts/link_global.sh --link    # link only (skip build)
-./scripts/link_global.sh --verify  # just check if gemini points to the fork
+./scripts/fork/link_global.sh           # build + link + verify (recommended)
+./scripts/fork/link_global.sh --link    # link only (skip build)
+./scripts/fork/link_global.sh --verify  # just check if gemini points to the fork
 ```
 
 > **When to use which:**
 >
 > - `npm run build` — fast, sufficient for day-to-day rebuilds (the link
 >   persists across builds)
-> - `./scripts/link_global.sh` — use if the link breaks (e.g. after
+> - `./scripts/fork/link_global.sh` — use if the link breaks (e.g. after
 >   accidentally installing the upstream package globally), or if you want a
 >   single command that always guarantees correctness
-> - `./scripts/link_global.sh --verify` — quick sanity check, run this if
+> - `./scripts/fork/link_global.sh --verify` — quick sanity check, run this if
 >   `gemini` starts behaving unexpectedly
 
 ## Quick Reference
@@ -240,7 +240,7 @@ set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
 gemini                      # shows model picker
 
 # Or use the test script:
-./scripts/test_openai_adapter.sh --quick
+./scripts/fork/test_openai_adapter.sh --quick
 
 # ----- Original Google mode -----
 # (don't source the env file, or unset the trigger vars)
@@ -254,7 +254,7 @@ gemini "explain this code"  # one-shot prompt
 # After editing source code
 cd ~/workspace/gemini-cli-fork
 npm run build               # rebuild (link persists)
-./scripts/link_global.sh    # or: build + re-link + verify (safer)
+./scripts/fork/link_global.sh    # or: build + re-link + verify (safer)
 ```
 
 ## Switching Between Modes
