@@ -14,9 +14,10 @@ import {
   logCliConfiguration,
   startupProfiler,
   getAuthTypeFromEnv,
-  getModelByName,
   AuthType,
 } from '@google/gemini-cli-core';
+// [FORK] OpenAI auto-connect extracted to its own module
+import { tryOpenAIAutoConnect } from './openaiInitializer.js';
 import { type LoadedSettings } from '../config/settings.js';
 import { performInitialAuth } from './auth.js';
 import { validateTheme } from './theme.js';
@@ -41,27 +42,16 @@ export async function initializeApp(
   config: Config,
   settings: LoadedSettings,
 ): Promise<InitializationResult> {
-  // Check if OpenAI-compatible mode is detected from environment
-  const detectedAuthType = getAuthTypeFromEnv();
-  const isOpenAIMode = detectedAuthType === AuthType.OPENAI_COMPATIBLE;
+  // [FORK] Check if OpenAI-compatible mode is detected from environment
+  const isOpenAIMode = getAuthTypeFromEnv() === AuthType.OPENAI_COMPATIBLE;
 
   let authError: string | null = null;
   let accountSuspensionInfo: AccountSuspensionInfo | null = null;
 
-  // In OpenAI mode, try to auto-connect to the last selected model
-  let openAIAutoConnected = false;
-  if (isOpenAIMode) {
-    const savedModel = settings.merged.security.auth.selectedModel;
-    if (savedModel && getModelByName(savedModel)) {
-      try {
-        config.setModel(savedModel, false);
-        await config.refreshAuth(AuthType.OPENAI_COMPATIBLE);
-        openAIAutoConnected = true;
-      } catch {
-        // Fall through to show model picker
-      }
-    }
-  }
+  // [FORK] In OpenAI mode, try to auto-connect to the last selected model
+  const openAIAutoConnected = isOpenAIMode
+    ? await tryOpenAIAutoConnect(config, settings)
+    : false;
 
   if (!isOpenAIMode) {
     const authHandle = startupProfiler.start('authenticate');
@@ -76,7 +66,7 @@ export async function initializeApp(
 
   const themeError = validateTheme(settings);
 
-  // In OpenAI mode, show model picker unless auto-connected to saved model
+  // [FORK] In OpenAI mode, show model picker unless auto-connected to saved model
   const shouldOpenAuthDialog =
     (isOpenAIMode && !openAIAutoConnected) ||
     settings.merged.security.auth.selectedType === undefined ||
