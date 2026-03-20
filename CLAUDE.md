@@ -155,7 +155,7 @@ npm run preflight                  # Full validation (slow — clean+build+lint+
 ```bash
 npm run build && node packages/cli  # Build and run
 # Or use the test script:
-./scripts/test_openai_adapter.sh
+./scripts/fork/test_openai_adapter.sh
 ```
 
 ---
@@ -205,11 +205,11 @@ All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
 | `packages/core/src/core/openaiFactory.ts`          | OpenAI factory (extracted from contentGenerator)    |
 | `packages/cli/src/core/openaiInitializer.ts`       | OpenAI auto-connect (extracted from initializer)    |
 | `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`   | Model picker UI (extracted from AuthDialog)         |
-| `scripts/test_openai_adapter.sh`                   | Build/test/run script                               |
-| `scripts/test_glm5_tools.py`                       | GLM-5 multi-turn tool call test                     |
-| `scripts/upstream-sync.sh`                         | Upstream sync workflow                              |
-| `scripts/verify-fork-features.sh`                  | Post-merge feature verification                     |
-| `scripts/fork-diff-report.sh`                      | Pre-merge conflict analysis                         |
+| `scripts/fork/test_openai_adapter.sh`                   | Build/test/run script                               |
+| `scripts/fork/test_glm5_tools.py`                       | GLM-5 multi-turn tool call test                     |
+| `scripts/fork/upstream-sync.sh`                         | Upstream sync workflow                              |
+| `scripts/fork/verify-fork-features.sh`                  | Post-merge feature verification                     |
+| `scripts/fork/fork-diff-report.sh`                      | Pre-merge conflict analysis                         |
 
 ## Files Modified by Fork (Phase 9: Sandbox)
 
@@ -237,13 +237,13 @@ conflict resolution guide.
 
 | Script                           | Purpose                                    |
 | -------------------------------- | ------------------------------------------ |
-| `scripts/upstream-sync.sh`       | Main sync workflow (fetch, backup, analyze) |
-| `scripts/verify-fork-features.sh` | Post-merge verification checklist          |
-| `scripts/fork-diff-report.sh`   | Pre-merge conflict analysis                |
+| `scripts/fork/upstream-sync.sh`       | Main sync workflow (fetch, backup, analyze) |
+| `scripts/fork/verify-fork-features.sh` | Post-merge verification checklist          |
+| `scripts/fork/fork-diff-report.sh`   | Pre-merge conflict analysis                |
 
 ### Key rules
 
 - **Never cherry-pick** — always merge
 - **All fork changes marked** with `// [FORK]` comments in upstream files
 - **Fork code extracted** into separate files to minimize conflict surface
-- Run `./scripts/verify-fork-features.sh` after every merge
+- Run `./scripts/fork/verify-fork-features.sh` after every merge
