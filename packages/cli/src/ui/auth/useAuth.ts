@@ -92,7 +92,7 @@ export const useAuthCommand = (
         return;
       }
 
-      // In OpenAI-compatible mode, skip Google auth flow entirely.
+      // [FORK] In OpenAI-compatible mode, skip Google auth flow entirely.
       // The AuthDialog's model picker handles authentication.
       if (getAuthTypeFromEnv() === AuthType.OPENAI_COMPATIBLE) {
         setAuthState(AuthState.Updating);
