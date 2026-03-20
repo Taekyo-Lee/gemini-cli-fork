@@ -95,7 +95,11 @@ describe('sandboxUtils', () => {
 
     it('should generate default entrypoint', () => {
       const args = entrypoint('/work', ['node', 'gemini', 'arg1']);
-      expect(args).toEqual(['bash', '-c', 'gemini arg1']);
+      // [FORK] Entrypoint includes a2g env file sourcing prefix
+      expect(args[0]).toBe('bash');
+      expect(args[1]).toBe('-c');
+      expect(args[2]).toContain('gemini arg1');
+      expect(args[2]).toContain('A2G_ENV_FILE');
     });
 
     it('should include PATH and PYTHONPATH if set', () => {
