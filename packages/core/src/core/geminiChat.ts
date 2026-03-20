@@ -417,6 +417,7 @@ export class GeminiChat {
             lastError = error;
             const isContentError = error instanceof InvalidStreamError;
 
+            // [FORK] Retry for all models (upstream gated by isGemini2Model)
             if (isContentError || (isRetryable && !signal.aborted)) {
               // Check if we have more attempts left.
               if (attempt < maxAttempts - 1) {
@@ -445,6 +446,7 @@ export class GeminiChat {
         }
 
         if (lastError) {
+          // [FORK] Log retry failure for all models (upstream gated by isGemini2Model)
           if (lastError instanceof InvalidStreamError) {
             logContentRetryFailure(
               this.config,
@@ -906,7 +908,7 @@ export class GeminiChat {
       .join('')
       .trim();
 
-    // Record model response text from the collected parts.
+    // [FORK] Record model response text from the collected parts.
     // Also flush when there are thoughts or a tool call (even with no text)
     // so that BeforeTool hooks always see the latest transcript state.
     if (responseText || hasThoughts || hasToolCall) {
