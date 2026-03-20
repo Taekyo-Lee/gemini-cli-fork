@@ -36,6 +36,10 @@ describe('validateNonInterActiveAuth', () => {
   let originalEnvGeminiApiKey: string | undefined;
   let originalEnvVertexAi: string | undefined;
   let originalEnvGcp: string | undefined;
+  // [FORK] Save OpenAI env vars so getAuthTypeFromEnv() doesn't detect OpenAI mode
+  let originalEnvOpenAIBaseURL: string | undefined;
+  let originalEnvOpenRouterKey: string | undefined;
+  let originalEnvA2GLocation: string | undefined;
   let debugLoggerErrorSpy: ReturnType<typeof vi.spyOn>;
   let coreEventsEmitFeedbackSpy: MockInstance;
   let processExitSpy: MockInstance;
@@ -45,9 +49,16 @@ describe('validateNonInterActiveAuth', () => {
     originalEnvGeminiApiKey = process.env['GEMINI_API_KEY'];
     originalEnvVertexAi = process.env['GOOGLE_GENAI_USE_VERTEXAI'];
     originalEnvGcp = process.env['GOOGLE_GENAI_USE_GCA'];
+    // [FORK] Save and clear OpenAI env vars
+    originalEnvOpenAIBaseURL = process.env['OPENAI_BASE_URL'];
+    originalEnvOpenRouterKey = process.env['PROJECT_OPENROUTER_API_KEY'];
+    originalEnvA2GLocation = process.env['PROJECT_A2G_LOCATION'];
     delete process.env['GEMINI_API_KEY'];
     delete process.env['GOOGLE_GENAI_USE_VERTEXAI'];
     delete process.env['GOOGLE_GENAI_USE_GCA'];
+    delete process.env['OPENAI_BASE_URL'];
+    delete process.env['PROJECT_OPENROUTER_API_KEY'];
+    delete process.env['PROJECT_A2G_LOCATION'];
     debugLoggerErrorSpy = vi
       .spyOn(debugLogger, 'error')
       .mockImplementation(() => {});
@@ -96,6 +107,22 @@ describe('validateNonInterActiveAuth', () => {
       process.env['GOOGLE_GENAI_USE_GCA'] = originalEnvGcp;
     } else {
       delete process.env['GOOGLE_GENAI_USE_GCA'];
+    }
+    // [FORK] Restore OpenAI env vars
+    if (originalEnvOpenAIBaseURL !== undefined) {
+      process.env['OPENAI_BASE_URL'] = originalEnvOpenAIBaseURL;
+    } else {
+      delete process.env['OPENAI_BASE_URL'];
+    }
+    if (originalEnvOpenRouterKey !== undefined) {
+      process.env['PROJECT_OPENROUTER_API_KEY'] = originalEnvOpenRouterKey;
+    } else {
+      delete process.env['PROJECT_OPENROUTER_API_KEY'];
+    }
+    if (originalEnvA2GLocation !== undefined) {
+      process.env['PROJECT_A2G_LOCATION'] = originalEnvA2GLocation;
+    } else {
+      delete process.env['PROJECT_A2G_LOCATION'];
     }
     vi.restoreAllMocks();
   });
