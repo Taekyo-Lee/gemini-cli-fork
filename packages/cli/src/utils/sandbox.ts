@@ -308,7 +308,7 @@ export async function start_sandbox(
     // mount current directory as working directory in sandbox (set via --workdir)
     args.push('--volume', `${workdir}:${containerWorkdir}`);
 
-    // When running from a local git clone (or via `npm link`), also mount
+    // [FORK] When running from a local git clone (or via `npm link`), also mount
     // the fork repo so `node packages/cli` works inside the container.
     // Resolve symlinks so npm-linked paths are detected correctly.
     const scriptPath = fs.realpathSync(path.resolve(cliArgs[1] ?? ''));
@@ -566,7 +566,7 @@ export async function start_sandbox(
       }
     }
 
-    // Mount and source a2g env file inside the container (OpenAI-compatible mode).
+    // [FORK] Mount and source a2g env file inside the container (OpenAI-compatible mode).
     // This forwards all PROJECT_*, API key, and other env vars automatically.
     const a2gEnvFile = process.env['A2G_ENV_FILE'] ??
       `${homedir()}/workspace/main/research/a2g_packages/envs/.env`;
@@ -575,7 +575,7 @@ export async function start_sandbox(
       args.push('--volume', `${a2gEnvFile}:${containerEnvPath}:ro`);
       args.push('--env', `A2G_ENV_FILE=${containerEnvPath}`);
     }
-    // Also forward NODE_TLS_REJECT_UNAUTHORIZED for on-prem endpoints
+    // [FORK] Also forward NODE_TLS_REJECT_UNAUTHORIZED for on-prem endpoints
     if (process.env['NODE_TLS_REJECT_UNAUTHORIZED']) {
       args.push('--env', `NODE_TLS_REJECT_UNAUTHORIZED=${process.env['NODE_TLS_REJECT_UNAUTHORIZED']}`);
     }
