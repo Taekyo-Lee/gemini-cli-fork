@@ -2761,9 +2761,9 @@ export function useTextBuffer({
 
   const text = useMemo(() => lines.join('\n'), [lines]);
 
-  // Returns the text including any pending reducer updates that React hasn't
-  // rendered yet.  Use this instead of `text` when you need the absolute
-  // latest value (e.g. inside a submit handler that runs in the same tick
+  // [FORK] Korean IME fix: Returns the text including any pending reducer updates
+  // that React hasn't rendered yet.  Use this instead of `text` when you need the
+  // absolute latest value (e.g. inside a submit handler that runs in the same tick
   // as an insert dispatch).
   const getLatestText = useCallback(
     () => latestLinesRef.current.join('\n'),
@@ -2852,12 +2852,12 @@ export function useTextBuffer({
         }
       }
       if (currentText.length > 0) {
-        // Eagerly compute the next state and update latestLinesRef BEFORE
-        // dispatch, because stdin 'data' callbacks run outside React's
-        // event system and dispatch may not execute the reducer synchronously.
-        // This ensures getLatestText() returns the correct value when a
-        // submit handler runs in the same JS tick (e.g. Korean IME commit
-        // + Enter arriving in a single data event).
+        // [FORK] Korean IME fix: Eagerly compute the next state and update
+        // latestLinesRef BEFORE dispatch, because stdin 'data' callbacks run
+        // outside React's event system and dispatch may not execute the reducer
+        // synchronously.  This ensures getLatestText() returns the correct
+        // value when a submit handler runs in the same JS tick (e.g. Korean
+        // IME commit + Enter arriving in a single data event).
         const action = { type: 'insert' as const, payload: currentText, isPaste: paste };
         const nextState = textBufferReducer(
           latestStateRef.current,
