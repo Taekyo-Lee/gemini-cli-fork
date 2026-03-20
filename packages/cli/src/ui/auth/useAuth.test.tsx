@@ -34,6 +34,8 @@ vi.mock('@google/gemini-cli-core', async (importOriginal) => {
   return {
     ...actual,
     loadApiKey: () => mockLoadApiKey(),
+    // [FORK] Override to prevent OpenAI mode detection from env vars in tests
+    getAuthTypeFromEnv: vi.fn().mockReturnValue(undefined),
   };
 });
 
