@@ -42,6 +42,7 @@ export function validateAuthMethod(authMethod: string): string | null {
     return null;
   }
 
+  // [FORK] OpenAI-compatible auth needs no validation
   if (authMethod === AuthType.OPENAI_COMPATIBLE) {
     return null;
   }
