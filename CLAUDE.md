@@ -17,9 +17,9 @@ use.
 
 ## Workflow Rule
 
-**After completing any Phase (or sub-phase), always update `docs-fork/todo.md`** — mark
+**After completing any Phase (or sub-phase), always update `docs-fork/tracking/todo.md`** — mark
 completed items with `[x]`, add notes on what was done, and ensure the status
-accurately reflects reality. This keeps `docs-fork/todo.md` as the single source of truth
+accurately reflects reality. This keeps `docs-fork/tracking/todo.md` as the single source of truth
 for project progress.
 
 ## Architecture
@@ -80,7 +80,7 @@ models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
 ## Known Issues
 
 All critical, medium, and minor issues from Phase 7 have been resolved. See
-`docs-fork/todo.md` for the full history of fixes. Key fixes applied:
+`docs-fork/tracking/todo.md` for the full history of fixes. Key fixes applied:
 
 - Per-instance `ToolCallIdTracker` (was global mutable state)
 - Streaming tool call emission at end-of-stream (was silently dropped)
@@ -187,23 +187,29 @@ npm run build && node packages/cli  # Build and run
 
 All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
 
-| File                                    | Purpose                                    |
-| --------------------------------------- | ------------------------------------------ |
-| `docs-fork/install-guide.md`            | Step-by-step setup, troubleshooting        |
-| `docs-fork/fork-philosophy.md`          | Why this fork exists, core principles      |
-| `docs-fork/openai-compatible.md`        | Env detection, auth flow, API mapping      |
-| `docs-fork/model-registry-reference.md` | Complete model tables with specs           |
-| `docs-fork/todo.md`                     | Implementation phases, bug fixes, status   |
+| Directory | Contents |
+| --------- | -------- |
+| `docs-fork/overview/`      | Fork philosophy, fork-vs-upstream comparison |
+| `docs-fork/setup/`         | Install guide, troubleshooting               |
+| `docs-fork/architecture/`  | OpenAI-compatible mode, model registry       |
+| `docs-fork/upstream/`      | Upstream merge plan, conflict resolution     |
+| `docs-fork/tracking/`      | TODO, changelog                              |
 
 ## Files Created by Fork
 
 | File                                               | Purpose                                             |
 | -------------------------------------------------- | --------------------------------------------------- |
-| `packages/core/src/config/llmRegistry.ts`          | TypeScript LLM registry (27 models, 3 environments) |
+| `packages/core/src/config/llmRegistry.ts`          | TypeScript LLM registry (mirrors a2g_models)         |
 | `packages/core/src/core/openaiTypeMapper.ts`       | Gemini <> OpenAI type conversion                    |
 | `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator impl using OpenAI SDK              |
+| `packages/core/src/core/openaiFactory.ts`          | OpenAI factory (extracted from contentGenerator)    |
+| `packages/cli/src/core/openaiInitializer.ts`       | OpenAI auto-connect (extracted from initializer)    |
+| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`   | Model picker UI (extracted from AuthDialog)         |
 | `scripts/test_openai_adapter.sh`                   | Build/test/run script                               |
 | `scripts/test_glm5_tools.py`                       | GLM-5 multi-turn tool call test                     |
+| `scripts/upstream-sync.sh`                         | Upstream sync workflow                              |
+| `scripts/verify-fork-features.sh`                  | Post-merge feature verification                     |
+| `scripts/fork-diff-report.sh`                      | Pre-merge conflict analysis                         |
 
 ## Files Modified by Fork (Phase 9: Sandbox)
 
@@ -218,9 +224,26 @@ All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
 
 ## Files NOT to Modify
 
-- `packages/core/src/core/geminiChat.ts` — consumes ContentGenerator interface
-  only
-- `packages/core/src/core/client.ts` — consumes ContentGenerator interface only
 - `packages/core/src/prompts/snippets.legacy.ts` — historical snapshot
 - Ink UI rendering components (they consume `StreamEvent` →
   `GenerateContentResponse`)
+
+## Upstream Sync
+
+See `docs-fork/upstream/upstream-merge-plan.md` for the full merge strategy and
+conflict resolution guide.
+
+### Sync scripts
+
+| Script                           | Purpose                                    |
+| -------------------------------- | ------------------------------------------ |
+| `scripts/upstream-sync.sh`       | Main sync workflow (fetch, backup, analyze) |
+| `scripts/verify-fork-features.sh` | Post-merge verification checklist          |
+| `scripts/fork-diff-report.sh`   | Pre-merge conflict analysis                |
+
+### Key rules
+
+- **Never cherry-pick** — always merge
+- **All fork changes marked** with `// [FORK]` comments in upstream files
+- **Fork code extracted** into separate files to minimize conflict surface
+- Run `./scripts/verify-fork-features.sh` after every merge
