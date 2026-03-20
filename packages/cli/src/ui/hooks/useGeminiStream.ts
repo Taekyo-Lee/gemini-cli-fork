@@ -1308,6 +1308,7 @@ export const useGeminiStream = (
           case ServerGeminiEventType.Retry:
             break;
           case ServerGeminiEventType.InvalidStream:
+            // [FORK] Show info message for empty responses (upstream handler was empty)
             addItem(
               {
                 type: MessageType.INFO,
