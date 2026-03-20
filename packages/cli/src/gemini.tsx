@@ -509,7 +509,7 @@ export async function main() {
     const memoryArgs = settings.merged.advanced.autoConfigureMemory
       ? getNodeMemoryArgs(isDebugMode)
       : [];
-    // Auto-enable sandbox in YOLO mode (best-effort: don't fail if no runtime)
+    // [FORK] Auto-enable sandbox in YOLO mode (best-effort: don't fail if no runtime)
     const rawApprovalMode =
       argv.approvalMode ??
       (argv.yolo ? 'yolo' : undefined) ??
@@ -682,6 +682,7 @@ export async function main() {
     const initializationResult = await initializeApp(config, settings);
     initAppHandle?.end();
 
+    // [FORK] Skip pre-render OAuth in OpenAI-compatible mode
     if (
       getAuthTypeFromEnv() !== AuthType.OPENAI_COMPATIBLE &&
       settings.merged.security.auth.selectedType ===
