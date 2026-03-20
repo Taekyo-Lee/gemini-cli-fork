@@ -396,7 +396,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
   const handleSubmit = useCallback(
     (submittedValue: string) => {
-      // DEBUG: write submitted text to file for Korean IME debugging
+      // [FORK] DEBUG: write submitted text to file for Korean IME debugging
       try { fs.appendFileSync('/tmp/gemini_ime_debug.log', `[SUBMIT] raw=${JSON.stringify(submittedValue)} buf.text=${JSON.stringify(buffer.text)} latest=${JSON.stringify(buffer.getLatestText())}\n`); } catch {}
       const trimmedMessage = submittedValue.trim();
       const isSlash = isSlashCommand(trimmedMessage);
@@ -937,7 +937,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           (completion.activeSuggestionIndex <= 0 &&
             !hasUserNavigatedSuggestions.current))
       ) {
-        handleSubmit(buffer.getLatestText());
+        handleSubmit(buffer.getLatestText()); // [FORK] Korean IME: use getLatestText()
         return true;
       }
 
@@ -988,7 +988,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
                 setExpandedSuggestionIndex(-1);
                 hasUserNavigatedSuggestions.current = false;
                 if (buffer.text.trim()) {
-                  handleSubmit(buffer.getLatestText());
+                  handleSubmit(buffer.getLatestText()); // [FORK] Korean IME: use getLatestText()
                 }
                 return true;
               }
@@ -1141,7 +1141,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
             buffer.backspace();
             buffer.newline();
           } else {
-            handleSubmit(buffer.getLatestText());
+            handleSubmit(buffer.getLatestText()); // [FORK] Korean IME: use getLatestText()
           }
         }
         return true;
