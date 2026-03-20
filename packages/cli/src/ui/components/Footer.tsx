@@ -193,7 +193,7 @@ export const Footer: React.FC = () => {
     quotaStats: uiState.quota.stats,
   };
 
-  const configuredSandbox = config.getSandbox()?.command;
+  const configuredSandbox = config.getSandbox()?.command; // [FORK] show sandbox before entering container
 
   const isFullErrorVerbosity = settings.merged.ui.errorVerbosity === 'full';
   const showErrorSummary =
@@ -279,7 +279,7 @@ export const Footer: React.FC = () => {
       }
       case 'sandbox': {
         let str = 'no sandbox';
-        const sandbox = process.env['SANDBOX'] ?? configuredSandbox;
+        const sandbox = process.env['SANDBOX'] ?? configuredSandbox; // [FORK] fallback to config
         if (isTrustedFolder === false) str = 'untrusted';
         else if (sandbox === 'sandbox-exec')
           str = `macOS Seatbelt (${process.env['SEATBELT_PROFILE']})`;
