@@ -806,7 +806,7 @@ export class GeminiClient {
       }
     }
 
-    // Only run nextSpeakerCheck when the model just responded to tool results.
+    // [FORK] Only run nextSpeakerCheck when the model just responded to tool results.
     // For text-only turns (e.g. user says "Hello"), skip the check to avoid
     // the model looping with "Please continue." on simple conversations.
     const requestParts = Array.isArray(request) ? request : [request];
@@ -820,7 +820,7 @@ export class GeminiClient {
       !signal.aborted &&
       isToolResponseTurn
     ) {
-      // If the model hit max_tokens, always continue — it was cut off mid-response.
+      // [FORK] If the model hit max_tokens, always continue — it was cut off mid-response.
       if (turn.finishReason?.toString() === 'MAX_TOKENS') {
         const nextRequest = [{ text: 'Please continue.' }];
         turn = yield* this.sendMessageStream(
@@ -852,7 +852,7 @@ export class GeminiClient {
             nextSpeakerCheck?.next_speaker || '',
           ),
         );
-        // Continue if the check explicitly says 'model', OR if the check
+        // [FORK] Continue if the check explicitly says 'model', OR if the check
         // failed (null) — on tool-response turns, failing to determine the
         // next speaker almost always means the model should continue.
         // The boundedTurns limit prevents infinite loops.
