@@ -61,7 +61,7 @@ git log --oneline -5
 ### 2. Run conflict analysis
 
 ```bash
-./scripts/fork-diff-report.sh
+./scripts/fork/fork-diff-report.sh
 ```
 
 Review the output to understand which files have been modified on both sides.
@@ -91,7 +91,7 @@ npm test
 ### 6. Run fork feature verification
 
 ```bash
-./scripts/verify-fork-features.sh
+./scripts/fork/verify-fork-features.sh
 ```
 
 ### 7. Commit + document
@@ -121,11 +121,11 @@ These files exist only in the fork. Upstream will never touch them.
 | `packages/core/src/config/llmRegistry.test.ts` | Registry tests |
 | `packages/core/src/core/openaiTypeMapper.test.ts` | Type mapper tests |
 | `packages/core/src/core/openaiContentGenerator.test.ts` | Content generator tests |
-| `scripts/test_openai_adapter.sh` | Build/test/run script |
-| `scripts/test_glm5_tools.py` | GLM-5 tool call test |
-| `scripts/upstream-sync.sh` | Sync workflow script |
-| `scripts/verify-fork-features.sh` | Post-merge verification |
-| `scripts/fork-diff-report.sh` | Pre-merge conflict analysis |
+| `scripts/fork/test_openai_adapter.sh` | Build/test/run script |
+| `scripts/fork/test_glm5_tools.py` | GLM-5 tool call test |
+| `scripts/fork/upstream-sync.sh` | Sync workflow script |
+| `scripts/fork/verify-fork-features.sh` | Post-merge verification |
+| `scripts/fork/fork-diff-report.sh` | Pre-merge conflict analysis |
 | `docs-fork/*` | All fork documentation |
 
 ### Fork-modified files (potential conflicts)
@@ -171,7 +171,7 @@ Strategy per file. All fork changes are marked with `// [FORK]`.
    find during conflict resolution.
 
 5. **Test after every merge** — run `npm run build && npm run typecheck && npm test`
-   plus `./scripts/verify-fork-features.sh`.
+   plus `./scripts/fork/verify-fork-features.sh`.
 
 6. **Document each merge** — update `docs-fork/todo.md` with what was merged,
    conflicts resolved, and any issues found.
@@ -193,11 +193,11 @@ Strategy per file. All fork changes are marked with `// [FORK]`.
 | `packages/core/src/config/llmRegistry.test.ts` | Registry tests (15 tests) | 5 |
 | `packages/core/src/core/openaiTypeMapper.test.ts` | Type mapper tests (27 tests) | 5 |
 | `packages/core/src/core/openaiContentGenerator.test.ts` | Content generator tests (11 tests) | 5 |
-| `scripts/test_openai_adapter.sh` | Build/test/run script | 0 |
-| `scripts/test_glm5_tools.py` | GLM-5 multi-turn tool call test | 8 |
-| `scripts/upstream-sync.sh` | Upstream sync workflow | 11 |
-| `scripts/verify-fork-features.sh` | Post-merge verification | 11 |
-| `scripts/fork-diff-report.sh` | Pre-merge conflict analysis | 11 |
+| `scripts/fork/test_openai_adapter.sh` | Build/test/run script | 0 |
+| `scripts/fork/test_glm5_tools.py` | GLM-5 multi-turn tool call test | 8 |
+| `scripts/fork/upstream-sync.sh` | Upstream sync workflow | 11 |
+| `scripts/fork/verify-fork-features.sh` | Post-merge verification | 11 |
+| `scripts/fork/fork-diff-report.sh` | Pre-merge conflict analysis | 11 |
 
 ### Files modified by fork
 
