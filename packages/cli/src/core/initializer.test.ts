@@ -28,6 +28,8 @@ vi.mock('@google/gemini-cli-core', async (importOriginal) => {
     logCliConfiguration: vi.fn(),
     StartSessionEvent: vi.fn(),
     IdeConnectionEvent: vi.fn(),
+    // [FORK] Override to prevent OpenAI mode detection from env vars in tests
+    getAuthTypeFromEnv: vi.fn().mockReturnValue(undefined),
   };
 });
 
@@ -37,6 +39,11 @@ vi.mock('./auth.js', () => ({
 
 vi.mock('./theme.js', () => ({
   validateTheme: vi.fn(),
+}));
+
+// [FORK] Mock the extracted OpenAI initializer
+vi.mock('./openaiInitializer.js', () => ({
+  tryOpenAIAutoConnect: vi.fn().mockResolvedValue(false),
 }));
 
 describe('initializer', () => {
