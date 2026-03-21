@@ -713,16 +713,20 @@ merge execution — that's deferred to a future session.
 
 - [x] **Created `docs-fork/upstream-merge-plan.md`** — permanent reference with
       divergence state, merge strategy (merge not rebase), step-by-step process,
-      conflict resolution table per file, rules going forward, complete file manifest
+      conflict resolution table per file, rules going forward, complete file
+      manifest
 - [x] **Created `docs-fork/fork-vs-upstream-comparison.md`** — side-by-side
       comparison (purpose, auth, models, API layer, sandbox, IME, multi-turn),
-      architecture diagram, file-by-file modification inventory with conflict risk
+      architecture diagram, file-by-file modification inventory with conflict
+      risk
 
 ### 11.2 Pre-merge Refactoring (reduce conflict surface)
 
 - [x] **Extracted `openaiFactory.ts`** from `contentGenerator.ts`
-  - `detectOpenAIMode()`, `isOpenAIAuthConfig()`, `createOpenAIContentGenerator()`
-  - `contentGenerator.ts` fork changes: ~44 lines → ~8 lines (3 small conditionals + 1 import)
+  - `detectOpenAIMode()`, `isOpenAIAuthConfig()`,
+    `createOpenAIContentGenerator()`
+  - `contentGenerator.ts` fork changes: ~44 lines → ~8 lines (3 small
+    conditionals + 1 import)
 - [x] **Extracted `openaiInitializer.ts`** from `initializer.ts`
   - `tryOpenAIAutoConnect(config, settings)` → returns boolean
   - `initializer.ts` fork changes: ~20 lines → ~6 lines
@@ -735,8 +739,9 @@ merge execution — that's deferred to a future session.
 
 ### 11.3 Sync Automation Scripts
 
-- [x] **`scripts/upstream-sync.sh`** — main workflow: add upstream remote, fetch,
-      backup tag, show commits to merge, conflict surface analysis, instructions
+- [x] **`scripts/upstream-sync.sh`** — main workflow: add upstream remote,
+      fetch, backup tag, show commits to merge, conflict surface analysis,
+      instructions
 - [x] **`scripts/verify-fork-features.sh`** — post-merge verification: checks
       fork files exist, markers present, build/typecheck/test pass
 - [x] **`scripts/fork-diff-report.sh`** — pre-merge analysis: files modified on
@@ -749,24 +754,53 @@ merge execution — that's deferred to a future session.
 
 ### 11.5 Files Created
 
-| File | Purpose |
-|------|---------|
-| `docs-fork/upstream-merge-plan.md` | Merge strategy and checklist |
-| `docs-fork/fork-vs-upstream-comparison.md` | Fork vs upstream comparison |
-| `packages/core/src/core/openaiFactory.ts` | OpenAI factory (extracted) |
-| `packages/cli/src/core/openaiInitializer.ts` | OpenAI auto-connect (extracted) |
-| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx` | Model picker (extracted) |
-| `scripts/upstream-sync.sh` | Sync workflow |
-| `scripts/verify-fork-features.sh` | Post-merge verification |
-| `scripts/fork-diff-report.sh` | Pre-merge conflict analysis |
+| File                                             | Purpose                         |
+| ------------------------------------------------ | ------------------------------- |
+| `docs-fork/upstream-merge-plan.md`               | Merge strategy and checklist    |
+| `docs-fork/fork-vs-upstream-comparison.md`       | Fork vs upstream comparison     |
+| `packages/core/src/core/openaiFactory.ts`        | OpenAI factory (extracted)      |
+| `packages/cli/src/core/openaiInitializer.ts`     | OpenAI auto-connect (extracted) |
+| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx` | Model picker (extracted)        |
+| `scripts/upstream-sync.sh`                       | Sync workflow                   |
+| `scripts/verify-fork-features.sh`                | Post-merge verification         |
+| `scripts/fork-diff-report.sh`                    | Pre-merge conflict analysis     |
 
 ### 11.6 Files Modified
 
-| File | Change |
-|------|--------|
+| File                                         | Change                                             |
+| -------------------------------------------- | -------------------------------------------------- |
 | `packages/core/src/core/contentGenerator.ts` | Slimmed to ~8 fork lines (import + 3 conditionals) |
-| `packages/cli/src/core/initializer.ts` | Slimmed to ~6 fork lines (import + call) |
-| `packages/cli/src/ui/auth/AuthDialog.tsx` | Slimmed to 5-line conditional + import |
-| `packages/core/src/index.ts` | Added openaiFactory export |
-| 19 upstream files | Added `// [FORK]` comment markers |
-| `CLAUDE.md` | Added upstream sync section |
+| `packages/cli/src/core/initializer.ts`       | Slimmed to ~6 fork lines (import + call)           |
+| `packages/cli/src/ui/auth/AuthDialog.tsx`    | Slimmed to 5-line conditional + import             |
+| `packages/core/src/index.ts`                 | Added openaiFactory export                         |
+| 19 upstream files                            | Added `// [FORK]` comment markers                  |
+| `CLAUDE.md`                                  | Added upstream sync section                        |
+
+---
+
+## Phase 12: Upstream Merge (fc03891a1)
+
+- [x] **Merged upstream/main (fc03891a1)** — resolved 11 conflicting files
+- [x] `package-lock.json` — deleted and regenerated
+- [x] `README.md` — took upstream (fork README in docs-fork/)
+- [x] `InputPrompt.tsx` — merged imports (kept `fs` for IME debug)
+- [x] `client.ts` — took upstream imports (`getDisplayString`, `resolveModel`);
+      removed unused `isGemini2Model`
+- [x] `gemini.tsx` — removed duplicate import block, added `getAuthTypeFromEnv`
+      to first import
+- [x] `sandboxConfig.ts` — upstream object parsing + fork `bestEffort`; updated
+      tests for new return shape
+- [x] `config.ts` — fork YOLO auto-sandbox + upstream
+      `allowedPaths`/`networkAccess` config (sequential)
+- [x] `config.test.ts` — kept both test suites (YOLO sandbox + ACP mode)
+- [x] `sandbox.ts` — deduplicated env vars, kept upstream `allowedPaths` LXC
+      mounting, added `NODE_TLS_REJECT_UNAUTHORIZED`
+- [x] `geminiChat.ts` — fork retry-all + upstream `MID_STREAM_RETRY_OPTIONS` +
+      abort check
+- [x] `geminiChat.test.ts` — updated to 4 calls (MID_STREAM maxAttempts) + both
+      retry/failure assertions
+- [x] `packages/core/index.ts` — took upstream's `./src/index.js` re-export
+      pattern
+- [x] `packages/core/src/index.ts` — added `openaiFactory` export
+- [x] Deduped `@grpc/grpc-js` version mismatch
+- [x] Build passes, all targeted tests pass, fork features verified

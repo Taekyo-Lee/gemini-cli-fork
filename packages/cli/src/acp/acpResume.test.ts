@@ -92,11 +92,14 @@ describe('GeminiAgent Session Resume', () => {
         getProjectTempDir: vi.fn().mockReturnValue('/tmp/project'),
       },
       getApprovalMode: vi.fn().mockReturnValue('default'),
-      isPlanEnabled: vi.fn().mockReturnValue(false),
+      isPlanEnabled: vi.fn().mockReturnValue(true),
       getModel: vi.fn().mockReturnValue('gemini-pro'),
       getHasAccessToPreviewModel: vi.fn().mockReturnValue(false),
       getGemini31LaunchedSync: vi.fn().mockReturnValue(false),
       getCheckpointingEnabled: vi.fn().mockReturnValue(false),
+      get config() {
+        return this;
+      },
     } as unknown as Mocked<Config>;
     mockSettings = {
       merged: {
@@ -158,9 +161,10 @@ describe('GeminiAgent Session Resume', () => {
       ],
     };
 
-    mockConfig.getToolRegistry = vi.fn().mockReturnValue({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockConfig as any).toolRegistry = {
       getTool: vi.fn().mockReturnValue({ kind: 'read' }),
-    });
+    };
 
     (SessionSelector as unknown as Mock).mockImplementation(() => ({
       resolveSession: vi.fn().mockResolvedValue({
@@ -203,6 +207,11 @@ describe('GeminiAgent Session Resume', () => {
             id: ApprovalMode.YOLO,
             name: 'YOLO',
             description: 'Auto-approves all tools',
+          },
+          {
+            id: ApprovalMode.PLAN,
+            name: 'Plan',
+            description: 'Read-only mode',
           },
         ],
         currentModeId: ApprovalMode.DEFAULT,
