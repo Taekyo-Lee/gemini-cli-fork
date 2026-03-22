@@ -157,6 +157,94 @@ describe('convertSessionToClientHistory', () => {
     ]);
   });
 
+  it('should skip user messages with functionResponse parts (duplicate tool results)', () => {
+    // When ReadFile returns images, isFunctionResponse() returns false
+    // (because .every() fails on inlineData siblings), so the tool result
+    // is recorded as both a gemini toolCall AND a user message. On restore,
+    // including both creates duplicate tool responses → 400 from OpenAI API.
+    const messages: ConversationRecord['messages'] = [
+      {
+        id: 'msg1',
+        type: 'user',
+        timestamp: '2024-01-01T10:00:00Z',
+        content: 'Show me cat images',
+      },
+      {
+        id: 'msg2',
+        type: 'gemini',
+        timestamp: '2024-01-01T10:01:00Z',
+        content: 'Let me read those files.',
+        toolCalls: [
+          {
+            id: 'call_rf1',
+            name: 'read_file',
+            args: { path: 'cat.png' },
+            status: CoreToolCallStatus.Success,
+            timestamp: '2024-01-01T10:01:05Z',
+            result: [
+              {
+                functionResponse: {
+                  id: 'call_rf1',
+                  name: 'read_file',
+                  response: { output: 'Binary content provided (1 item(s)).' },
+                },
+              },
+              {
+                inlineData: { mimeType: 'image/png', data: 'base64img' },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        // This user message is the DUPLICATE — it was recorded because
+        // isFunctionResponse() returned false due to inlineData siblings
+        id: 'msg3',
+        type: 'user',
+        timestamp: '2024-01-01T10:01:06Z',
+        content: [
+          {
+            functionResponse: {
+              id: 'call_rf1',
+              name: 'read_file',
+              response: { output: 'Binary content provided (1 item(s)).' },
+            },
+          },
+          {
+            inlineData: { mimeType: 'image/png', data: 'base64img' },
+          },
+        ],
+      },
+      {
+        id: 'msg4',
+        type: 'gemini',
+        timestamp: '2024-01-01T10:02:00Z',
+        content: 'Here is the cat image description.',
+      },
+      {
+        id: 'msg5',
+        type: 'user',
+        timestamp: '2024-01-01T10:03:00Z',
+        content: 'which cat do you like more?',
+      },
+    ];
+
+    const history = convertSessionToClientHistory(messages);
+
+    // msg3 (duplicate user message with functionResponse) should be SKIPPED
+    // Tool results should only appear once — from msg2's toolCalls
+    const toolResponses = history.filter(
+      (h) => h.role === 'user' && h.parts.some((p) => p.functionResponse),
+    );
+    expect(toolResponses).toHaveLength(1); // Only from toolCalls, not from duplicate user msg
+
+    // The follow-up user message should still be present
+    const userTexts = history.filter(
+      (h) => h.role === 'user' && h.parts.some((p) => p.text),
+    );
+    expect(userTexts).toHaveLength(2); // "Show me cat images" + "which cat do you like more?"
+  });
+
   it('should preserve multi-modal parts (inlineData)', () => {
     const messages: ConversationRecord['messages'] = [
       {

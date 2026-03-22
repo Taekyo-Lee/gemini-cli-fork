@@ -210,61 +210,6 @@ describe('geminiContentsToOpenAIMessages', () => {
     });
   });
 
-  it('skips inlineData images in tool-result containers (restored chat history)', () => {
-    // When chat history is restored, tool results may contain both
-    // functionResponse parts and inlineData (image) parts in the same
-    // user-role Content.  Sending images as a user message between
-    // assistant tool_calls and tool responses violates the OpenAI API
-    // message sequence.  Images should be skipped in this case.
-    const tracker = new ToolCallIdTracker();
-    const contents: Content[] = [
-      {
-        role: 'model',
-        parts: [
-          {
-            functionCall: {
-              id: 'call_read_file_0',
-              name: 'read_file',
-              args: { path: 'cat.png' },
-            },
-          },
-        ],
-      },
-      {
-        role: 'user',
-        parts: [
-          {
-            functionResponse: {
-              id: 'call_read_file_0',
-              name: 'read_file',
-              response: { output: 'Read image file: cat.png' },
-            },
-          },
-          {
-            inlineData: {
-              mimeType: 'image/png',
-              data: 'iVBORw0KGgo=',
-            },
-          },
-        ],
-      },
-    ];
-    const messages = geminiContentsToOpenAIMessages(
-      contents,
-      undefined,
-      tracker,
-    );
-
-    // Should have: assistant(tool_call) + tool(response) — no user(image) message
-    expect(messages).toHaveLength(2);
-    expect(messages[0].role).toBe('assistant');
-    expect(messages[1].role).toBe('tool');
-    const toolMsg = messages[1] as { content: string };
-    expect(JSON.parse(toolMsg.content)).toEqual({
-      output: 'Read image file: cat.png',
-    });
-  });
-
   it('ignores non-image inlineData (e.g. PDF) and keeps text-only format', () => {
     const contents: Content[] = [
       {

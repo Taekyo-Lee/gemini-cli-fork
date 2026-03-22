@@ -46,9 +46,21 @@ export function convertSessionToClientHistory(
         continue;
       }
 
+      // [FORK] Skip user messages that contain functionResponse parts.
+      // These are tool-result messages that were incorrectly recorded as
+      // regular user messages (because isFunctionResponse() uses .every()
+      // which returns false when inlineData siblings are present).
+      // The tool results are already captured via the gemini message's
+      // toolCalls array — including them again creates duplicate tool
+      // responses that cause 400 errors from OpenAI-compatible APIs.
+      const parts = ensurePartArray(msg.content);
+      if (parts.some((p) => p.functionResponse)) {
+        continue;
+      }
+
       clientHistory.push({
         role: 'user',
-        parts: ensurePartArray(msg.content),
+        parts,
       });
     } else if (msg.type === 'gemini') {
       const modelParts: Part[] = [];

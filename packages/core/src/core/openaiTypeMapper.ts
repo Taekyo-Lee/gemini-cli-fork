@@ -137,14 +137,6 @@ export function geminiContentsToOpenAIMessages(
     const parts = content.parts ?? [];
 
     if (role === 'user') {
-      // [FORK] Check if this content block is a tool-result container
-      // (has functionResponse parts). When restored from chat history,
-      // tool results may include leftover inlineData (images) alongside
-      // functionResponse parts.  Sending those images as a user message
-      // between assistant tool_calls and tool responses violates the
-      // OpenAI message sequence and causes 400 errors.
-      const hasFunctionResponse = parts.some((p) => p.functionResponse);
-
       // [FORK] Build content parts to support multimodal (text + images)
       const contentParts: ChatCompletionContentPart[] = [];
       for (const part of parts) {
@@ -155,14 +147,9 @@ export function geminiContentsToOpenAIMessages(
         ) {
           contentParts.push({ type: 'text', text: part.text ?? '' });
         } else if (
-          !hasFunctionResponse &&
           part.inlineData?.data &&
           part.inlineData.mimeType?.startsWith('image/')
         ) {
-          // Only include images when this is a real user message, not a
-          // tool-result container.  Images in tool results were already
-          // consumed by the model and re-sending them breaks the
-          // assistant→tool message sequence required by the OpenAI API.
           contentParts.push({
             type: 'image_url',
             image_url: {
