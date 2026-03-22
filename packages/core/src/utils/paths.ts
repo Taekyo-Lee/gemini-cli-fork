@@ -291,18 +291,23 @@ export function escapePath(filePath: string): string {
 /**
  * Unescapes paths for at-commands.
  *
- *  - Windows: double quoted if they contain special chars, otherwise bare
- *  - POSIX: backslash-escaped
+ *  - All platforms: strip surrounding double or single quotes
+ *  - Windows: bare path returned as-is after quote stripping
+ *  - POSIX: backslash-escaped characters unescaped after quote stripping
  */
 export function unescapePath(filePath: string): string {
-  if (process.platform === 'win32') {
+  // [FORK] Strip double or single quotes on all platforms (not just Windows)
+  // so that @"path with spaces" and @'path with spaces' work on Linux/WSL
+  if (filePath.length >= 2) {
     if (
-      filePath.length >= 2 &&
-      filePath.startsWith('"') &&
-      filePath.endsWith('"')
+      (filePath.startsWith('"') && filePath.endsWith('"')) ||
+      (filePath.startsWith("'") && filePath.endsWith("'"))
     ) {
-      return filePath.slice(1, -1);
+      filePath = filePath.slice(1, -1);
     }
+  }
+
+  if (process.platform === 'win32') {
     return filePath;
   } else {
     return filePath.replace(/\\(.)/g, '$1');

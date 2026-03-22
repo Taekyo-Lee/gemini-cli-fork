@@ -154,6 +154,107 @@ describe('geminiContentsToOpenAIMessages', () => {
     const messages = geminiContentsToOpenAIMessages(contents);
     expect(messages).toHaveLength(0);
   });
+
+  it('converts user message with inlineData image to multimodal content', () => {
+    const contents: Content[] = [
+      {
+        role: 'user',
+        parts: [
+          { text: 'What is in this image?' },
+          {
+            inlineData: {
+              mimeType: 'image/png',
+              data: 'iVBORw0KGgo=',
+            },
+          },
+        ],
+      },
+    ];
+    const messages = geminiContentsToOpenAIMessages(contents);
+    expect(messages).toHaveLength(1);
+    expect(messages[0].role).toBe('user');
+    const content = (messages[0] as { content: unknown }).content;
+    expect(Array.isArray(content)).toBe(true);
+    const parts = content as Array<{ type: string }>;
+    expect(parts).toHaveLength(2);
+    expect(parts[0]).toEqual({ type: 'text', text: 'What is in this image?' });
+    expect(parts[1]).toEqual({
+      type: 'image_url',
+      image_url: { url: 'data:image/png;base64,iVBORw0KGgo=' },
+    });
+  });
+
+  it('converts user message with image-only (no text) to multimodal content', () => {
+    const contents: Content[] = [
+      {
+        role: 'user',
+        parts: [
+          {
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: '/9j/4AAQ=',
+            },
+          },
+        ],
+      },
+    ];
+    const messages = geminiContentsToOpenAIMessages(contents);
+    expect(messages).toHaveLength(1);
+    const content = (messages[0] as { content: unknown }).content;
+    expect(Array.isArray(content)).toBe(true);
+    const parts = content as Array<{ type: string }>;
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toEqual({
+      type: 'image_url',
+      image_url: { url: 'data:image/jpeg;base64,/9j/4AAQ=' },
+    });
+  });
+
+  it('ignores non-image inlineData (e.g. PDF) and keeps text-only format', () => {
+    const contents: Content[] = [
+      {
+        role: 'user',
+        parts: [
+          { text: 'Read this document' },
+          {
+            inlineData: {
+              mimeType: 'application/pdf',
+              data: 'JVBERi0=',
+            },
+          },
+        ],
+      },
+    ];
+    const messages = geminiContentsToOpenAIMessages(contents);
+    expect(messages).toHaveLength(1);
+    // Non-image inlineData is skipped, falls back to text-only
+    expect(messages[0]).toEqual({
+      role: 'user',
+      content: 'Read this document',
+    });
+  });
+
+  it('handles multiple images in one user message', () => {
+    const contents: Content[] = [
+      {
+        role: 'user',
+        parts: [
+          { text: 'Compare these images' },
+          { inlineData: { mimeType: 'image/png', data: 'img1base64' } },
+          { inlineData: { mimeType: 'image/png', data: 'img2base64' } },
+        ],
+      },
+    ];
+    const messages = geminiContentsToOpenAIMessages(contents);
+    expect(messages).toHaveLength(1);
+    const content = (messages[0] as { content: unknown }).content;
+    expect(Array.isArray(content)).toBe(true);
+    const parts = content as Array<{ type: string }>;
+    expect(parts).toHaveLength(3);
+    expect(parts[0]).toEqual({ type: 'text', text: 'Compare these images' });
+    expect(parts[1].type).toBe('image_url');
+    expect(parts[2].type).toBe('image_url');
+  });
 });
 
 describe('geminiToolsToOpenAITools', () => {

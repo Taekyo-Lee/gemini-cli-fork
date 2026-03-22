@@ -16,6 +16,7 @@ import {
   resolveToRealPath,
   fileExists,
   ReadManyFilesTool,
+  processSingleFileContent,
   REFERENCE_CONTENT_START,
   REFERENCE_CONTENT_END,
   CoreToolCallStatus,
@@ -54,13 +55,14 @@ export function unescapeLiteralAt(text: string): string {
  * Regex source for the path/command part of an @ reference.
  * It uses strict ASCII whitespace delimiters to allow Unicode characters like NNBSP in filenames.
  *
- * 1. "(?:[^"]*)" matches a double-quoted string (for Windows paths with spaces).
- * 2. \\. matches any escaped character (e.g., \ ).
- * 3. [^ \t\n\r,;!?()\[\]{}.] matches any character that is NOT a delimiter and NOT a period.
- * 4. \.(?!$|[ \t\n\r]) matches a period ONLY if it is NOT followed by whitespace or end-of-string.
+ * 1. "(?:[^"]*)" matches a double-quoted string (for paths with spaces).
+ * 2. '(?:[^']*)' matches a single-quoted string (for paths with spaces). [FORK]
+ * 3. \\. matches any escaped character (e.g., \ ).
+ * 4. [^ \t\n\r,;!?()\[\]{}.] matches any character that is NOT a delimiter and NOT a period.
+ * 5. \.(?!$|[ \t\n\r]) matches a period ONLY if it is NOT followed by whitespace or end-of-string.
  */
 export const AT_COMMAND_PATH_REGEX_SOURCE =
-  '(?:(?:"(?:[^"]*)")|(?:\\\\.|[^ \\t\\n\\r,;!?()\\[\\]{}.]|\\.(?!$|[ \\t\\n\\r])))+';
+  '(?:(?:"(?:[^"]*)")|(?:\'(?:[^\']*)\')|(?:\\\\.|[^ \\t\\n\\r,;!?()\\[\\]{}.]|\\.(?!$|[ \\t\\n\\r])))+';
 
 interface HandleAtCommandParams {
   query: string;
@@ -232,10 +234,20 @@ async function resolveFilePaths(
 
   for (const part of fileParts) {
     const originalAtPath = part.content;
-    const pathName = originalAtPath.substring(1);
+    let pathName = originalAtPath.substring(1);
 
     if (!pathName) {
       continue;
+    }
+
+    // [FORK] Auto-translate Windows drive paths (e.g. c:/Users/...) to WSL
+    // mount paths (/mnt/c/Users/...) when running on Linux/WSL
+    if (process.platform === 'linux' && /^[a-zA-Z]:[\\/]/.test(pathName)) {
+      const drive = pathName[0].toLowerCase();
+      pathName = `/mnt/${drive}/${pathName.slice(3).replace(/\\/g, '/')}`;
+      onDebugMessage(
+        `Translated Windows path to WSL: ${originalAtPath.substring(1)} → ${pathName}`,
+      );
     }
 
     const gitIgnored =
@@ -498,6 +510,9 @@ async function readMcpResources(
 
 /**
  * Reads content from local files using the ReadManyFilesTool.
+ * [FORK] Files outside the workspace are read directly with
+ * processSingleFileContent to bypass the workspace security check,
+ * since the user explicitly requested them via @path.
  */
 async function readLocalFiles(
   resolvedFiles: ResolvedFile[],
@@ -513,13 +528,61 @@ async function readLocalFiles(
     return { parts: [] };
   }
 
+  // [FORK] Split files into workspace (use ReadManyFilesTool) and external
+  // (read directly). User-initiated @path references to external files
+  // should not be blocked by the workspace security check.
+  const workspaceDirs = config.getWorkspaceContext().getDirectories();
+  const isInWorkspace = (rf: ResolvedFile): boolean => {
+    if (!rf.absolutePath) return true;
+    return workspaceDirs.some((dir) => rf.absolutePath!.startsWith(dir));
+  };
+
+  const workspaceFiles = resolvedFiles.filter(isInWorkspace);
+  const externalFiles = resolvedFiles.filter((rf) => !isInWorkspace(rf));
+
+  // Read external files directly (bypasses workspace security check)
+  const externalParts: PartUnion[] = [];
+  for (const rf of externalFiles) {
+    if (!rf.absolutePath) continue;
+    const result = await processSingleFileContent(
+      rf.absolutePath,
+      config.getTargetDir(),
+      config.getFileSystemService(),
+    );
+    if (!result.error) {
+      externalParts.push({ text: `\nContent from @${rf.displayLabel}:\n` });
+      if (typeof result.llmContent === 'string') {
+        externalParts.push({ text: result.llmContent });
+      } else {
+        externalParts.push(result.llmContent);
+      }
+    }
+  }
+
+  // If only external files, return early
+  if (workspaceFiles.length === 0) {
+    const display: IndividualToolCallDisplay = {
+      callId: `client-read-${userMessageTimestamp}`,
+      name: 'ReadManyFiles',
+      description: `Read ${externalFiles.length} external file(s)`,
+      status: CoreToolCallStatus.Success,
+      isClientInitiated: true,
+      resultDisplay: `Successfully read: ${externalFiles.map((rf) => rf.displayLabel).join(', ')}`,
+      confirmationDetails: undefined,
+    };
+    return { parts: externalParts, display };
+  }
+
   const readManyFilesTool = new ReadManyFilesTool(
     config,
     config.getMessageBus(),
   );
 
-  const pathSpecsToRead = resolvedFiles.map((rf) => rf.pathSpec);
-  const fileLabelsForDisplay = resolvedFiles.map((rf) => rf.displayLabel);
+  const pathSpecsToRead = workspaceFiles.map((rf) => rf.pathSpec);
+  const fileLabelsForDisplay = [
+    ...workspaceFiles.map((rf) => rf.displayLabel),
+    ...externalFiles.map((rf) => rf.displayLabel),
+  ];
   const respectFileIgnore = config.getFileFilteringOptions();
 
   const toolArgs = {
@@ -589,6 +652,9 @@ async function readLocalFiles(
         }
       }
     }
+
+    // [FORK] Merge in any externally-read file parts
+    parts.push(...externalParts);
 
     return { parts, display };
   } catch (error: unknown) {

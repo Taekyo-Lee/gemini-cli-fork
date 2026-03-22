@@ -22,6 +22,7 @@ import type {
 import { GenerateContentResponse, FinishReason } from '@google/genai';
 import type {
   ChatCompletionMessageParam,
+  ChatCompletionContentPart,
   ChatCompletionTool,
   ChatCompletion,
   ChatCompletionChunk,
@@ -136,10 +137,40 @@ export function geminiContentsToOpenAIMessages(
     const parts = content.parts ?? [];
 
     if (role === 'user') {
-      const text = partsToText(parts);
-      if (text) {
-        messages.push({ role: 'user', content: text });
+      // [FORK] Build content parts to support multimodal (text + images)
+      const contentParts: ChatCompletionContentPart[] = [];
+      for (const part of parts) {
+        if (
+          part.text !== undefined &&
+          !part.functionCall &&
+          !part.functionResponse
+        ) {
+          contentParts.push({ type: 'text', text: part.text ?? '' });
+        } else if (
+          part.inlineData?.data &&
+          part.inlineData.mimeType?.startsWith('image/')
+        ) {
+          contentParts.push({
+            type: 'image_url',
+            image_url: {
+              url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
+            },
+          });
+        }
       }
+
+      // Use array format when images are present; simple string otherwise
+      // for maximum compatibility with OpenAI-compatible providers
+      const hasImages = contentParts.some((p) => p.type === 'image_url');
+      if (hasImages) {
+        messages.push({ role: 'user', content: contentParts });
+      } else {
+        const text = partsToText(parts);
+        if (text) {
+          messages.push({ role: 'user', content: text });
+        }
+      }
+
       // Also handle function responses from "user" role (Gemini puts them there)
       for (const part of parts) {
         if (part.functionResponse) {
