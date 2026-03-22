@@ -804,3 +804,25 @@ merge execution — that's deferred to a future session.
 - [x] `packages/core/src/index.ts` — added `openaiFactory` export
 - [x] Deduped `@grpc/grpc-js` version mismatch
 - [x] Build passes, all targeted tests pass, fork features verified
+
+---
+
+## Phase 13: Generalize Upstream Sync Process
+
+- [x] **Consolidated two overlapping docs into one** — `upstream-merge-plan.md`
+      (stale one-off snapshot) folded into `upstream-sync-guide.md` (single
+      source of truth). Deleted `upstream-merge-plan.md`.
+- [x] **Rewrote `upstream-sync.sh`** — now targets stable release tags only
+      (`vX.Y.Z`, no `-preview`/`-nightly`). Reads last synced version from
+      `merge-history.md`, exits early if already up to date. Added `--force`
+      flag.
+- [x] **Created `merge-history.md`** — persistent log of every merge with backup
+      tags, upstream versions, conflict counts. Seeded with Phase 12 entry.
+- [x] **Updated `upstream-sync-guide.md`** — added Quick Summary, Strategy
+      section, beginner-friendly conflict resolution walkthrough with examples,
+      per-file conflict resolution table, rules.
+- [x] **Updated CLAUDE.md** — references now point to `upstream-sync-guide.md`
+      and `merge-history.md`.
+- [x] **Rewrote `README.md`** — now reflects fork identity: model picker,
+      supported models, env config, architecture diagram, fork features, docs
+      index.
