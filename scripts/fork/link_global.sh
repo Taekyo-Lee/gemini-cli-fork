@@ -11,16 +11,16 @@
 # (or just use `npm run build` — the link persists).
 #
 # Usage:
-#   ./scripts/link_global.sh           # full: build + link
-#   ./scripts/link_global.sh --link    # link only (skip build)
-#   ./scripts/link_global.sh --verify  # just check current state
+#   ./scripts/fork/link_global.sh           # full: build + link
+#   ./scripts/fork/link_global.sh --link    # link only (skip build)
+#   ./scripts/fork/link_global.sh --verify  # just check current state
 # ─────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
 # Resolve repo root (this script lives in <repo>/scripts/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CLI_PKG="$REPO_ROOT/packages/cli"
 EXPECTED_DIST="$CLI_PKG/dist/index.js"
 
