@@ -3,11 +3,11 @@
 ## Fork Purpose
 
 This is a fork of
-[Google's Gemini CLI](https://github.com/google-gemini/gemini-cli)
-customized to support **on-prem LLMs** (KIMI, DeepSeek, GLM, Qwen, etc.) and
-public OpenAI-compatible APIs via the **a2g_models** registry. Instead of
-prompting for Google authentication on startup, the CLI should display a **model
-picker** showing all available LLMs and connect via OpenAI-compatible endpoints.
+[Google's Gemini CLI](https://github.com/google-gemini/gemini-cli) customized to
+support **on-prem LLMs** (KIMI, DeepSeek, GLM, Qwen, etc.) and public
+OpenAI-compatible APIs via the **a2g_models** registry. Instead of prompting for
+Google authentication on startup, the CLI should display a **model picker**
+showing all available LLMs and connect via OpenAI-compatible endpoints.
 
 **Key behavior change:** `$ gemini` → shows LLM selection list (not auth prompt)
 → connects to selected model via OpenAI Chat Completions API.
@@ -17,10 +17,10 @@ use.
 
 ## Workflow Rule
 
-**After completing any Phase (or sub-phase), always update `docs-fork/tracking/todo.md`** — mark
-completed items with `[x]`, add notes on what was done, and ensure the status
-accurately reflects reality. This keeps `docs-fork/tracking/todo.md` as the single source of truth
-for project progress.
+**After completing any Phase (or sub-phase), always update
+`docs-fork/tracking/todo.md`** — mark completed items with `[x]`, add notes on
+what was done, and ensure the status accurately reflects reality. This keeps
+`docs-fork/tracking/todo.md` as the single source of truth for project progress.
 
 ## Architecture
 
@@ -187,29 +187,29 @@ npm run build && node packages/cli  # Build and run
 
 All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
 
-| Directory | Contents |
-| --------- | -------- |
-| `docs-fork/overview/`      | Fork philosophy, fork-vs-upstream comparison |
-| `docs-fork/setup/`         | Install guide, troubleshooting               |
-| `docs-fork/architecture/`  | OpenAI-compatible mode, model registry       |
-| `docs-fork/upstream/`      | Upstream merge plan, conflict resolution     |
-| `docs-fork/tracking/`      | TODO, changelog                              |
+| Directory                 | Contents                                     |
+| ------------------------- | -------------------------------------------- |
+| `docs-fork/overview/`     | Fork philosophy, fork-vs-upstream comparison |
+| `docs-fork/setup/`        | Install guide, troubleshooting               |
+| `docs-fork/architecture/` | OpenAI-compatible mode, model registry       |
+| `docs-fork/upstream/`     | Upstream merge plan, conflict resolution     |
+| `docs-fork/tracking/`     | TODO, changelog                              |
 
 ## Files Created by Fork
 
-| File                                               | Purpose                                             |
-| -------------------------------------------------- | --------------------------------------------------- |
-| `packages/core/src/config/llmRegistry.ts`          | TypeScript LLM registry (mirrors a2g_models)         |
-| `packages/core/src/core/openaiTypeMapper.ts`       | Gemini <> OpenAI type conversion                    |
-| `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator impl using OpenAI SDK              |
-| `packages/core/src/core/openaiFactory.ts`          | OpenAI factory (extracted from contentGenerator)    |
-| `packages/cli/src/core/openaiInitializer.ts`       | OpenAI auto-connect (extracted from initializer)    |
-| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`   | Model picker UI (extracted from AuthDialog)         |
-| `scripts/fork/test_openai_adapter.sh`                   | Build/test/run script                               |
-| `scripts/fork/test_glm5_tools.py`                       | GLM-5 multi-turn tool call test                     |
-| `scripts/fork/upstream-sync.sh`                         | Upstream sync workflow                              |
-| `scripts/fork/verify-fork-features.sh`                  | Post-merge feature verification                     |
-| `scripts/fork/fork-diff-report.sh`                      | Pre-merge conflict analysis                         |
+| File                                               | Purpose                                          |
+| -------------------------------------------------- | ------------------------------------------------ |
+| `packages/core/src/config/llmRegistry.ts`          | TypeScript LLM registry (mirrors a2g_models)     |
+| `packages/core/src/core/openaiTypeMapper.ts`       | Gemini <> OpenAI type conversion                 |
+| `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator impl using OpenAI SDK           |
+| `packages/core/src/core/openaiFactory.ts`          | OpenAI factory (extracted from contentGenerator) |
+| `packages/cli/src/core/openaiInitializer.ts`       | OpenAI auto-connect (extracted from initializer) |
+| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`   | Model picker UI (extracted from AuthDialog)      |
+| `scripts/fork/test_openai_adapter.sh`              | Build/test/run script                            |
+| `scripts/fork/test_glm5_tools.py`                  | GLM-5 multi-turn tool call test                  |
+| `scripts/fork/upstream-sync.sh`                    | Upstream sync workflow                           |
+| `scripts/fork/verify-fork-features.sh`             | Post-merge feature verification                  |
+| `scripts/fork/fork-diff-report.sh`                 | Pre-merge conflict analysis                      |
 
 ## Files Modified by Fork (Phase 9: Sandbox)
 
@@ -230,16 +230,17 @@ All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
 
 ## Upstream Sync
 
-See `docs-fork/upstream/upstream-merge-plan.md` for the full merge strategy and
-conflict resolution guide.
+See `docs-fork/upstream/upstream-sync-guide.md` for the full merge strategy,
+conflict resolution guide, and step-by-step process. See
+`docs-fork/upstream/merge-history.md` for the log of past merges.
 
 ### Sync scripts
 
-| Script                           | Purpose                                    |
-| -------------------------------- | ------------------------------------------ |
-| `scripts/fork/upstream-sync.sh`       | Main sync workflow (fetch, backup, analyze) |
-| `scripts/fork/verify-fork-features.sh` | Post-merge verification checklist          |
-| `scripts/fork/fork-diff-report.sh`   | Pre-merge conflict analysis                |
+| Script                                 | Purpose                                     |
+| -------------------------------------- | ------------------------------------------- |
+| `scripts/fork/upstream-sync.sh`        | Main sync workflow (fetch, backup, analyze) |
+| `scripts/fork/verify-fork-features.sh` | Post-merge verification checklist           |
+| `scripts/fork/fork-diff-report.sh`     | Pre-merge conflict analysis                 |
 
 ### Key rules
 
