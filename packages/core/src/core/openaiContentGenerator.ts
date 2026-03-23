@@ -123,12 +123,12 @@ export class OpenAIContentGenerator implements ContentGenerator {
     );
 
     // Debug: log the exact messages being sent to the API
-    debugLogger.log(
+    debugLogger.debug(
       `[OpenAI] Sending ${messages.length} messages to ${this.modelName}:`,
     );
     for (const msg of messages) {
       if (msg.role === 'tool') {
-        debugLogger.log(
+        debugLogger.debug(
           `  [${msg.role}] tool_call_id=${msg.tool_call_id} content=${String(msg.content).substring(0, 200)}`,
         );
       } else if (
@@ -136,7 +136,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
         'tool_calls' in msg &&
         msg.tool_calls
       ) {
-        debugLogger.log(
+        debugLogger.debug(
           `  [${msg.role}] tool_calls=${JSON.stringify(msg.tool_calls.map((tc) => ({ id: tc.id, name: tc.function.name })))}`,
         );
       } else {
@@ -144,7 +144,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
           typeof msg.content === 'string'
             ? msg.content
             : JSON.stringify(msg.content);
-        debugLogger.log(`  [${msg.role}] ${(content ?? '').substring(0, 100)}`);
+        debugLogger.debug(`  [${msg.role}] ${(content ?? '').substring(0, 100)}`);
       }
     }
 
@@ -176,16 +176,16 @@ export class OpenAIContentGenerator implements ContentGenerator {
       // Debug: log each chunk summary
       if (choice?.delta?.tool_calls) {
         for (const tc of choice.delta.tool_calls) {
-          debugLogger.log(
+          debugLogger.debug(
             `[OpenAI] Stream chunk: tool_call idx=${tc.index} id=${tc.id ?? '(none)'} name=${tc.function?.name ?? '(cont)'} args=${(tc.function?.arguments ?? '').substring(0, 100)} finish=${choice.finish_reason ?? '(none)'}`,
           );
         }
       } else if (choice?.delta?.content) {
-        debugLogger.log(
+        debugLogger.debug(
           `[OpenAI] Stream chunk: text="${choice.delta.content.substring(0, 80)}" finish=${choice.finish_reason ?? '(none)'}`,
         );
       } else if (choice?.finish_reason) {
-        debugLogger.log(
+        debugLogger.debug(
           `[OpenAI] Stream chunk: finish_reason=${choice.finish_reason}`,
         );
       }
@@ -349,7 +349,7 @@ function sanitizeToolCallArgs(args: string): string {
       const candidate = args.substring(lastBrace);
       try {
         JSON.parse(candidate);
-        debugLogger.log(
+        debugLogger.debug(
           `[OpenAI] Repaired garbled tool call args: "${args}" → "${candidate}"`,
         );
         return candidate;
@@ -357,7 +357,7 @@ function sanitizeToolCallArgs(args: string): string {
         // fall through
       }
     }
-    debugLogger.warn(
+    debugLogger.debug(
       `[OpenAI] Could not parse tool call args: "${args}", using empty object`,
     );
     return '{}';
