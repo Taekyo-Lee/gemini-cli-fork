@@ -380,7 +380,7 @@ description: project-desc
 
     it('should log warning but NOT emit UI warning when a built-in skill is overridden', async () => {
       const emitFeedbackSpy = vi.spyOn(coreEvents, 'emitFeedback');
-      const debugWarnSpy = vi.spyOn(debugLogger, 'warn');
+      const debugWarnSpy = vi.spyOn(debugLogger, 'debug');
       const userDir = path.join(testRootDir, 'user');
       await fs.mkdir(userDir, { recursive: true });
 
