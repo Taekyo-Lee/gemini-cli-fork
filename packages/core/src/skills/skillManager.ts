@@ -123,7 +123,7 @@ export class SkillManager {
       const existingSkill = skillMap.get(newSkill.name);
       if (existingSkill && existingSkill.location !== newSkill.location) {
         if (existingSkill.isBuiltin) {
-          debugLogger.warn(
+          debugLogger.debug(
             `Skill "${newSkill.name}" from "${newSkill.location}" is overriding the built-in skill.`,
           );
         } else {
