@@ -6,6 +6,7 @@
 
 import * as os from 'node:os';
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { debugLogger } from '../utils/debugLogger.js';
 
@@ -63,6 +64,43 @@ const DEFAULT_REGISTRY_JSON = join(
   'workspace/main/research/a2g_packages/envs/llm_registry.json',
 );
 
+/** Path to the a2g_models project (where uv run works). */
+const A2G_PROJECT_DIR = join(
+  os.homedir(),
+  'workspace/main/research/a2g_packages/src/a2g_models',
+);
+
+/** Path to the export script. */
+const EXPORT_SCRIPT = join(
+  os.homedir(),
+  'workspace/gemini-cli-fork/scripts/fork/export_llm_registry.py',
+);
+
+/** ENV file for API keys and location detection. */
+const ENV_FILE = join(
+  os.homedir(),
+  'workspace/main/research/a2g_packages/envs/.env',
+);
+
+/** Run the Python export script to regenerate the JSON from the live registry. */
+function refreshRegistryJson(): void {
+  try {
+    execSync(
+      `uv run --native-tls --env-file "${ENV_FILE}" python "${EXPORT_SCRIPT}"`,
+      {
+        cwd: A2G_PROJECT_DIR,
+        timeout: 15000,
+        stdio: 'pipe',
+      },
+    );
+    debugLogger.log('[LLMRegistry] Auto-exported registry from Python source');
+  } catch {
+    debugLogger.log(
+      '[LLMRegistry] Could not auto-export registry (uv/python not available), using cached JSON or hardcoded',
+    );
+  }
+}
+
 /** Build GaussO corp auth headers lazily from env vars. */
 function buildCorpAuthHeaders(): Record<string, string> {
   return {
@@ -93,6 +131,9 @@ interface JsonModelEntry {
 }
 
 function loadModelsFromJson(): LLMModelConfig[] | null {
+  // Always re-export from the live Python registry before loading
+  refreshRegistryJson();
+
   const jsonPath = process.env['LLM_REGISTRY_JSON'] ?? DEFAULT_REGISTRY_JSON;
   try {
     const raw = readFileSync(jsonPath, 'utf-8');
