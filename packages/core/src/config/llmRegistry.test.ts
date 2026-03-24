@@ -63,9 +63,9 @@ describe('getAvailableModels', () => {
     vi.stubEnv('PROJECT_A2G_LOCATION', 'DEVELOPMENT');
     const models = getAvailableModels();
     const names = models.map((m) => m.model);
+    // All returned models must have dev=true
+    expect(models.every((m) => m.dev)).toBe(true);
     expect(names).toContain('dev-DeepSeek-V3.2');
-    expect(names).toContain('gpt-4o');
-    expect(names).toContain('claude-haiku-4.5');
     expect(names).not.toContain('GLM-5-Thinking');
   });
 
@@ -73,8 +73,9 @@ describe('getAvailableModels', () => {
     vi.stubEnv('PROJECT_A2G_LOCATION', 'HOME');
     const models = getAvailableModels();
     const names = models.map((m) => m.model);
+    // All returned models must have home=true
+    expect(models.every((m) => m.home)).toBe(true);
     expect(names).toContain('dev-DeepSeek-V3.2');
-    expect(names).toContain('gpt-4o');
     expect(names).not.toContain('GLM-5-Thinking');
   });
 

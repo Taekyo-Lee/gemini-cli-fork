@@ -5,6 +5,9 @@
  */
 
 import * as os from 'node:os';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { debugLogger } from '../utils/debugLogger.js';
 
 export interface LLMModelConfig {
   model: string;
@@ -48,6 +51,104 @@ export function detectLocation(): EnvironmentType {
   }
 
   return 'HOME';
+}
+
+// ---------------------------------------------------------------------------
+// [FORK] Dynamic registry loading from JSON exported by Python a2g_models
+// ---------------------------------------------------------------------------
+
+/** Default path for the JSON registry (alongside the .env file). */
+const DEFAULT_REGISTRY_JSON = join(
+  os.homedir(),
+  'workspace/main/research/a2g_packages/envs/llm_registry.json',
+);
+
+/** Build GaussO corp auth headers lazily from env vars. */
+function buildCorpAuthHeaders(): Record<string, string> {
+  return {
+    'x-dep-ticket':
+      (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ?? '',
+    'Send-System-Name':
+      (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ?? '',
+    'User-Id': process.env['PROJECT_AD_ID'] ?? '',
+    'User-Type': 'AD_ID',
+  };
+}
+
+interface JsonModelEntry {
+  model: string;
+  modelAlias?: string;
+  url: string;
+  modality?: { input: string[]; output: string[] };
+  apiKeyEnv?: string;
+  contextLength: number;
+  maxTokens: number;
+  corp: boolean;
+  home: boolean;
+  dev: boolean;
+  supportsResponsesApi: boolean;
+  reasoningModel: boolean;
+  extraBody?: Record<string, unknown>;
+  defaultHeaders?: string | Record<string, string>;
+}
+
+function loadModelsFromJson(): LLMModelConfig[] | null {
+  const jsonPath = process.env['LLM_REGISTRY_JSON'] ?? DEFAULT_REGISTRY_JSON;
+  try {
+    const raw = readFileSync(jsonPath, 'utf-8');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns unknown
+    const data = JSON.parse(raw) as {
+      models: Record<string, JsonModelEntry>;
+    };
+    const models: LLMModelConfig[] = [];
+    for (const entry of Object.values(data.models)) {
+      // Handle dynamic corp auth headers marker
+      let defaultHeaders: Record<string, string> | undefined;
+      if (entry.defaultHeaders === '__corp_auth__') {
+        // Use a getter-like pattern: compute on access via proxy
+        defaultHeaders = undefined; // will be handled via Object.defineProperty below
+      } else if (
+        typeof entry.defaultHeaders === 'object' &&
+        entry.defaultHeaders !== null
+      ) {
+        defaultHeaders = entry.defaultHeaders;
+      }
+
+      const config: LLMModelConfig = {
+        model: entry.model,
+        url: entry.url,
+        contextLength: entry.contextLength,
+        maxTokens: entry.maxTokens,
+        corp: entry.corp,
+        home: entry.home,
+        dev: entry.dev,
+        supportsResponsesApi: entry.supportsResponsesApi,
+        reasoningModel: entry.reasoningModel,
+        ...(entry.modelAlias && { modelAlias: entry.modelAlias }),
+        ...(entry.modality && { modality: entry.modality }),
+        ...(entry.apiKeyEnv && { apiKeyEnv: entry.apiKeyEnv }),
+        ...(entry.extraBody && { extraBody: entry.extraBody }),
+        ...(defaultHeaders && { defaultHeaders }),
+      };
+
+      // For corp auth models, use a lazy getter so env vars are read at access time
+      if (entry.defaultHeaders === '__corp_auth__') {
+        Object.defineProperty(config, 'defaultHeaders', {
+          get: buildCorpAuthHeaders,
+          enumerable: true,
+        });
+      }
+
+      models.push(config);
+    }
+    debugLogger.log(
+      `[LLMRegistry] Loaded ${models.length} models from ${jsonPath}`,
+    );
+    return models;
+  } catch {
+    // JSON not found or invalid — fall back to hardcoded
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -442,14 +543,17 @@ const anthropicModels: LLMModelConfig[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Combined registry
+// Combined registry — prefer dynamic JSON, fall back to hardcoded
 // ---------------------------------------------------------------------------
-const allModels: LLMModelConfig[] = [
+const hardcodedModels: LLMModelConfig[] = [
   ...corpModels,
   ...devModels,
   ...defaultModels,
   ...anthropicModels,
 ];
+
+// [FORK] Try loading from the Python-exported JSON first
+const allModels: LLMModelConfig[] = loadModelsFromJson() ?? hardcodedModels;
 
 const modelsByName = new Map<string, LLMModelConfig>(
   allModels.map((m) => [m.model, m]),
