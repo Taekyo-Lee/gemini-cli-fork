@@ -200,7 +200,12 @@ export class OpenAIContentGenerator implements ContentGenerator {
             if (tc.id) {
               existing.id = tc.id;
               if (tc.function?.name) existing.name = tc.function.name;
-              existing.arguments = tc.function?.arguments ?? '';
+              // Only replace arguments when the duplicate chunk has non-empty args.
+              // GLM-5 sends a final confirmation chunk (same id, empty args) after
+              // the streaming deltas — replacing with '' would erase accumulated args.
+              if (tc.function?.arguments) {
+                existing.arguments = tc.function.arguments;
+              }
             } else {
               existing.arguments += tc.function?.arguments ?? '';
             }
