@@ -593,8 +593,14 @@ const hardcodedModels: LLMModelConfig[] = [
   ...anthropicModels,
 ];
 
-// [FORK] Try loading from the Python-exported JSON first
-const allModels: LLMModelConfig[] = loadModelsFromJson() ?? hardcodedModels;
+// [FORK] Two registry modes:
+//   LLM_REGISTRY_MODE=static  → skip uv/Python export, use hardcoded arrays (fast startup)
+//   LLM_REGISTRY_MODE=dynamic → run Python export script then load JSON (default, always fresh)
+const useStaticRegistry =
+  (process.env['LLM_REGISTRY_MODE'] ?? 'dynamic').toLowerCase() === 'static';
+const allModels: LLMModelConfig[] = useStaticRegistry
+  ? hardcodedModels
+  : (loadModelsFromJson() ?? hardcodedModels);
 
 const modelsByName = new Map<string, LLMModelConfig>(
   allModels.map((m) => [m.model, m]),
