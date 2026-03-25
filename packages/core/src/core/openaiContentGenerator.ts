@@ -129,7 +129,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
     for (const msg of messages) {
       if (msg.role === 'tool') {
         debugLogger.debug(
-          `  [${msg.role}] tool_call_id=${msg.tool_call_id} content=${String(msg.content).substring(0, 200)}`,
+          `  [${msg.role}] tool_call_id=${msg.tool_call_id} content=${String(msg.content)}`,
         );
       } else if (
         msg.role === 'assistant' &&
@@ -144,7 +144,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
           typeof msg.content === 'string'
             ? msg.content
             : JSON.stringify(msg.content);
-        debugLogger.debug(`  [${msg.role}] ${(content ?? '').substring(0, 100)}`);
+        debugLogger.debug(`  [${msg.role}] ${content ?? ''}`);
       }
     }
 
@@ -177,12 +177,12 @@ export class OpenAIContentGenerator implements ContentGenerator {
       if (choice?.delta?.tool_calls) {
         for (const tc of choice.delta.tool_calls) {
           debugLogger.debug(
-            `[OpenAI] Stream chunk: tool_call idx=${tc.index} id=${tc.id ?? '(none)'} name=${tc.function?.name ?? '(cont)'} args=${(tc.function?.arguments ?? '').substring(0, 100)} finish=${choice.finish_reason ?? '(none)'}`,
+            `[OpenAI] Stream chunk: tool_call idx=${tc.index} id=${tc.id ?? '(none)'} name=${tc.function?.name ?? '(cont)'} args=${tc.function?.arguments ?? ''} finish=${choice.finish_reason ?? '(none)'}`,
           );
         }
       } else if (choice?.delta?.content) {
         debugLogger.debug(
-          `[OpenAI] Stream chunk: text="${choice.delta.content.substring(0, 80)}" finish=${choice.finish_reason ?? '(none)'}`,
+          `[OpenAI] Stream chunk: text="${choice.delta.content}" finish=${choice.finish_reason ?? '(none)'}`,
         );
       } else if (choice?.finish_reason) {
         debugLogger.debug(
