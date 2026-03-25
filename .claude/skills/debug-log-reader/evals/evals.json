@@ -1,0 +1,64 @@
+{
+  "skill_name": "debug-log-reader",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "show me the debug log",
+      "expected_output": "Formatted conversation view with OpenAI-style message dicts, merged stream chunks, startup summary, routing info",
+      "files": [],
+      "assertions": [
+        {
+          "name": "runs_parser_script",
+          "description": "Invokes parse_debug_log.py (not just reads the raw log file)",
+          "type": "manual"
+        },
+        {
+          "name": "shows_openai_format",
+          "description": "Output contains OpenAI-style message dicts with role/content keys",
+          "type": "manual"
+        },
+        {
+          "name": "stream_chunks_merged",
+          "description": "Individual stream token chunks are merged into complete messages, not shown individually",
+          "type": "manual"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "what errors happened in the gemini log?",
+      "expected_output": "Filtered view showing only warnings and errors from the debug log",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses_level_filter",
+          "description": "Uses --level warn or --level error flag to filter output",
+          "type": "manual"
+        },
+        {
+          "name": "highlights_issues",
+          "description": "Clearly presents warnings/errors, not buried in noise",
+          "type": "manual"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "parse ~/gemini_debug.log as JSON",
+      "expected_output": "JSON array output with structured session/event data",
+      "files": [],
+      "assertions": [
+        {
+          "name": "uses_json_flag",
+          "description": "Uses --json flag when running the parser",
+          "type": "manual"
+        },
+        {
+          "name": "valid_json_output",
+          "description": "Output is valid JSON with session/event structure",
+          "type": "manual"
+        }
+      ]
+    }
+  ]
+}
