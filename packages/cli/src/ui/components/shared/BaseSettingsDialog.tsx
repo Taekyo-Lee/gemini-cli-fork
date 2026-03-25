@@ -267,10 +267,19 @@ export function BaseSettingsDialog({
   // Get current item
   const currentItem = items[activeIndex];
 
-  // Handle scope changes (for RadioButtonSelect)
+  // Handle scope highlight (arrow key navigation — just update scope, keep focus in scope section)
   const handleScopeChange = useCallback(
     (scope: LoadableSettingScope) => {
       onScopeChange?.(scope);
+    },
+    [onScopeChange],
+  );
+
+  // Handle scope confirm (Enter key — update scope AND switch focus back to settings)
+  const handleScopeSelect = useCallback(
+    (scope: LoadableSettingScope) => {
+      onScopeChange?.(scope);
+      setFocusSection('settings');
     },
     [onScopeChange],
   );
@@ -600,7 +609,7 @@ export function BaseSettingsDialog({
               initialIndex={scopeItems.findIndex(
                 (item) => item.value === selectedScope,
               )}
-              onSelect={handleScopeChange}
+              onSelect={handleScopeSelect}
               onHighlight={handleScopeChange}
               isFocused={effectiveFocusSection === 'scope'}
               showNumbers={effectiveFocusSection === 'scope'}
