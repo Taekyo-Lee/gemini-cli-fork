@@ -29,6 +29,24 @@ immediately — no TypeScript edits or manual export steps needed.
   (filtered by location)
 ```
 
+## Registry Mode (`GEMINI_LLM_REGISTRY_MODE`)
+
+The `GEMINI_LLM_REGISTRY_MODE` environment variable controls how the model
+registry is loaded at startup:
+
+| Value     | Behavior                                                          |
+| --------- | ----------------------------------------------------------------- |
+| `dynamic` | (default) Run Python export script via `uv run`, load fresh JSON  |
+| `static`  | Skip Python/uv entirely, use hardcoded model arrays (fast startup)|
+
+```bash
+# Use static registry (no Python dependency, faster startup)
+GEMINI_LLM_REGISTRY_MODE=static gemini
+
+# Use dynamic registry (default — always fresh from Python source)
+GEMINI_LLM_REGISTRY_MODE=dynamic gemini
+```
+
 ## Flow
 
 1. **Startup** — `llmRegistry.ts` module loads
