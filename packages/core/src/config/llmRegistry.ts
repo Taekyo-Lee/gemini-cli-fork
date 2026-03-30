@@ -161,7 +161,8 @@ function getRepoDefaultPath(): string {
   return join(dir, 'models.default.json'); // won't exist, triggers fallback
 }
 
-let _warned = false;
+// Global key to prevent duplicate warnings across module instances
+const WARNED_KEY = Symbol.for('__gemini_fork_no_models_warned__');
 
 function loadModels(): LLMModelConfig[] {
   const repoDefault = getRepoDefaultPath();
@@ -170,9 +171,10 @@ function loadModels(): LLMModelConfig[] {
     if (models) return models;
   }
 
-  // No models found — show guide once via stderr
-  if (!_warned) {
-    _warned = true;
+  // No models found — show guide once via stderr (global dedup)
+  const g = globalThis as Record<symbol, boolean>;
+  if (!g[WARNED_KEY]) {
+    g[WARNED_KEY] = true;
     process.stderr.write(
       '\n' +
         '⚠  No models loaded — models.default.json not found.\n' +
@@ -185,9 +187,6 @@ function loadModels(): LLMModelConfig[] {
         '     # or: ./scripts/fork/link_global.sh\n\n',
     );
   }
-  debugLogger.log(
-    '[LLMRegistry] models.default.json not found — no models loaded',
-  );
   return [];
 }
 
