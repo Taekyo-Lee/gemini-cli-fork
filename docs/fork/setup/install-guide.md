@@ -113,16 +113,13 @@ and the **original Google auth mode**.
 This mode replaces the Google auth prompt with a model picker. It activates
 automatically when certain env vars are set.
 
-**Setup: Load the env file before running.**
-
-The env file at `~/.env` contains API keys and the `A2G_LOCATION` variable that
-controls which models are available.
+**Setup:** Load your env file (API keys + environment detection):
 
 ```bash
-# Option 1: Source the env file in your current shell
+# Option 1: Source in current shell
 set -a && source ~/.env && set +a
 
-# Option 2: Add to your shell profile for persistence (auto-loads on every new terminal)
+# Option 2: Auto-load on every new terminal
 echo 'set -a && source ~/.env && set +a' >> ~/.bashrc
 source ~/.bashrc
 ```
@@ -137,8 +134,11 @@ source ~/.bashrc
 gemini
 ```
 
-You'll see a model picker instead of an auth prompt. Select a model and start
+You'll see a model picker with the default models. Select one and start
 chatting.
+
+**To customize models**, edit `models.default.json` at the repo root. See
+`docs/fork/architecture/dynamic-model-loading.md` for the field reference.
 
 **Which models you see depends on `A2G_LOCATION`:**
 

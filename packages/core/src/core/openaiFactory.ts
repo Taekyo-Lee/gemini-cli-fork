@@ -15,7 +15,11 @@ import type { Config } from '../config/config.js';
 import { getModelByName } from '../config/llmRegistry.js';
 import { LoggingContentGenerator } from './loggingContentGenerator.js';
 import { OpenAIContentGenerator } from './openaiContentGenerator.js';
-import type { ContentGenerator , type ContentGeneratorConfig, AuthType } from './contentGenerator.js';
+import type {
+  ContentGenerator,
+  ContentGeneratorConfig,
+} from './contentGenerator.js';
+import { AuthType } from './contentGenerator.js';
 
 /**
  * Detects whether the environment is configured for OpenAI-compatible mode.

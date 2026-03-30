@@ -41,27 +41,18 @@ Ink | **Testing:** Vitest | **Bundling:** esbuild
 
 ---
 
-## The a2g_models LLM Registry (Source of Truth)
+## Model Configuration
 
-The Python `a2g_models` package at
-`~/workspace/main/research/a2g_packages/src/a2g_models/` defines all available
-LLMs. Our TypeScript registry must mirror this data.
+Models are defined in `models.default.json` at the repo root — edit that file to
+add/remove models, no code changes needed. On startup, `llmRegistry.ts` loads it
+and falls back to a minimal hardcoded gpt-4o if the file is missing.
 
-### Key Python files
+See `docs/fork/architecture/dynamic-model-loading.md` for the field reference.
 
-- `registries/llm_registries.py` → LLMRegistry class |
-  `configurations/llm_configurations.py` → LLMConfig model
-- `utils/utils.py` → `detect_location()`: checks `A2G_LOCATION` env var
-  (CORP/DEV/HOME), hostname patterns, defaults to HOME
-- LLMConfig fields: `model`, `model_alias`, `url`, `api_key_env`,
-  `context_length`, `max_tokens`, `corp/home/dev` (bools), `reasoning_model`,
-  `extra_body`, `default_headers`
-
-### Complete Model Registry
-
-See `packages/core/src/config/llmRegistry.ts` for the full model registry (27
-models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
-1 Anthropic.
+The optional Python `a2g_models` package at
+`~/workspace/main/research/a2g_packages/src/a2g_models/` can regenerate
+`models.default.json` via `scripts/fork/export_llm_registry.py` but is NOT
+required at runtime.
 
 ### Env File Location
 
@@ -198,7 +189,8 @@ All fork-specific docs live in `docs/fork/` (separate from upstream `docs/`):
 
 | File                                               | Purpose                                          |
 | -------------------------------------------------- | ------------------------------------------------ |
-| `packages/core/src/config/llmRegistry.ts`          | TypeScript LLM registry (mirrors a2g_models)     |
+| `models.default.json`                              | Shipped model config (repo root)                 |
+| `packages/core/src/config/llmRegistry.ts`          | JSON loader, env detection, public API           |
 | `packages/core/src/core/openaiTypeMapper.ts`       | Gemini <> OpenAI type conversion                 |
 | `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator impl using OpenAI SDK           |
 | `packages/core/src/core/openaiFactory.ts`          | OpenAI factory (extracted from contentGenerator) |

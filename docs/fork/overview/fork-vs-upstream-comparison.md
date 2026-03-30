@@ -59,7 +59,7 @@ Side-by-side comparison of this fork against
 │       │                       ▼                                  │
 │       │              openaiTypeMapper.ts [FORK]                  │
 │       │                                                          │
-│  llmRegistry.ts [FORK] ← a2g_models Python registry            │
+│  llmRegistry.ts [FORK] ← models.default.json                   │
 │                                                                  │
 │  client.ts [FORK: MAX_TOKENS, null-default-continue]            │
 │  geminiChat.ts [FORK: universal retry/recovery]                 │

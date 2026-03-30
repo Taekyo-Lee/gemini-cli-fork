@@ -4,10 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// [FORK] LLM model registry — loads models from models.default.json at repo root.
+// Edit that file to add/remove models. Hardcoded gpt-4o fallback if not found.
+
 import * as os from 'node:os';
-import { readFileSync } from 'node:fs';
-import { execSync } from 'node:child_process';
-import { join } from 'node:path';
+import { readFileSync, existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { debugLogger } from '../utils/debugLogger.js';
 
 export interface LLMModelConfig {
@@ -55,44 +58,24 @@ export function detectLocation(): EnvironmentType {
 }
 
 // ---------------------------------------------------------------------------
-// [FORK] Dynamic registry loading from JSON exported by Python a2g_models
+// JSON config loading
 // ---------------------------------------------------------------------------
 
-/** Default path for the JSON registry (alongside the .env file). */
-const DEFAULT_REGISTRY_JSON = join(os.homedir(), '.llm_registry.json');
-
-/** Path to the a2g_models project (where uv run works). */
-const A2G_PROJECT_DIR = join(
-  os.homedir(),
-  'workspace/main/research/a2g_packages/src/a2g_models',
-);
-
-/** Path to the export script. */
-const EXPORT_SCRIPT = join(
-  os.homedir(),
-  'workspace/gemini-cli-fork/scripts/fork/export_llm_registry.py',
-);
-
-/** ENV file for API keys and location detection. */
-const ENV_FILE = join(os.homedir(), '.env');
-
-/** Run the Python export script to regenerate the JSON from the live registry. */
-function refreshRegistryJson(): void {
-  try {
-    execSync(
-      `uv run --native-tls --env-file "${ENV_FILE}" python "${EXPORT_SCRIPT}"`,
-      {
-        cwd: A2G_PROJECT_DIR,
-        timeout: 15000,
-        stdio: 'pipe',
-      },
-    );
-    debugLogger.log('[LLMRegistry] Auto-exported registry from Python source');
-  } catch {
-    debugLogger.log(
-      '[LLMRegistry] Could not auto-export registry (uv/python not available), using cached JSON or hardcoded',
-    );
-  }
+interface JsonModelEntry {
+  model: string;
+  modelAlias?: string;
+  url: string;
+  modality?: { input: string[]; output: string[] };
+  apiKeyEnv?: string;
+  contextLength: number;
+  maxTokens: number;
+  corp?: boolean;
+  home?: boolean;
+  dev?: boolean;
+  supportsResponsesApi?: boolean;
+  reasoningModel?: boolean;
+  extraBody?: Record<string, unknown>;
+  defaultHeaders?: string | Record<string, string>;
 }
 
 /** Build GaussO corp auth headers lazily from env vars. */
@@ -107,41 +90,19 @@ function buildCorpAuthHeaders(): Record<string, string> {
   };
 }
 
-interface JsonModelEntry {
-  model: string;
-  modelAlias?: string;
-  url: string;
-  modality?: { input: string[]; output: string[] };
-  apiKeyEnv?: string;
-  contextLength: number;
-  maxTokens: number;
-  corp: boolean;
-  home: boolean;
-  dev: boolean;
-  supportsResponsesApi: boolean;
-  reasoningModel: boolean;
-  extraBody?: Record<string, unknown>;
-  defaultHeaders?: string | Record<string, string>;
-}
-
-function loadModelsFromJson(): LLMModelConfig[] | null {
-  // Always re-export from the live Python registry before loading
-  refreshRegistryJson();
-
-  const jsonPath = process.env['LLM_REGISTRY_JSON'] ?? DEFAULT_REGISTRY_JSON;
+function parseModelsJson(jsonPath: string): LLMModelConfig[] | null {
   try {
     const raw = readFileSync(jsonPath, 'utf-8');
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns unknown
-    const data = JSON.parse(raw) as {
-      models: Record<string, JsonModelEntry>;
-    };
+    const data = JSON.parse(raw) as { models: JsonModelEntry[] };
+    if (!Array.isArray(data.models)) return null;
+
     const models: LLMModelConfig[] = [];
-    for (const entry of Object.values(data.models)) {
+    for (const entry of data.models) {
       // Handle dynamic corp auth headers marker
       let defaultHeaders: Record<string, string> | undefined;
       if (entry.defaultHeaders === '__corp_auth__') {
-        // Use a getter-like pattern: compute on access via proxy
-        defaultHeaders = undefined; // will be handled via Object.defineProperty below
+        defaultHeaders = undefined; // handled via Object.defineProperty below
       } else if (
         typeof entry.defaultHeaders === 'object' &&
         entry.defaultHeaders !== null
@@ -153,12 +114,12 @@ function loadModelsFromJson(): LLMModelConfig[] | null {
         model: entry.model,
         url: entry.url,
         contextLength: entry.contextLength,
-        maxTokens: entry.maxTokens,
-        corp: entry.corp,
-        home: entry.home,
-        dev: entry.dev,
-        supportsResponsesApi: entry.supportsResponsesApi,
-        reasoningModel: entry.reasoningModel,
+        maxTokens: entry.maxTokens ?? entry.contextLength,
+        corp: entry.corp ?? false,
+        home: entry.home ?? false,
+        dev: entry.dev ?? false,
+        supportsResponsesApi: entry.supportsResponsesApi ?? false,
+        reasoningModel: entry.reasoningModel ?? false,
         ...(entry.modelAlias && { modelAlias: entry.modelAlias }),
         ...(entry.modality && { modality: entry.modality }),
         ...(entry.apiKeyEnv && { apiKeyEnv: entry.apiKeyEnv }),
@@ -181,419 +142,51 @@ function loadModelsFromJson(): LLMModelConfig[] | null {
     );
     return models;
   } catch {
-    // JSON not found or invalid — fall back to hardcoded
     return null;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Corporate (on-prem) models
-// ---------------------------------------------------------------------------
-const corpModels: LLMModelConfig[] = [
-  {
-    model: 'GLM-5-Thinking',
-    url: 'http://a2g.samsungds.net:7620/v1',
-    modality: { input: ['text'], output: ['text'] },
-    contextLength: 157000,
-    maxTokens: 157000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: true,
-  },
-  {
-    model: 'GLM-5-Non-Thinking',
-    url: 'http://a2g.samsungds.net:7620/v1',
-    modality: { input: ['text'], output: ['text'] },
-    contextLength: 157000,
-    maxTokens: 157000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: true,
-  },
-  {
-    model: 'Kimi-K2.5-Thinking',
-    url: 'http://a2g.samsungds.net:7620/v1',
-    modality: { input: ['text', 'image', 'video'], output: ['text'] },
-    contextLength: 262000,
-    maxTokens: 262000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: true,
-  },
-  {
-    model: 'Kimi-K2.5-Non-Thinking',
-    url: 'http://a2g.samsungds.net:7620/v1',
-    modality: { input: ['text', 'image', 'video'], output: ['text'] },
-    contextLength: 262000,
-    maxTokens: 262000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: true,
-  },
-  {
-    model: 'Qwen3.5-35B-A3B',
-    url: 'http://a2g.samsungds.net:7620/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 128000,
-    maxTokens: 128000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: true,
-  },
-  {
-    model: 'Qwen3.5-122B-A10B',
-    url: 'http://a2g.samsungds.net:7620/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 262000,
-    maxTokens: 262000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: true,
-  },
-  {
-    model: 'gpt-oss-120b',
-    url: 'http://a2g.samsungds.net:7620/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 262000,
-    maxTokens: 262000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: true,
-  },
-  {
-    model: 'GaussO-Owl-Ultra-Instruct',
-    url: 'http://apigw.samsungds.net:8000/gausso/1/gauss_o/aiserving/gauss/o/v1',
-    modality: { input: ['text'], output: ['text'] },
-    contextLength: 128000,
-    maxTokens: 128000,
-    supportsResponsesApi: false,
-    corp: true,
-    home: false,
-    dev: false,
-    reasoningModel: false,
-    // Headers are built lazily via getDefaultHeaders() — env vars may not be
-    // set at module-load time.
-    get defaultHeaders(): Record<string, string> {
-      return {
-        'x-dep-ticket':
-          (process.env['FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ?? '',
-        'Send-System-Name':
-          (process.env['FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ?? '',
-        'User-Id': process.env['AD_ID'] ?? '',
-        'User-Type': 'AD_ID',
-      };
+/** Resolve the path to the repo root's models.default.json. */
+function getRepoDefaultPath(): string {
+  // This file is at packages/core/src/config/llmRegistry.ts
+  // Repo root is 4 levels up: config → src → core → packages → repo
+  const thisDir = dirname(fileURLToPath(import.meta.url));
+  return join(thisDir, '..', '..', '..', '..', 'models.default.json');
+}
+
+function loadModels(): LLMModelConfig[] {
+  // 1. models.default.json at repo root
+  const repoDefault = getRepoDefaultPath();
+  if (existsSync(repoDefault)) {
+    const models = parseModelsJson(repoDefault);
+    if (models) return models;
+    debugLogger.log(
+      `[LLMRegistry] Failed to parse ${repoDefault}, using hardcoded fallback`,
+    );
+  }
+
+  // 2. Minimal hardcoded fallback (safety net)
+  debugLogger.log('[LLMRegistry] Using minimal hardcoded fallback');
+  return [
+    {
+      model: 'gpt-4o',
+      url: 'https://api.openai.com/v1',
+      contextLength: 128000,
+      maxTokens: 16384,
+      supportsResponsesApi: true,
+      reasoningModel: false,
+      corp: false,
+      home: true,
+      dev: true,
     },
-  },
-];
+  ];
+}
 
 // ---------------------------------------------------------------------------
-// Dev/Home models (OpenRouter)
+// Public API
 // ---------------------------------------------------------------------------
-const devModels: LLMModelConfig[] = [
-  {
-    model: 'dev-DeepSeek-V3.2',
-    modelAlias: 'deepseek/deepseek-v3.2',
-    url: 'https://openrouter.ai/api/v1',
-    modality: { input: ['text'], output: ['text'] },
-    apiKeyEnv: 'OPENROUTER_API_KEY',
-    contextLength: 128000,
-    maxTokens: 128000,
-    supportsResponsesApi: false,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-    extraBody: {
-      provider: { sort: 'throughput' },
-      reasoning: { enabled: true },
-    },
-  },
-  {
-    model: 'dev-DeepSeek-V3.2-non-reasoning',
-    modelAlias: 'deepseek/deepseek-v3.2',
-    url: 'https://openrouter.ai/api/v1',
-    modality: { input: ['text'], output: ['text'] },
-    apiKeyEnv: 'OPENROUTER_API_KEY',
-    contextLength: 128000,
-    maxTokens: 128000,
-    supportsResponsesApi: false,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: false,
-    extraBody: {
-      provider: { sort: 'throughput' },
-      reasoning: { enabled: false },
-    },
-  },
-  {
-    model: 'dev-claude-haiku-4.5',
-    modelAlias: 'anthropic/claude-haiku-4.5',
-    url: 'https://openrouter.ai/api/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    apiKeyEnv: 'OPENROUTER_API_KEY',
-    contextLength: 200000,
-    maxTokens: 64000,
-    supportsResponsesApi: false,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'dev-claude-haiku-4.5-generic',
-    modelAlias: 'anthropic/claude-haiku-4.5',
-    url: 'https://openrouter.ai/api/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    apiKeyEnv: 'OPENROUTER_API_KEY',
-    contextLength: 200000,
-    maxTokens: 64000,
-    supportsResponsesApi: false,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'dev-Gemini-3.1-Pro-Preview',
-    modelAlias: 'google/gemini-3.1-pro-preview',
-    url: 'https://openrouter.ai/api/v1',
-    modality: { input: ['text', 'image', 'audio', 'video'], output: ['text'] },
-    apiKeyEnv: 'OPENROUTER_API_KEY',
-    contextLength: 1000000,
-    maxTokens: 64000,
-    supportsResponsesApi: false,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-    extraBody: {
-      provider: { sort: 'throughput' },
-      reasoning: { enabled: true },
-    },
-  },
-  {
-    model: 'dev-Claude-Opus-4.6',
-    modelAlias: 'anthropic/claude-opus-4.6',
-    url: 'https://openrouter.ai/api/v1',
-    modality: { input: ['text', 'image', 'audio', 'video'], output: ['text'] },
-    apiKeyEnv: 'OPENROUTER_API_KEY',
-    contextLength: 1000000,
-    maxTokens: 128000,
-    supportsResponsesApi: false,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-    extraBody: {
-      provider: { sort: 'throughput' },
-      reasoning: { enabled: true },
-    },
-  },
-];
 
-// ---------------------------------------------------------------------------
-// Default models (OpenAI direct)
-// ---------------------------------------------------------------------------
-const defaultModels: LLMModelConfig[] = [
-  {
-    model: 'gpt-4o',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 128000,
-    maxTokens: 16384,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: false,
-  },
-  {
-    model: 'gpt-4o-mini',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 128000,
-    maxTokens: 16384,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: false,
-  },
-  {
-    model: 'gpt-4.1',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 1047576,
-    maxTokens: 32768,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: false,
-  },
-  {
-    model: 'gpt-4.1-mini',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 1047576,
-    maxTokens: 32768,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: false,
-  },
-  {
-    model: 'gpt-4.1-nano',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 1047576,
-    maxTokens: 32768,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: false,
-  },
-  {
-    model: 'o1',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 200000,
-    maxTokens: 100000,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'o3-mini',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text'], output: ['text'] },
-    contextLength: 128000,
-    maxTokens: 100000,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'o4-mini',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 200000,
-    maxTokens: 100000,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'gpt-5',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 400000,
-    maxTokens: 128000,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'gpt-5-nano',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 400000,
-    maxTokens: 128000,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'gpt-5-mini',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 400000,
-    maxTokens: 128000,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-  {
-    model: 'gpt-5.2',
-    url: 'https://api.openai.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 400000,
-    maxTokens: 128000,
-    supportsResponsesApi: true,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Anthropic (custom class, not ChatOpenAI)
-// ---------------------------------------------------------------------------
-const anthropicModels: LLMModelConfig[] = [
-  {
-    model: 'claude-haiku-4.5',
-    modelAlias: 'claude-haiku-4-5',
-    url: 'https://api.anthropic.com/v1',
-    modality: { input: ['text', 'image'], output: ['text'] },
-    contextLength: 200000,
-    maxTokens: 64000,
-    supportsResponsesApi: false,
-    corp: false,
-    home: true,
-    dev: true,
-    reasoningModel: true,
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Combined registry — prefer dynamic JSON, fall back to hardcoded
-// ---------------------------------------------------------------------------
-const hardcodedModels: LLMModelConfig[] = [
-  ...corpModels,
-  ...devModels,
-  ...defaultModels,
-  ...anthropicModels,
-];
-
-// [FORK] Two registry modes:
-//   GEMINI_LLM_REGISTRY_MODE=static  → skip uv/Python export, use hardcoded arrays (fast startup)
-//   GEMINI_LLM_REGISTRY_MODE=dynamic → run Python export script then load JSON (default, always fresh)
-const useStaticRegistry =
-  (process.env['GEMINI_LLM_REGISTRY_MODE'] ?? 'dynamic').toLowerCase() ===
-  'static';
-const allModels: LLMModelConfig[] = useStaticRegistry
-  ? hardcodedModels
-  : (loadModelsFromJson() ?? hardcodedModels);
+const allModels: LLMModelConfig[] = loadModels();
 
 const modelsByName = new Map<string, LLMModelConfig>(
   allModels.map((m) => [m.model, m]),

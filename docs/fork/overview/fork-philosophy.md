@@ -102,14 +102,12 @@ When you pass `--yolo`, you mean it. The fork ensures:
 
 ### 7. Single Source of Truth for Models
 
-The Python `a2g_models` package
-(`~/workspace/main/research/a2g_packages/src/a2g_models/`) is the authoritative
-model registry. The TypeScript registry (`llmRegistry.ts`) mirrors it. Both
-define the same models with the same URLs, API key env vars, context lengths,
-and environment flags.
+`models.default.json` at the repo root is the single config file that defines
+all available models. Edit it to add, remove, or modify models — no code changes
+needed.
 
-When a new model is deployed on the on-prem vLLM server, adding it to both
-registries is all that's needed.
+When a new model is deployed on the on-prem vLLM server, adding it to
+`models.default.json` is all that's needed.
 
 ## What This Fork Is Not
 

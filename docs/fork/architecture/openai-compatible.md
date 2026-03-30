@@ -131,10 +131,9 @@ field. Instead, API key resolution falls through the chain in
 
 ```
 1. modelConfig.apiKeyEnv  →  (undefined for corp models)
-2. OPENAI_API_KEY →  (used as fallback)
-3. OPENAI_API_KEY         →  (standard OpenAI env var)
-4. config.apiKey          →  (from CLI flags)
-5. '' (empty string)      →  (corp endpoints don't require bearer auth)
+2. OPENAI_API_KEY         →  (standard OpenAI env var)
+3. config.apiKey          →  (from CLI flags)
+4. '' (empty string)      →  (corp endpoints don't require bearer auth)
 ```
 
 Corp models authenticate via **custom HTTP headers** instead of API keys. The
@@ -235,7 +234,7 @@ Model-specific:
 
 | File                                               | Role                                  |
 | -------------------------------------------------- | ------------------------------------- |
-| `packages/core/src/config/llmRegistry.ts`          | Model registry (mirrors a2g_models)   |
+| `packages/core/src/config/llmRegistry.ts`          | JSON config loader, env detection     |
 | `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator using OpenAI SDK     |
 | `packages/core/src/core/openaiTypeMapper.ts`       | Gemini ↔ OpenAI type conversion      |
 | `packages/core/src/core/contentGenerator.ts`       | AuthType enum, factory, env detection |
