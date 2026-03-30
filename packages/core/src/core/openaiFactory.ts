@@ -15,19 +15,18 @@ import type { Config } from '../config/config.js';
 import { getModelByName } from '../config/llmRegistry.js';
 import { LoggingContentGenerator } from './loggingContentGenerator.js';
 import { OpenAIContentGenerator } from './openaiContentGenerator.js';
-import type { ContentGenerator } from './contentGenerator.js';
-import { type ContentGeneratorConfig, AuthType } from './contentGenerator.js';
+import type { ContentGenerator , type ContentGeneratorConfig, AuthType } from './contentGenerator.js';
 
 /**
  * Detects whether the environment is configured for OpenAI-compatible mode.
- * Checks (in order): OPENAI_BASE_URL, PROJECT_OPENROUTER_API_KEY,
- * PROJECT_A2G_LOCATION.
+ * Checks (in order): OPENAI_BASE_URL, OPENROUTER_API_KEY,
+ * A2G_LOCATION.
  */
 export function detectOpenAIMode(): boolean {
   return !!(
     process.env['OPENAI_BASE_URL'] ||
-    process.env['PROJECT_OPENROUTER_API_KEY'] ||
-    process.env['PROJECT_A2G_LOCATION']
+    process.env['OPENROUTER_API_KEY'] ||
+    process.env['A2G_LOCATION']
   );
 }
 
@@ -49,13 +48,11 @@ export function createOpenAIContentGenerator(
   config: ContentGeneratorConfig,
   gcConfig: Config,
 ): ContentGenerator {
-  const selectedModelName =
-    config.selectedOpenAIModel ?? gcConfig.getModel();
+  const selectedModelName = config.selectedOpenAIModel ?? gcConfig.getModel();
   const modelConfig = getModelByName(selectedModelName);
   const apiKeyEnv = modelConfig?.apiKeyEnv;
   const apiKey =
     (apiKeyEnv ? process.env[apiKeyEnv] : undefined) ??
-    process.env['PROJECT_OPENAI_API_KEY'] ??
     process.env['OPENAI_API_KEY'] ??
     config.apiKey ??
     '';

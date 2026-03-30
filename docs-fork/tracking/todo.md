@@ -12,7 +12,7 @@ one, and connect via OpenAI Chat Completions API.
 
 - [x] **Create `scripts/test_openai_adapter.sh`** — build+run script for
       iterative testing
-  - Loads env vars from `~/workspace/main/research/a2g_packages/envs/.env`
+  - Loads env vars from `~/.env`
   - Builds the project
   - Runs `gemini` with OpenAI-compatible mode
   - Modes: `--status`, `--build-only`, `--run-only`, `--test`, `--quick`,
@@ -98,7 +98,7 @@ one, and connect via OpenAI Chat Completions API.
 - [x] **Edited `packages/core/src/core/contentGenerator.ts`**
   - Added `OPENAI_COMPATIBLE = 'openai-compatible'` to AuthType enum
   - Updated `getAuthTypeFromEnv()` — checks `OPENAI_BASE_URL`,
-    `PROJECT_OPENROUTER_API_KEY`, `PROJECT_A2G_LOCATION`
+    `OPENROUTER_API_KEY`, `A2G_LOCATION`
   - Added `selectedOpenAIModel?: string` to `ContentGeneratorConfig`
   - Updated `createContentGeneratorConfig()` — early return for
     OPENAI_COMPATIBLE
@@ -231,8 +231,8 @@ Findings from code scrutiny — 16 issues (3 critical, 7 medium, 6 minor).
 
 ### 7.2 Medium (incorrect behavior)
 
-- [x] Add `apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY'` to
-      `dev-claude-haiku-4.5-generic` in `llmRegistry.ts`
+- [x] Add `apiKeyEnv: 'OPENROUTER_API_KEY'` to `dev-claude-haiku-4.5-generic` in
+      `llmRegistry.ts`
 - [x] Defer GaussO `defaultHeaders` from module-load to factory-time — changed
       to a getter property on the model config so env vars are read when
       accessed, not at import time
@@ -419,8 +419,7 @@ inside the container exactly as they do outside.
 ### 9.4 Env Var Forwarding into Docker
 
 - [x] **`sandbox.ts` — Mount a2g env file read-only**
-  - Mounts `~/workspace/main/research/a2g_packages/envs/.env` (or
-    `$A2G_ENV_FILE`) to `/tmp/.a2g_env` inside the container
+  - Mounts `~/.env` (or `$A2G_ENV_FILE`) to `/tmp/.a2g_env` inside the container
   - Sets `A2G_ENV_FILE=/tmp/.a2g_env` env var in the container
   - Also forwards `NODE_TLS_REJECT_UNAUTHORIZED` for on-prem endpoints
 
@@ -428,8 +427,8 @@ inside the container exactly as they do outside.
   - Added
     `if [ -f "$A2G_ENV_FILE" ]; then set -a; source "$A2G_ENV_FILE"; set +a; fi`
     to the entrypoint shell commands
-  - All `PROJECT_*` API keys, `PROJECT_A2G_LOCATION`, etc. are available inside
-    the container without listing them individually
+  - All `API key` API keys, `A2G_LOCATION`, etc. are available inside the
+    container without listing them individually
 
 ### 9.5 Run Fork Code Inside Docker
 

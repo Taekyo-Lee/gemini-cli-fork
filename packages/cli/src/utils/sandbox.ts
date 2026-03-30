@@ -606,10 +606,8 @@ export async function start_sandbox(
     }
 
     // [FORK] Mount and source a2g env file inside the container (OpenAI-compatible mode).
-    // This forwards all PROJECT_*, API key, and other env vars automatically.
-    const a2gEnvFile =
-      process.env['A2G_ENV_FILE'] ??
-      `${homedir()}/workspace/main/research/a2g_packages/envs/.env`;
+    // This forwards all API key and other env vars automatically.
+    const a2gEnvFile = process.env['A2G_ENV_FILE'] ?? `${homedir()}/.env`;
     if (fs.existsSync(a2gEnvFile)) {
       const containerEnvPath = '/tmp/.a2g_env';
       args.push('--volume', `${a2gEnvFile}:${containerEnvPath}:ro`);

@@ -1,6 +1,6 @@
 """ 
 
-You can run this file by uv run --native-tls --active --env-file /home/jetlee/workspace/main/research/a2g_packages/envs/.env on_prem_llms_test/llm_test.py 
+You can run this file by uv run --native-tls --active --env-file ~/.env on_prem_llms_test/llm_test.py 
 
 """
 

@@ -7,19 +7,19 @@ Side-by-side comparison of this fork against
 
 ## High-Level Comparison
 
-| Aspect | Upstream (google-gemini/gemini-cli) | This Fork |
-|--------|-------------------------------------|-----------|
-| **Purpose** | Google Gemini AI assistant CLI | Multi-LLM CLI (on-prem + cloud) |
-| **Auth** | Google OAuth / API Key / Vertex AI | OpenAI-compatible model picker |
-| **Models** | Gemini family only | Multiple providers: CORP on-prem (KIMI, GLM, Qwen), OpenRouter, OpenAI, Anthropic |
-| **Startup** | Google auth prompt | LLM selection list → OpenAI Chat Completions API |
-| **Key addition** | — | `llmRegistry.ts`, `openaiContentGenerator.ts`, `openaiTypeMapper.ts`, `openaiFactory.ts` |
-| **API layer** | `@google/genai` SDK | OpenAI SDK (via ContentGenerator interface) |
-| **Sandbox** | Docker/Podman required | bestEffort fallback + YOLO auto-enable |
-| **Input** | Standard | Korean IME fix (getLatestText) |
-| **Multi-turn** | Gemini-optimized | Universal fixes (nextSpeakerCheck, MAX_TOKENS, null-default-continue) |
-| **Env detection** | — | `PROJECT_A2G_LOCATION` (CORP/DEV/HOME) |
-| **Tool compatibility** | Gemini-native | OpenAI tool name sanitization + schema forwarding |
+| Aspect                 | Upstream (google-gemini/gemini-cli) | This Fork                                                                                |
+| ---------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Purpose**            | Google Gemini AI assistant CLI      | Multi-LLM CLI (on-prem + cloud)                                                          |
+| **Auth**               | Google OAuth / API Key / Vertex AI  | OpenAI-compatible model picker                                                           |
+| **Models**             | Gemini family only                  | Multiple providers: CORP on-prem (KIMI, GLM, Qwen), OpenRouter, OpenAI, Anthropic        |
+| **Startup**            | Google auth prompt                  | LLM selection list → OpenAI Chat Completions API                                         |
+| **Key addition**       | —                                   | `llmRegistry.ts`, `openaiContentGenerator.ts`, `openaiTypeMapper.ts`, `openaiFactory.ts` |
+| **API layer**          | `@google/genai` SDK                 | OpenAI SDK (via ContentGenerator interface)                                              |
+| **Sandbox**            | Docker/Podman required              | bestEffort fallback + YOLO auto-enable                                                   |
+| **Input**              | Standard                            | Korean IME fix (getLatestText)                                                           |
+| **Multi-turn**         | Gemini-optimized                    | Universal fixes (nextSpeakerCheck, MAX_TOKENS, null-default-continue)                    |
+| **Env detection**      | —                                   | `A2G_LOCATION` (CORP/DEV/HOME)                                                           |
+| **Tool compatibility** | Gemini-native                       | OpenAI tool name sanitization + schema forwarding                                        |
 
 ---
 
@@ -70,7 +70,8 @@ Side-by-side comparison of this fork against
 
 **Key insight:** The fork plugs in through the `ContentGenerator` interface.
 `geminiChat.ts` and `client.ts` consume this interface — they don't know or care
-whether the backend is Google's `@google/genai` SDK or our `OpenAIContentGenerator`.
+whether the backend is Google's `@google/genai` SDK or our
+`OpenAIContentGenerator`.
 
 ---
 
@@ -78,47 +79,47 @@ whether the backend is Google's `@google/genai` SDK or our `OpenAIContentGenerat
 
 ### Fork-created files (conflict risk: NONE)
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `packages/core/src/config/llmRegistry.ts` | ~400 | Multi-model registry with env detection |
-| `packages/core/src/core/openaiContentGenerator.ts` | ~350 | OpenAI SDK ↔ ContentGenerator adapter |
-| `packages/core/src/core/openaiTypeMapper.ts` | ~300 | Gemini ↔ OpenAI type mapping |
-| `packages/core/src/core/openaiFactory.ts` | ~80 | Factory functions extracted from contentGenerator |
-| `packages/cli/src/core/openaiInitializer.ts` | ~30 | Auto-connect logic extracted from initializer |
-| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx` | ~140 | Model picker UI extracted from AuthDialog |
-| `packages/core/src/config/llmRegistry.test.ts` | ~150 | 15 registry tests |
-| `packages/core/src/core/openaiTypeMapper.test.ts` | ~400 | 27 type mapper tests |
-| `packages/core/src/core/openaiContentGenerator.test.ts` | ~250 | 11 content generator tests |
+| File                                                    | Lines | Purpose                                           |
+| ------------------------------------------------------- | ----- | ------------------------------------------------- |
+| `packages/core/src/config/llmRegistry.ts`               | ~400  | Multi-model registry with env detection           |
+| `packages/core/src/core/openaiContentGenerator.ts`      | ~350  | OpenAI SDK ↔ ContentGenerator adapter            |
+| `packages/core/src/core/openaiTypeMapper.ts`            | ~300  | Gemini ↔ OpenAI type mapping                     |
+| `packages/core/src/core/openaiFactory.ts`               | ~80   | Factory functions extracted from contentGenerator |
+| `packages/cli/src/core/openaiInitializer.ts`            | ~30   | Auto-connect logic extracted from initializer     |
+| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`        | ~140  | Model picker UI extracted from AuthDialog         |
+| `packages/core/src/config/llmRegistry.test.ts`          | ~150  | 15 registry tests                                 |
+| `packages/core/src/core/openaiTypeMapper.test.ts`       | ~400  | 27 type mapper tests                              |
+| `packages/core/src/core/openaiContentGenerator.test.ts` | ~250  | 11 content generator tests                        |
 
 ### Fork-modified files
 
-| File | Fork lines changed | Conflict risk | Category |
-|------|-------------------|---------------|----------|
-| **Core: OpenAI integration** | | | |
-| `contentGenerator.ts` | ~8 (after extraction) | HIGH | AuthType enum + env detection + factory import |
-| `index.ts` | 4 lines | LOW | Export additions |
-| `package.json` (core) | 1 line | LOW | `openai` dependency |
-| **Core: Multi-turn fixes** | | | |
-| `client.ts` | ~30 lines | HIGH | MAX_TOKENS bypass, null-default-continue, isToolResponseTurn gate |
-| `geminiChat.ts` | ~10 lines | MEDIUM | isGemini2Model guard removal (retry for all models) |
-| **CLI: Auth flow** | | | |
-| `initializer.ts` | ~6 (after extraction) | MEDIUM | Import + call to tryOpenAIAutoConnect |
-| `AuthDialog.tsx` | ~5 (after extraction) | MEDIUM | Import + conditional routing |
-| `useAuth.ts` | 6 lines | LOW | Skip Google auth early-return |
-| `auth.ts` | 3 lines | LOW | OPENAI_COMPATIBLE validation case |
-| **CLI: Sandbox** | | | |
-| `config.ts` | ~20 lines | MEDIUM | YOLO auto-sandbox + skipNextSpeakerCheck |
-| `sandboxConfig.ts` | ~5 lines | LOW | bestEffort parameter |
-| `gemini.tsx` | ~20 lines | MEDIUM | YOLO sandbox + OpenAI auth guard |
-| `sandbox.ts` | ~20 lines | LOW | Env file mount + fork repo volume |
-| `sandboxUtils.ts` | ~15 lines | LOW | Env sourcing + local clone detection |
-| **CLI: Korean IME** | | | |
-| `InputPrompt.tsx` | ~8 lines | LOW | getLatestText() calls |
-| `text-buffer.ts` | ~20 lines | MEDIUM | getLatestText + latestLinesRef |
-| `KeypressContext.tsx` | ~25 lines | MEDIUM | IME stdin reorder |
-| **CLI: UI** | | | |
-| `Footer.tsx` | ~5 lines | LOW | configuredSandbox fallback |
-| `useGeminiStream.ts` | 5 lines | LOW | InvalidStream info message |
+| File                         | Fork lines changed    | Conflict risk | Category                                                          |
+| ---------------------------- | --------------------- | ------------- | ----------------------------------------------------------------- |
+| **Core: OpenAI integration** |                       |               |                                                                   |
+| `contentGenerator.ts`        | ~8 (after extraction) | HIGH          | AuthType enum + env detection + factory import                    |
+| `index.ts`                   | 4 lines               | LOW           | Export additions                                                  |
+| `package.json` (core)        | 1 line                | LOW           | `openai` dependency                                               |
+| **Core: Multi-turn fixes**   |                       |               |                                                                   |
+| `client.ts`                  | ~30 lines             | HIGH          | MAX_TOKENS bypass, null-default-continue, isToolResponseTurn gate |
+| `geminiChat.ts`              | ~10 lines             | MEDIUM        | isGemini2Model guard removal (retry for all models)               |
+| **CLI: Auth flow**           |                       |               |                                                                   |
+| `initializer.ts`             | ~6 (after extraction) | MEDIUM        | Import + call to tryOpenAIAutoConnect                             |
+| `AuthDialog.tsx`             | ~5 (after extraction) | MEDIUM        | Import + conditional routing                                      |
+| `useAuth.ts`                 | 6 lines               | LOW           | Skip Google auth early-return                                     |
+| `auth.ts`                    | 3 lines               | LOW           | OPENAI_COMPATIBLE validation case                                 |
+| **CLI: Sandbox**             |                       |               |                                                                   |
+| `config.ts`                  | ~20 lines             | MEDIUM        | YOLO auto-sandbox + skipNextSpeakerCheck                          |
+| `sandboxConfig.ts`           | ~5 lines              | LOW           | bestEffort parameter                                              |
+| `gemini.tsx`                 | ~20 lines             | MEDIUM        | YOLO sandbox + OpenAI auth guard                                  |
+| `sandbox.ts`                 | ~20 lines             | LOW           | Env file mount + fork repo volume                                 |
+| `sandboxUtils.ts`            | ~15 lines             | LOW           | Env sourcing + local clone detection                              |
+| **CLI: Korean IME**          |                       |               |                                                                   |
+| `InputPrompt.tsx`            | ~8 lines              | LOW           | getLatestText() calls                                             |
+| `text-buffer.ts`             | ~20 lines             | MEDIUM        | getLatestText + latestLinesRef                                    |
+| `KeypressContext.tsx`        | ~25 lines             | MEDIUM        | IME stdin reorder                                                 |
+| **CLI: UI**                  |                       |               |                                                                   |
+| `Footer.tsx`                 | ~5 lines              | LOW           | configuredSandbox fallback                                        |
+| `useGeminiStream.ts`         | 5 lines               | LOW           | InvalidStream info message                                        |
 
 ---
 
@@ -136,8 +137,8 @@ whether the backend is Google's `@google/genai` SDK or our `OpenAIContentGenerat
 - Agent/A2A support
 - Policy engine, billing, admin controls
 
-If `OPENAI_BASE_URL` / `PROJECT_A2G_LOCATION` / `PROJECT_OPENROUTER_API_KEY`
-are not set, the fork behaves identically to upstream.
+If `OPENAI_BASE_URL` / `A2G_LOCATION` / `OPENROUTER_API_KEY` are not set, the
+fork behaves identically to upstream.
 
 ---
 
@@ -155,11 +156,11 @@ are not set, the fork behaves identically to upstream.
 
 ### Medium risk
 
-3. **`initializer.ts` changes** — Upstream may refactor the init flow.
-   Mitigated by extraction to `openaiInitializer.ts`.
+3. **`initializer.ts` changes** — Upstream may refactor the init flow. Mitigated
+   by extraction to `openaiInitializer.ts`.
 
-4. **`AuthDialog.tsx` changes** — Upstream may add new auth options.
-   Mitigated by extraction to `OpenAIModelPicker.tsx`.
+4. **`AuthDialog.tsx` changes** — Upstream may add new auth options. Mitigated
+   by extraction to `OpenAIModelPicker.tsx`.
 
 5. **`text-buffer.ts` / `KeypressContext.tsx` IME changes** — If upstream adds
    their own IME handling, it may conflict with ours.
@@ -173,6 +174,7 @@ are not set, the fork behaves identically to upstream.
 ### Possible upstream adoption
 
 Some fork fixes address real bugs that affect all users:
+
 - Korean IME character drop
 - Empty response retry for non-Gemini models
 - MAX_TOKENS auto-continue

@@ -16,7 +16,7 @@ repo so you can type `gemini` anywhere in your terminal — just like `claude`.
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
     source ~/.bashrc
     nvm install node
-    
+
     # Option 2: NodeSource (requires sudo)
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt install -y nodejs
@@ -115,16 +115,15 @@ automatically when certain env vars are set.
 
 **Setup: Load the env file before running.**
 
-The env file at `~/workspace/main/research/a2g_packages/envs/.env` contains API
-keys and the `PROJECT_A2G_LOCATION` variable that controls which models are
-available.
+The env file at `~/.env` contains API keys and the `A2G_LOCATION` variable that
+controls which models are available.
 
 ```bash
 # Option 1: Source the env file in your current shell
-set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
+set -a && source ~/.env && set +a
 
 # Option 2: Add to your shell profile for persistence (auto-loads on every new terminal)
-echo 'set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a' >> ~/.bashrc
+echo 'set -a && source ~/.env && set +a' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -141,7 +140,7 @@ gemini
 You'll see a model picker instead of an auth prompt. Select a model and start
 chatting.
 
-**Which models you see depends on `PROJECT_A2G_LOCATION`:**
+**Which models you see depends on `A2G_LOCATION`:**
 
 | Value                              | Environment | Models                                                                             |
 | ---------------------------------- | ----------- | ---------------------------------------------------------------------------------- |
@@ -151,8 +150,8 @@ chatting.
 
 **Trigger env vars** (any one of these activates OpenAI-compatible mode):
 
-- `PROJECT_A2G_LOCATION` — environment detection (set in env file)
-- `PROJECT_OPENROUTER_API_KEY` — OpenRouter API key (set in env file)
+- `A2G_LOCATION` — environment detection (set in env file)
+- `OPENROUTER_API_KEY` — OpenRouter API key (set in env file)
 - `OPENAI_BASE_URL` — custom OpenAI base URL
 
 **Using the test script** (alternative to manual source + run):
@@ -236,7 +235,7 @@ npm run build
 npm link ./packages/cli     # or use alias method above
 
 # ----- OpenAI-compatible mode (on-prem/cloud LLMs) -----
-set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
+set -a && source ~/.env && set +a
 gemini                      # shows model picker
 
 # Or use the test script:
@@ -244,7 +243,7 @@ gemini                      # shows model picker
 
 # ----- Original Google mode -----
 # (don't source the env file, or unset the trigger vars)
-unset PROJECT_A2G_LOCATION PROJECT_OPENROUTER_API_KEY OPENAI_BASE_URL
+unset A2G_LOCATION OPENROUTER_API_KEY OPENAI_BASE_URL
 gemini                      # shows Google auth prompt
 
 # ----- Common -----
@@ -262,14 +261,14 @@ npm run build               # rebuild (link persists)
 To switch from OpenAI mode back to Google auth mode in the same shell:
 
 ```bash
-unset PROJECT_A2G_LOCATION PROJECT_OPENROUTER_API_KEY OPENAI_BASE_URL
+unset A2G_LOCATION OPENROUTER_API_KEY OPENAI_BASE_URL
 gemini
 ```
 
 To switch from Google mode to OpenAI mode:
 
 ```bash
-set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
+set -a && source ~/.env && set +a
 gemini
 ```
 
@@ -296,19 +295,19 @@ npm link ./packages/cli
 **Cause 2: Env vars aren't exported to child processes.**
 
 ```bash
-node -e "console.log(process.env.PROJECT_A2G_LOCATION)"
+node -e "console.log(process.env.A2G_LOCATION)"
 ```
 
 If this prints `undefined`, you sourced the `.env` file without `set -a`. Fix:
 
 ```bash
-set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
+set -a && source ~/.env && set +a
 ```
 
 If you already added `source .env` to `~/.bashrc` without `set -a`, fix it:
 
 ```bash
-sed -i 's|source ~/workspace/main/research/a2g_packages/envs/.env|set -a \&\& source ~/workspace/main/research/a2g_packages/envs/.env \&\& set +a|' ~/.bashrc
+sed -i 's|source ~/.env|set -a \&\& source ~/.env \&\& set +a|' ~/.bashrc
 source ~/.bashrc
 ```
 

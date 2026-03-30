@@ -30,7 +30,7 @@ export interface LLMModelConfig {
 export type EnvironmentType = 'CORP' | 'DEV' | 'HOME';
 
 export function detectLocation(): EnvironmentType {
-  const envLocation = (process.env['PROJECT_A2G_LOCATION'] ?? '').toUpperCase();
+  const envLocation = (process.env['A2G_LOCATION'] ?? '').toUpperCase();
 
   if (['COMPANY', 'PRODUCTION', 'CORP'].includes(envLocation)) {
     return 'CORP';
@@ -59,10 +59,7 @@ export function detectLocation(): EnvironmentType {
 // ---------------------------------------------------------------------------
 
 /** Default path for the JSON registry (alongside the .env file). */
-const DEFAULT_REGISTRY_JSON = join(
-  os.homedir(),
-  'workspace/main/research/a2g_packages/envs/llm_registry.json',
-);
+const DEFAULT_REGISTRY_JSON = join(os.homedir(), '.llm_registry.json');
 
 /** Path to the a2g_models project (where uv run works). */
 const A2G_PROJECT_DIR = join(
@@ -77,10 +74,7 @@ const EXPORT_SCRIPT = join(
 );
 
 /** ENV file for API keys and location detection. */
-const ENV_FILE = join(
-  os.homedir(),
-  'workspace/main/research/a2g_packages/envs/.env',
-);
+const ENV_FILE = join(os.homedir(), '.env');
 
 /** Run the Python export script to regenerate the JSON from the live registry. */
 function refreshRegistryJson(): void {
@@ -105,10 +99,10 @@ function refreshRegistryJson(): void {
 function buildCorpAuthHeaders(): Record<string, string> {
   return {
     'x-dep-ticket':
-      (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ?? '',
+      (process.env['FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ?? '',
     'Send-System-Name':
-      (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ?? '',
-    'User-Id': process.env['PROJECT_AD_ID'] ?? '',
+      (process.env['FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ?? '',
+    'User-Id': process.env['AD_ID'] ?? '',
     'User-Type': 'AD_ID',
   };
 }
@@ -296,12 +290,10 @@ const corpModels: LLMModelConfig[] = [
     get defaultHeaders(): Record<string, string> {
       return {
         'x-dep-ticket':
-          (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ??
-          '',
+          (process.env['FALLBACK_API_KEY_1'] ?? '/').split('/')[1] ?? '',
         'Send-System-Name':
-          (process.env['PROJECT_FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ??
-          '',
-        'User-Id': process.env['PROJECT_AD_ID'] ?? '',
+          (process.env['FALLBACK_API_KEY_1'] ?? '/').split('/')[0] ?? '',
+        'User-Id': process.env['AD_ID'] ?? '',
         'User-Type': 'AD_ID',
       };
     },
@@ -317,7 +309,7 @@ const devModels: LLMModelConfig[] = [
     modelAlias: 'deepseek/deepseek-v3.2',
     url: 'https://openrouter.ai/api/v1',
     modality: { input: ['text'], output: ['text'] },
-    apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
     contextLength: 128000,
     maxTokens: 128000,
     supportsResponsesApi: false,
@@ -335,7 +327,7 @@ const devModels: LLMModelConfig[] = [
     modelAlias: 'deepseek/deepseek-v3.2',
     url: 'https://openrouter.ai/api/v1',
     modality: { input: ['text'], output: ['text'] },
-    apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
     contextLength: 128000,
     maxTokens: 128000,
     supportsResponsesApi: false,
@@ -353,7 +345,7 @@ const devModels: LLMModelConfig[] = [
     modelAlias: 'anthropic/claude-haiku-4.5',
     url: 'https://openrouter.ai/api/v1',
     modality: { input: ['text', 'image'], output: ['text'] },
-    apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
     contextLength: 200000,
     maxTokens: 64000,
     supportsResponsesApi: false,
@@ -367,7 +359,7 @@ const devModels: LLMModelConfig[] = [
     modelAlias: 'anthropic/claude-haiku-4.5',
     url: 'https://openrouter.ai/api/v1',
     modality: { input: ['text', 'image'], output: ['text'] },
-    apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
     contextLength: 200000,
     maxTokens: 64000,
     supportsResponsesApi: false,
@@ -381,7 +373,7 @@ const devModels: LLMModelConfig[] = [
     modelAlias: 'google/gemini-3.1-pro-preview',
     url: 'https://openrouter.ai/api/v1',
     modality: { input: ['text', 'image', 'audio', 'video'], output: ['text'] },
-    apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
     contextLength: 1000000,
     maxTokens: 64000,
     supportsResponsesApi: false,
@@ -399,7 +391,7 @@ const devModels: LLMModelConfig[] = [
     modelAlias: 'anthropic/claude-opus-4.6',
     url: 'https://openrouter.ai/api/v1',
     modality: { input: ['text', 'image', 'audio', 'video'], output: ['text'] },
-    apiKeyEnv: 'PROJECT_OPENROUTER_API_KEY',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
     contextLength: 1000000,
     maxTokens: 128000,
     supportsResponsesApi: false,
@@ -597,7 +589,8 @@ const hardcodedModels: LLMModelConfig[] = [
 //   GEMINI_LLM_REGISTRY_MODE=static  → skip uv/Python export, use hardcoded arrays (fast startup)
 //   GEMINI_LLM_REGISTRY_MODE=dynamic → run Python export script then load JSON (default, always fresh)
 const useStaticRegistry =
-  (process.env['GEMINI_LLM_REGISTRY_MODE'] ?? 'dynamic').toLowerCase() === 'static';
+  (process.env['GEMINI_LLM_REGISTRY_MODE'] ?? 'dynamic').toLowerCase() ===
+  'static';
 const allModels: LLMModelConfig[] = useStaticRegistry
   ? hardcodedModels
   : (loadModelsFromJson() ?? hardcodedModels);

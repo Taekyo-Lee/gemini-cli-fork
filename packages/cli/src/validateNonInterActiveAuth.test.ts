@@ -51,14 +51,14 @@ describe('validateNonInterActiveAuth', () => {
     originalEnvGcp = process.env['GOOGLE_GENAI_USE_GCA'];
     // [FORK] Save and clear OpenAI env vars
     originalEnvOpenAIBaseURL = process.env['OPENAI_BASE_URL'];
-    originalEnvOpenRouterKey = process.env['PROJECT_OPENROUTER_API_KEY'];
-    originalEnvA2GLocation = process.env['PROJECT_A2G_LOCATION'];
+    originalEnvOpenRouterKey = process.env['OPENROUTER_API_KEY'];
+    originalEnvA2GLocation = process.env['A2G_LOCATION'];
     delete process.env['GEMINI_API_KEY'];
     delete process.env['GOOGLE_GENAI_USE_VERTEXAI'];
     delete process.env['GOOGLE_GENAI_USE_GCA'];
     delete process.env['OPENAI_BASE_URL'];
-    delete process.env['PROJECT_OPENROUTER_API_KEY'];
-    delete process.env['PROJECT_A2G_LOCATION'];
+    delete process.env['OPENROUTER_API_KEY'];
+    delete process.env['A2G_LOCATION'];
     debugLoggerErrorSpy = vi
       .spyOn(debugLogger, 'error')
       .mockImplementation(() => {});
@@ -115,14 +115,14 @@ describe('validateNonInterActiveAuth', () => {
       delete process.env['OPENAI_BASE_URL'];
     }
     if (originalEnvOpenRouterKey !== undefined) {
-      process.env['PROJECT_OPENROUTER_API_KEY'] = originalEnvOpenRouterKey;
+      process.env['OPENROUTER_API_KEY'] = originalEnvOpenRouterKey;
     } else {
-      delete process.env['PROJECT_OPENROUTER_API_KEY'];
+      delete process.env['OPENROUTER_API_KEY'];
     }
     if (originalEnvA2GLocation !== undefined) {
-      process.env['PROJECT_A2G_LOCATION'] = originalEnvA2GLocation;
+      process.env['A2G_LOCATION'] = originalEnvA2GLocation;
     } else {
-      delete process.env['PROJECT_A2G_LOCATION'];
+      delete process.env['A2G_LOCATION'];
     }
     vi.restoreAllMocks();
   });

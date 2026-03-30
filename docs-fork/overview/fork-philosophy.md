@@ -16,9 +16,9 @@ the model you need, wherever it runs.**
 ### 1. Any Model, One Interface
 
 You shouldn't need to learn a different tool for each LLM provider. This fork
-gives you the same terminal agent experience — file editing, shell commands, tool
-calling, context management — regardless of whether the model runs on an on-prem
-vLLM server, OpenRouter, OpenAI, or Anthropic.
+gives you the same terminal agent experience — file editing, shell commands,
+tool calling, context management — regardless of whether the model runs on an
+on-prem vLLM server, OpenRouter, OpenAI, or Anthropic.
 
 The model picker replaces the auth prompt:
 
@@ -37,13 +37,13 @@ One command, 27+ models, three environments. Pick and go.
 
 Not all models are available everywhere. Corporate networks have on-prem vLLM
 endpoints. Home machines have OpenRouter and OpenAI API keys. The fork
-auto-detects your environment via the `PROJECT_A2G_LOCATION` env var and shows
-only the models you can actually use:
+auto-detects your environment via the `A2G_LOCATION` env var and shows only the
+models you can actually use:
 
-| Location      | What You See                                     |
-| ------------- | ------------------------------------------------ |
-| `CORP`        | On-prem models (GLM-5, Kimi, Qwen, gpt-oss-120b) |
-| `DEV` / `HOME`| OpenRouter + OpenAI models                        |
+| Location       | What You See                                     |
+| -------------- | ------------------------------------------------ |
+| `CORP`         | On-prem models (GLM-5, Kimi, Qwen, gpt-oss-120b) |
+| `DEV` / `HOME` | OpenRouter + OpenAI models                       |
 
 This prevents the frustration of selecting a model that won't connect.
 
@@ -51,9 +51,10 @@ This prevents the frustration of selecting a model that won't connect.
 
 The fork follows a strict **additive-only** rule. No upstream code paths are
 modified — only new branches are added. The `ContentGenerator` interface is the
-key abstraction: the upstream Gemini implementation and our `OpenAIContentGenerator`
-both implement it. Everything downstream (tool execution, prompt construction,
-UI rendering) is unaware of which provider is active.
+key abstraction: the upstream Gemini implementation and our
+`OpenAIContentGenerator` both implement it. Everything downstream (tool
+execution, prompt construction, UI rendering) is unaware of which provider is
+active.
 
 If you unset the OpenAI env vars, the CLI behaves exactly like upstream Gemini
 CLI — Google auth, Gemini models, everything intact.
@@ -114,8 +115,8 @@ registries is all that's needed.
 
 - **Not a new CLI.** It's Gemini CLI with a broader model backend. The UI, tool
   system, and workflow are identical to upstream.
-- **Not a proxy or middleware.** The CLI talks directly to LLM endpoints. There's
-  no intermediary service to deploy.
+- **Not a proxy or middleware.** The CLI talks directly to LLM endpoints.
+  There's no intermediary service to deploy.
 - **Not a model evaluator.** The fork doesn't compare models or rank them. It
   lets you pick the model you want and gets out of the way.
 
@@ -125,17 +126,17 @@ On startup, env detection routes to either Google auth (upstream) or the model
 picker (fork). The model picker queries the `llmRegistry` for available models
 filtered by environment. On selection, an `OpenAIContentGenerator` is created
 with the model's endpoint, API key, and config. This generator implements the
-same `ContentGenerator` interface as Google's implementation, translating between
-Gemini's types and OpenAI's Chat Completions API via `openaiTypeMapper`. From
-that point on, the rest of the CLI — `geminiChat`, tool execution, prompt
+same `ContentGenerator` interface as Google's implementation, translating
+between Gemini's types and OpenAI's Chat Completions API via `openaiTypeMapper`.
+From that point on, the rest of the CLI — `geminiChat`, tool execution, prompt
 construction, UI rendering — works unchanged.
 
 ## Related Documentation
 
-| Document | What It Covers |
-| --- | --- |
-| [README.md](../README.md) | Quick overview, supported models, quick start |
-| [install-guide.md](./install-guide.md) | Step-by-step setup, troubleshooting |
-| [openai-compatible.md](./openai-compatible.md) | Technical deep-dive: env detection, auth flow, API mapping |
-| [model-registry-reference.md](./model-registry-reference.md) | Complete model tables with specs |
-| [todo.md](./todo.md) | Implementation phases, bug fixes, current status |
+| Document                                                     | What It Covers                                             |
+| ------------------------------------------------------------ | ---------------------------------------------------------- |
+| [README.md](../README.md)                                    | Quick overview, supported models, quick start              |
+| [install-guide.md](./install-guide.md)                       | Step-by-step setup, troubleshooting                        |
+| [openai-compatible.md](./openai-compatible.md)               | Technical deep-dive: env detection, auth flow, API mapping |
+| [model-registry-reference.md](./model-registry-reference.md) | Complete model tables with specs                           |
+| [todo.md](./todo.md)                                         | Implementation phases, bug fixes, current status           |

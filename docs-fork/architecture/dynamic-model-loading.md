@@ -34,10 +34,10 @@ immediately — no TypeScript edits or manual export steps needed.
 The `GEMINI_LLM_REGISTRY_MODE` environment variable controls how the model
 registry is loaded at startup:
 
-| Value     | Behavior                                                          |
-| --------- | ----------------------------------------------------------------- |
-| `dynamic` | (default) Run Python export script via `uv run`, load fresh JSON  |
-| `static`  | Skip Python/uv entirely, use hardcoded model arrays (fast startup)|
+| Value     | Behavior                                                           |
+| --------- | ------------------------------------------------------------------ |
+| `dynamic` | (default) Run Python export script via `uv run`, load fresh JSON   |
+| `static`  | Skip Python/uv entirely, use hardcoded model arrays (fast startup) |
 
 ```bash
 # Use static registry (no Python dependency, faster startup)
@@ -54,8 +54,7 @@ GEMINI_LLM_REGISTRY_MODE=dynamic gemini
    `uv run ... python export_llm_registry.py` via `execSync` from the
    `a2g_models` project directory
 3. **JSON written** — The Python script imports `LLMRegistry._models`, converts
-   all models to camelCase JSON, writes to
-   `~/workspace/main/research/a2g_packages/envs/llm_registry.json`
+   all models to camelCase JSON, writes to `~/.llm_registry.json`
 4. **JSON loaded** — TypeScript reads and parses the JSON file
 5. **Fallback** — If Python/uv is unavailable (e.g., CI, fresh machine), falls
    back to hardcoded models in `llmRegistry.ts`
@@ -66,7 +65,7 @@ GEMINI_LLM_REGISTRY_MODE=dynamic gemini
 | ------------------------------------------------------ | ------------------------------------------ |
 | `packages/core/src/config/llmRegistry.ts`              | Runtime loader, environment detection, API |
 | `scripts/fork/export_llm_registry.py`                  | Python script that dumps registry to JSON  |
-| `~/...a2g_packages/envs/llm_registry.json`             | Auto-generated intermediate JSON           |
+| `~/.llm_registry.json`                                 | Auto-generated intermediate JSON           |
 | `~/...a2g_models/registries/llm_registries.py`         | Python source of truth (all models)        |
 | `~/...a2g_models/registries/default_registries/`       | Default models (OpenAI, Anthropic)         |
 | `~/...a2g_models/configurations/llm_configurations.py` | `LLMConfig` Pydantic model                 |
@@ -76,7 +75,7 @@ GEMINI_LLM_REGISTRY_MODE=dynamic gemini
 Both Python (`detect_location()`) and TypeScript (`detectLocation()`) use the
 same logic:
 
-1. Read `PROJECT_A2G_LOCATION` env var
+1. Read `A2G_LOCATION` env var
 2. Map: `COMPANY`/`PRODUCTION`/`CORP` → `CORP`, `DEVELOPMENT`/`DEV` → `DEV`,
    `HOME` → `HOME`
 3. If unset, check hostname patterns (`prod`, `company`, `server` → `CORP`)
@@ -110,7 +109,7 @@ The GaussO model requires dynamic HTTP headers computed from env vars at
 runtime. The Python export script writes `"__corp_auth__"` as a marker instead
 of actual header values. The TypeScript loader detects this marker and installs
 a lazy getter via `Object.defineProperty` that computes headers from
-`PROJECT_FALLBACK_API_KEY_1` and `PROJECT_AD_ID` on each access.
+`FALLBACK_API_KEY_1` and `AD_ID` on each access.
 
 ## Typical Workflow
 
@@ -130,7 +129,7 @@ If you need to pre-generate the JSON without starting gemini:
 
 ```bash
 cd ~/workspace/main/research/a2g_packages/src/a2g_models
-uv run --native-tls --env-file ~/workspace/main/research/a2g_packages/envs/.env \
+uv run --native-tls --env-file ~/.env \
   python ~/workspace/gemini-cli-fork/scripts/fork/export_llm_registry.py
 ```
 

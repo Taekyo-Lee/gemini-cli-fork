@@ -24,8 +24,7 @@ All use `http://a2g.samsungds.net:7620/v1` except GaussO.
 
 ## Dev/Home (OpenRouter, corp=False, home=True, dev=True)
 
-All use `https://openrouter.ai/api/v1`,
-api_key_env=`PROJECT_OPENROUTER_API_KEY`.
+All use `https://openrouter.ai/api/v1`, api_key_env=`OPENROUTER_API_KEY`.
 
 | Name                            | model_alias                   | context_length | max_tokens | extra_body       |
 | ------------------------------- | ----------------------------- | -------------- | ---------- | ---------------- |
@@ -38,8 +37,7 @@ api_key_env=`PROJECT_OPENROUTER_API_KEY`.
 
 ## Default Models (OpenAI direct, corp=False, home=True, dev=True)
 
-All use `https://api.openai.com/v1`, api_key_env=`PROJECT_OPENAI_API_KEY`
-(implicit).
+All use `https://api.openai.com/v1`, api_key_env=`OPENAI_API_KEY` (implicit).
 
 | Name         | context_length | max_tokens | supports_responses_api |
 | ------------ | -------------- | ---------- | ---------------------- |

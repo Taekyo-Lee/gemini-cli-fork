@@ -9,7 +9,7 @@ Quick test to see if GLM-5 handles multi-turn tool calling properly
 via the OpenAI-compatible API (vLLM endpoint).
 
 Run with:
-  set -a && source ~/workspace/main/research/a2g_packages/envs/.env && set +a
+  set -a && source ~/.env && set +a
   cd ~/workspace/gemini-cli-fork
   uv run scripts/test_glm5_tools.py
 """
@@ -20,7 +20,7 @@ from openai import OpenAI
 
 # Config
 BASE_URL = "http://a2g.samsungds.net:7620/v1"
-API_KEY = os.environ.get("PROJECT_OPENAI_API_KEY", "dummy")
+API_KEY = os.environ.get("OPENAI_API_KEY", "dummy")
 MODEL = "GLM-5-Non-Thinking"  # Try both Thinking and Non-Thinking
 
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY)

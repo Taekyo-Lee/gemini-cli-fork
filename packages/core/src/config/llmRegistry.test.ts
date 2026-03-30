@@ -18,49 +18,49 @@ beforeEach(() => {
 
 describe('detectLocation', () => {
   it('returns CORP for COMPANY env var', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'COMPANY');
+    vi.stubEnv('A2G_LOCATION', 'COMPANY');
     expect(detectLocation()).toBe('CORP');
   });
 
   it('returns CORP for PRODUCTION env var', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'PRODUCTION');
+    vi.stubEnv('A2G_LOCATION', 'PRODUCTION');
     expect(detectLocation()).toBe('CORP');
   });
 
   it('returns CORP for CORP env var', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'CORP');
+    vi.stubEnv('A2G_LOCATION', 'CORP');
     expect(detectLocation()).toBe('CORP');
   });
 
   it('returns DEV for DEVELOPMENT env var', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'DEVELOPMENT');
+    vi.stubEnv('A2G_LOCATION', 'DEVELOPMENT');
     expect(detectLocation()).toBe('DEV');
   });
 
   it('returns DEV for DEV env var', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'DEV');
+    vi.stubEnv('A2G_LOCATION', 'DEV');
     expect(detectLocation()).toBe('DEV');
   });
 
   it('returns HOME for HOME env var', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'HOME');
+    vi.stubEnv('A2G_LOCATION', 'HOME');
     expect(detectLocation()).toBe('HOME');
   });
 
   it('is case-insensitive', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'development');
+    vi.stubEnv('A2G_LOCATION', 'development');
     expect(detectLocation()).toBe('DEV');
   });
 
   it('defaults to HOME when no env var set', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', '');
+    vi.stubEnv('A2G_LOCATION', '');
     expect(detectLocation()).toBe('HOME');
   });
 });
 
 describe('getAvailableModels', () => {
   it('returns DEV models when in DEV environment', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'DEVELOPMENT');
+    vi.stubEnv('A2G_LOCATION', 'DEVELOPMENT');
     const models = getAvailableModels();
     const names = models.map((m) => m.model);
     // All returned models must have dev=true
@@ -70,7 +70,7 @@ describe('getAvailableModels', () => {
   });
 
   it('returns HOME models when in HOME environment', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'HOME');
+    vi.stubEnv('A2G_LOCATION', 'HOME');
     const models = getAvailableModels();
     const names = models.map((m) => m.model);
     // All returned models must have home=true
@@ -80,7 +80,7 @@ describe('getAvailableModels', () => {
   });
 
   it('returns CORP models when in CORP environment', () => {
-    vi.stubEnv('PROJECT_A2G_LOCATION', 'CORP');
+    vi.stubEnv('A2G_LOCATION', 'CORP');
     const models = getAvailableModels();
     const names = models.map((m) => m.model);
     expect(names).toContain('GLM-5-Thinking');
@@ -96,7 +96,7 @@ describe('getModelByName', () => {
     expect(model).toBeDefined();
     expect(model!.modelAlias).toBe('deepseek/deepseek-v3.2');
     expect(model!.url).toBe('https://openrouter.ai/api/v1');
-    expect(model!.apiKeyEnv).toBe('PROJECT_OPENROUTER_API_KEY');
+    expect(model!.apiKeyEnv).toBe('OPENROUTER_API_KEY');
   });
 
   it('returns undefined for an unknown model', () => {

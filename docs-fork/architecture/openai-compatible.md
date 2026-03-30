@@ -18,11 +18,11 @@ On startup, `getAuthTypeFromEnv()` in
 `packages/core/src/core/contentGenerator.ts` checks for these env vars (in
 order):
 
-| Env Var                      | What it indicates                 |
-| ---------------------------- | --------------------------------- |
-| `PROJECT_A2G_LOCATION`       | a2g environment (CORP/DEV/HOME)   |
-| `PROJECT_OPENROUTER_API_KEY` | OpenRouter API key available      |
-| `OPENAI_BASE_URL`            | Custom OpenAI-compatible endpoint |
+| Env Var              | What it indicates                 |
+| -------------------- | --------------------------------- |
+| `A2G_LOCATION`       | a2g environment (CORP/DEV/HOME)   |
+| `OPENROUTER_API_KEY` | OpenRouter API key available      |
+| `OPENAI_BASE_URL`    | Custom OpenAI-compatible endpoint |
 
 If **any** of these are set, the auth type is set to `OPENAI_COMPATIBLE` and the
 Google auth flow is skipped entirely.
@@ -30,15 +30,15 @@ Google auth flow is skipped entirely.
 > **Priority note:** OpenAI-compatible mode takes precedence over all Google
 > auth methods. The detection order in `getAuthTypeFromEnv()` is:
 >
-> 1. `PROJECT_A2G_LOCATION` set → `OPENAI_COMPATIBLE`
-> 2. `PROJECT_OPENROUTER_API_KEY` set → `OPENAI_COMPATIBLE`
+> 1. `A2G_LOCATION` set → `OPENAI_COMPATIBLE`
+> 2. `OPENROUTER_API_KEY` set → `OPENAI_COMPATIBLE`
 > 3. `OPENAI_BASE_URL` set → `OPENAI_COMPATIBLE`
 > 4. `GEMINI_API_KEY` set → `USE_GEMINI`
 > 5. None → `null` (show Google auth dialog)
 >
-> This means if both `PROJECT_A2G_LOCATION` and `GEMINI_API_KEY` are set, OpenAI
-> mode wins silently. To use Google auth instead, unset the OpenAI trigger vars:
-> `unset PROJECT_A2G_LOCATION PROJECT_OPENROUTER_API_KEY OPENAI_BASE_URL`
+> This means if both `A2G_LOCATION` and `GEMINI_API_KEY` are set, OpenAI mode
+> wins silently. To use Google auth instead, unset the OpenAI trigger vars:
+> `unset A2G_LOCATION OPENROUTER_API_KEY OPENAI_BASE_URL`
 
 ### 2. Model Registry
 
@@ -64,13 +64,13 @@ interface LLMModelConfig {
 
 ### 3. Environment-Based Filtering
 
-`detectLocation()` reads `PROJECT_A2G_LOCATION` and maps it:
+`detectLocation()` reads `A2G_LOCATION` and maps it:
 
-| Env Value                       | Environment | Models shown                          |
-| ------------------------------- | ----------- | ------------------------------------- |
-| `COMPANY`, `PRODUCTION`, `CORP` | CORP        | On-prem models (corp-flagged)         |
-| `DEVELOPMENT`, `DEV`            | DEV         | Dev + default + Anthropic models      |
-| `HOME` (or unset)               | HOME        | Same as DEV                           |
+| Env Value                       | Environment | Models shown                     |
+| ------------------------------- | ----------- | -------------------------------- |
+| `COMPANY`, `PRODUCTION`, `CORP` | CORP        | On-prem models (corp-flagged)    |
+| `DEVELOPMENT`, `DEV`            | DEV         | Dev + default + Anthropic models |
+| `HOME` (or unset)               | HOME        | Same as DEV                      |
 
 `getAvailableModels()` filters by the detected environment and returns only
 models where the corresponding flag (`corp`, `dev`, `home`) is `true`.
@@ -131,7 +131,7 @@ field. Instead, API key resolution falls through the chain in
 
 ```
 1. modelConfig.apiKeyEnv  →  (undefined for corp models)
-2. PROJECT_OPENAI_API_KEY →  (used as fallback)
+2. OPENAI_API_KEY →  (used as fallback)
 3. OPENAI_API_KEY         →  (standard OpenAI env var)
 4. config.apiKey          →  (from CLI flags)
 5. '' (empty string)      →  (corp endpoints don't require bearer auth)
@@ -141,9 +141,9 @@ Corp models authenticate via **custom HTTP headers** instead of API keys. The
 GaussO model uses a lazy getter for `defaultHeaders` that reads env vars at
 access time (not import time):
 
-- `x-dep-ticket` — extracted from `PROJECT_FALLBACK_API_KEY_1`
-- `Send-System-Name` — extracted from `PROJECT_FALLBACK_API_KEY_1`
-- `User-Id` — from `PROJECT_AD_ID`
+- `x-dep-ticket` — extracted from `FALLBACK_API_KEY_1`
+- `Send-System-Name` — extracted from `FALLBACK_API_KEY_1`
+- `User-Id` — from `AD_ID`
 - `User-Type` — hardcoded `AD_ID`
 
 Models: GLM-5 (thinking/non-thinking), Kimi-K2.5 (thinking/non-thinking),
@@ -153,7 +153,7 @@ Qwen3.5 (35B/122B), gpt-oss-120b, GaussO-Owl-Ultra-Instruct
 
 Base URL: `https://openrouter.ai/api/v1`
 
-API key: `PROJECT_OPENROUTER_API_KEY`
+API key: `OPENROUTER_API_KEY`
 
 Models: DeepSeek-V3.2 (reasoning/non-reasoning), Claude Haiku 4.5
 (thinking/generic), Gemini 3.1 Pro Preview, Claude Opus 4.6
@@ -162,7 +162,7 @@ Models: DeepSeek-V3.2 (reasoning/non-reasoning), Claude Haiku 4.5
 
 Base URL: `https://api.openai.com/v1`
 
-API key: `PROJECT_OPENAI_API_KEY`
+API key: `OPENAI_API_KEY`
 
 Models: GPT-4o, GPT-4o-mini, GPT-4.1 (regular/mini/nano), o1, o3-mini, o4-mini,
 GPT-5 (regular/nano/mini), GPT-5.2
@@ -171,7 +171,7 @@ GPT-5 (regular/nano/mini), GPT-5.2
 
 Base URL: `https://api.anthropic.com/v1`
 
-API key: `PROJECT_ANTHROPIC_API_KEY`
+API key: `ANTHROPIC_API_KEY`
 
 Models: claude-haiku-4.5
 
@@ -219,17 +219,17 @@ See the [Install Guide](./install-guide.md) for setup instructions.
 
 Required (at least one):
 
-- `PROJECT_A2G_LOCATION` — Environment detection
-- `PROJECT_OPENROUTER_API_KEY` — OpenRouter key
+- `A2G_LOCATION` — Environment detection
+- `OPENROUTER_API_KEY` — OpenRouter key
 - `OPENAI_BASE_URL` — Custom endpoint
 
 Model-specific:
 
-- `PROJECT_OPENAI_API_KEY` — OpenAI models
-- `PROJECT_ANTHROPIC_API_KEY` — Anthropic models
-- `PROJECT_OPENROUTER_API_KEY` — OpenRouter models
-- `PROJECT_FALLBACK_API_KEY_1` — Corp model auth headers
-- `PROJECT_AD_ID` — Corp user identification
+- `OPENAI_API_KEY` — OpenAI models
+- `ANTHROPIC_API_KEY` — Anthropic models
+- `OPENROUTER_API_KEY` — OpenRouter models
+- `FALLBACK_API_KEY_1` — Corp model auth headers
+- `AD_ID` — Corp user identification
 
 ## Files
 

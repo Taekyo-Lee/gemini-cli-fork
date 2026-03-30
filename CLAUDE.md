@@ -51,7 +51,7 @@ LLMs. Our TypeScript registry must mirror this data.
 
 - `registries/llm_registries.py` → LLMRegistry class |
   `configurations/llm_configurations.py` → LLMConfig model
-- `utils/utils.py` → `detect_location()`: checks `PROJECT_A2G_LOCATION` env var
+- `utils/utils.py` → `detect_location()`: checks `A2G_LOCATION` env var
   (CORP/DEV/HOME), hostname patterns, defaults to HOME
 - LLMConfig fields: `model`, `model_alias`, `url`, `api_key_env`,
   `context_length`, `max_tokens`, `corp/home/dev` (bools), `reasoning_model`,
@@ -66,14 +66,14 @@ models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
 
 ### Env File Location
 
-`~/workspace/main/research/a2g_packages/envs/.env` — contains API keys:
+`~/.env` — contains API keys:
 
-- `PROJECT_OPENAI_API_KEY`, `PROJECT_OPENAI_API_BASE`
-- `PROJECT_ANTHROPIC_API_KEY`, `PROJECT_ANTHROPIC_API_BASE`
-- `PROJECT_OPENROUTER_API_KEY`, `PROJECT_OPENROUTER_API_BASE`
-- `PROJECT_LITE_LLM_KEY`, `PROJECT_LITE_URL`
-- `PROJECT_AD_ID`, `PROJECT_FALLBACK_API_KEY_1/2` (corp auth)
-- `PROJECT_A2G_LOCATION` (environment detection)
+- `OPENAI_API_KEY`, `OPENAI_API_BASE`
+- `ANTHROPIC_API_KEY`, `ANTHROPIC_API_BASE`
+- `OPENROUTER_API_KEY`, `OPENROUTER_API_BASE`
+- `LITE_LLM_KEY`, `LITE_URL`
+- `AD_ID`, `FALLBACK_API_KEY_1/2` (corp auth)
+- `A2G_LOCATION` (environment detection)
 
 ---
 
@@ -93,7 +93,7 @@ All critical, medium, and minor issues from Phase 7 have been resolved. See
 ## Reference Python Scripts
 
 ```bash
-ENV="--env-file ~/workspace/main/research/a2g_packages/envs/.env"
+ENV="--env-file ~/.env"
 uv run --native-tls --active $ENV on_prem_llms_test/list_available_llms.py  # List models (model picker reference)
 uv run --native-tls --active $ENV on_prem_llms_test/llm_test.py            # Test model end-to-end
 ```

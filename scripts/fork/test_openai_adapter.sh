@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="$HOME/workspace/main/research/a2g_packages/envs/.env"
+ENV_FILE="$HOME/.env"
 
 # Colors
 RED='\033[0;31m'
@@ -38,7 +38,7 @@ load_env() {
     # shellcheck disable=SC1090
     source "$ENV_FILE"
     set +a
-    log_ok "Env loaded (PROJECT_A2G_LOCATION=${PROJECT_A2G_LOCATION:-HOME})"
+    log_ok "Env loaded (A2G_LOCATION=${A2G_LOCATION:-HOME})"
   else
     log_warn "Env file not found: $ENV_FILE"
     log_warn "API keys may not be available. Set them manually if needed."

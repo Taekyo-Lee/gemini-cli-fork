@@ -24,8 +24,8 @@ The upstream Gemini CLI only works with Google's Gemini models. This fork adds:
 - **Model picker** — replaces the Google auth prompt with a model selection list
 - **Any OpenAI-compatible endpoint** — on-prem vLLM, OpenRouter, OpenAI direct,
   Anthropic, LiteLLM
-- **Environment-aware** — auto-detects CORP/DEV/HOME via `PROJECT_A2G_LOCATION`
-  and shows only reachable models
+- **Environment-aware** — auto-detects CORP/DEV/HOME via `A2G_LOCATION` and
+  shows only reachable models
 - **YOLO sandbox** — `--yolo` auto-enables Docker sandbox with best-effort
   fallback
 - **Korean IME fix** — proper handling of composing characters in terminal input
@@ -55,21 +55,21 @@ node packages/cli
 
 ### Configure
 
-Set your environment and API keys. The env file at
-`~/workspace/main/research/a2g_packages/envs/.env` is the default location.
+Set your environment and API keys. The env file at `~/.env` is the default
+location.
 
 Key env vars:
 
 ```bash
 # Environment detection (CORP, DEV, or HOME)
-PROJECT_A2G_LOCATION="HOME"
+A2G_LOCATION="HOME"
 
 # Provider API keys (set the ones you need)
-PROJECT_OPENAI_API_KEY="sk-..."
-PROJECT_OPENAI_API_BASE="https://api.openai.com/v1"
-PROJECT_OPENROUTER_API_KEY="sk-or-..."
-PROJECT_OPENROUTER_API_BASE="https://openrouter.ai/api/v1"
-PROJECT_ANTHROPIC_API_KEY="sk-ant-..."
+OPENAI_API_KEY="sk-..."
+OPENAI_API_BASE="https://api.openai.com/v1"
+OPENROUTER_API_KEY="sk-or-..."
+OPENROUTER_API_BASE="https://openrouter.ai/api/v1"
+ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
 ### Use with Google (upstream mode)

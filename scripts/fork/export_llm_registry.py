@@ -7,11 +7,11 @@
 
 Usage (run from the a2g_models project root):
     cd ~/workspace/main/research/a2g_packages/src/a2g_models
-    ENV="--env-file ~/workspace/main/research/a2g_packages/envs/.env"
+    ENV="--env-file ~/.env"
     uv run --native-tls $ENV python ~/workspace/gemini-cli-fork/scripts/fork/export_llm_registry.py
 
 Output:
-    ~/workspace/main/research/a2g_packages/envs/llm_registry.json
+    ~/.llm_registry.json
 """
 
 import json
@@ -19,9 +19,7 @@ import os
 
 from a2g_models.registries.llm_registries import LLMRegistry
 
-OUTPUT_PATH = os.path.expanduser(
-    "~/workspace/main/research/a2g_packages/envs/llm_registry.json"
-)
+OUTPUT_PATH = os.path.expanduser("~/.llm_registry.json")
 
 
 def snake_to_camel(name: str) -> str:
