@@ -61,8 +61,7 @@ LLMs. Our TypeScript registry must mirror this data.
 
 See `packages/core/src/config/llmRegistry.ts` for the full model registry (27
 models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
-1 Anthropic. For the original Python source, see
-`docs/fork/model-registry-reference.md`.
+1 Anthropic.
 
 ### Env File Location
 

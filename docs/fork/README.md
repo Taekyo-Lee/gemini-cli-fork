@@ -15,8 +15,8 @@
 
 - [OpenAI-Compatible Mode](architecture/openai-compatible.md) — Env detection,
   auth flow, API mapping
-- [Model Registry Reference](architecture/model-registry-reference.md) —
-  Complete model tables with specs
+- [Dynamic Model Loading](architecture/dynamic-model-loading.md) — Registry
+  loading from Python a2g_models
 
 ## Upstream Sync
 

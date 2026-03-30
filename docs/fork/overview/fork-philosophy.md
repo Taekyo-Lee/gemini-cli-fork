@@ -133,10 +133,9 @@ construction, UI rendering — works unchanged.
 
 ## Related Documentation
 
-| Document                                                     | What It Covers                                             |
-| ------------------------------------------------------------ | ---------------------------------------------------------- |
-| [README.md](../README.md)                                    | Quick overview, supported models, quick start              |
-| [install-guide.md](./install-guide.md)                       | Step-by-step setup, troubleshooting                        |
-| [openai-compatible.md](./openai-compatible.md)               | Technical deep-dive: env detection, auth flow, API mapping |
-| [model-registry-reference.md](./model-registry-reference.md) | Complete model tables with specs                           |
-| [todo.md](./todo.md)                                         | Implementation phases, bug fixes, current status           |
+| Document                                       | What It Covers                                             |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| [README.md](../README.md)                      | Quick overview, supported models, quick start              |
+| [install-guide.md](./install-guide.md)         | Step-by-step setup, troubleshooting                        |
+| [openai-compatible.md](./openai-compatible.md) | Technical deep-dive: env detection, auth flow, API mapping |
+| [todo.md](./todo.md)                           | Implementation phases, bug fixes, current status           |
