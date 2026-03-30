@@ -165,8 +165,8 @@ This fork syncs with stable upstream releases (not nightlies or previews).
 ./scripts/fork/verify-fork-features.sh  # Verify fork features after merge
 ```
 
-See `docs-fork/upstream/upstream-sync-guide.md` for the full process and
-`docs-fork/upstream/merge-history.md` for the merge log.
+See `docs/fork/upstream/upstream-sync-guide.md` for the full process and
+`docs/fork/upstream/merge-history.md` for the merge log.
 
 ---
 
@@ -174,11 +174,11 @@ See `docs-fork/upstream/upstream-sync-guide.md` for the full process and
 
 | Document                  | Contents                                     |
 | ------------------------- | -------------------------------------------- |
-| `docs-fork/overview/`     | Fork philosophy, fork-vs-upstream comparison |
-| `docs-fork/setup/`        | Install guide, troubleshooting               |
-| `docs-fork/architecture/` | OpenAI-compatible mode, model registry       |
-| `docs-fork/upstream/`     | Sync guide, merge history                    |
-| `docs-fork/tracking/`     | TODO, changelog                              |
+| `docs/fork/overview/`     | Fork philosophy, fork-vs-upstream comparison |
+| `docs/fork/setup/`        | Install guide, troubleshooting               |
+| `docs/fork/architecture/` | OpenAI-compatible mode, model registry       |
+| `docs/fork/upstream/`     | Sync guide, merge history                    |
+| `docs/fork/tracking/`     | TODO, changelog                              |
 
 For upstream Gemini CLI docs, see `docs/` or
 [geminicli.com](https://geminicli.com/docs/).

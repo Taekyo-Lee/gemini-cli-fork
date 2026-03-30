@@ -18,9 +18,9 @@ use.
 ## Workflow Rule
 
 **After completing any Phase (or sub-phase), always update
-`docs-fork/tracking/todo.md`** — mark completed items with `[x]`, add notes on
+`docs/fork/tracking/todo.md`** — mark completed items with `[x]`, add notes on
 what was done, and ensure the status accurately reflects reality. This keeps
-`docs-fork/tracking/todo.md` as the single source of truth for project progress.
+`docs/fork/tracking/todo.md` as the single source of truth for project progress.
 
 ## Architecture
 
@@ -62,7 +62,7 @@ LLMs. Our TypeScript registry must mirror this data.
 See `packages/core/src/config/llmRegistry.ts` for the full model registry (27
 models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
 1 Anthropic. For the original Python source, see
-`docs-fork/model-registry-reference.md`.
+`docs/fork/model-registry-reference.md`.
 
 ### Env File Location
 
@@ -80,7 +80,7 @@ models). Summary: 8 CORP (on-prem), 6 DEV/HOME (OpenRouter), 12 OpenAI (direct),
 ## Known Issues
 
 All critical, medium, and minor issues from Phase 7 have been resolved. See
-`docs-fork/tracking/todo.md` for the full history of fixes. Key fixes applied:
+`docs/fork/tracking/todo.md` for the full history of fixes. Key fixes applied:
 
 - Per-instance `ToolCallIdTracker` (was global mutable state)
 - Streaming tool call emission at end-of-stream (was silently dropped)
@@ -185,15 +185,15 @@ npm run build && node packages/cli  # Build and run
 
 ## Fork Documentation
 
-All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
+All fork-specific docs live in `docs/fork/` (separate from upstream `docs/`):
 
 | Directory                 | Contents                                     |
 | ------------------------- | -------------------------------------------- |
-| `docs-fork/overview/`     | Fork philosophy, fork-vs-upstream comparison |
-| `docs-fork/setup/`        | Install guide, troubleshooting               |
-| `docs-fork/architecture/` | OpenAI-compatible mode, model registry       |
-| `docs-fork/upstream/`     | Upstream merge plan, conflict resolution     |
-| `docs-fork/tracking/`     | TODO, changelog                              |
+| `docs/fork/overview/`     | Fork philosophy, fork-vs-upstream comparison |
+| `docs/fork/setup/`        | Install guide, troubleshooting               |
+| `docs/fork/architecture/` | OpenAI-compatible mode, model registry       |
+| `docs/fork/upstream/`     | Upstream merge plan, conflict resolution     |
+| `docs/fork/tracking/`     | TODO, changelog                              |
 
 ## Files Created by Fork
 
@@ -230,9 +230,9 @@ All fork-specific docs live in `docs-fork/` (separate from upstream `docs/`):
 
 ## Upstream Sync
 
-See `docs-fork/upstream/upstream-sync-guide.md` for the full merge strategy,
+See `docs/fork/upstream/upstream-sync-guide.md` for the full merge strategy,
 conflict resolution guide, and step-by-step process. See
-`docs-fork/upstream/merge-history.md` for the log of past merges.
+`docs/fork/upstream/merge-history.md` for the log of past merges.
 
 ### Sync scripts
 

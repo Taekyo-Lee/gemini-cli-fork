@@ -710,11 +710,11 @@ merge execution — that's deferred to a future session.
 
 ### 11.1 Documentation
 
-- [x] **Created `docs-fork/upstream-merge-plan.md`** — permanent reference with
+- [x] **Created `docs/fork/upstream-merge-plan.md`** — permanent reference with
       divergence state, merge strategy (merge not rebase), step-by-step process,
       conflict resolution table per file, rules going forward, complete file
       manifest
-- [x] **Created `docs-fork/fork-vs-upstream-comparison.md`** — side-by-side
+- [x] **Created `docs/fork/fork-vs-upstream-comparison.md`** — side-by-side
       comparison (purpose, auth, models, API layer, sandbox, IME, multi-turn),
       architecture diagram, file-by-file modification inventory with conflict
       risk
@@ -749,14 +749,14 @@ merge execution — that's deferred to a future session.
 ### 11.4 Project Docs Updated
 
 - [x] **`CLAUDE.md`** — added upstream sync section, updated file tables
-- [x] **`docs-fork/todo.md`** — added this phase entry
+- [x] **`docs/fork/todo.md`** — added this phase entry
 
 ### 11.5 Files Created
 
 | File                                             | Purpose                         |
 | ------------------------------------------------ | ------------------------------- |
-| `docs-fork/upstream-merge-plan.md`               | Merge strategy and checklist    |
-| `docs-fork/fork-vs-upstream-comparison.md`       | Fork vs upstream comparison     |
+| `docs/fork/upstream-merge-plan.md`               | Merge strategy and checklist    |
+| `docs/fork/fork-vs-upstream-comparison.md`       | Fork vs upstream comparison     |
 | `packages/core/src/core/openaiFactory.ts`        | OpenAI factory (extracted)      |
 | `packages/cli/src/core/openaiInitializer.ts`     | OpenAI auto-connect (extracted) |
 | `packages/cli/src/ui/auth/OpenAIModelPicker.tsx` | Model picker (extracted)        |
@@ -781,7 +781,7 @@ merge execution — that's deferred to a future session.
 
 - [x] **Merged upstream/main (fc03891a1)** — resolved 11 conflicting files
 - [x] `package-lock.json` — deleted and regenerated
-- [x] `README.md` — took upstream (fork README in docs-fork/)
+- [x] `README.md` — took upstream (fork README in docs/fork/)
 - [x] `InputPrompt.tsx` — merged imports (kept `fs` for IME debug)
 - [x] `client.ts` — took upstream imports (`getDisplayString`, `resolveModel`);
       removed unused `isGemini2Model`

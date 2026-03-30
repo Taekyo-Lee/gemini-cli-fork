@@ -19,7 +19,7 @@ npm install --ignore-scripts                 # 5. Build & test
 npm run build && npm run typecheck && npm test
 ./scripts/fork/verify-fork-features.sh       # 6. Verify fork features
 git commit -m "merge: sync with upstream vX.Y.Z"  # 7. Commit
-# Update docs-fork/upstream/merge-history.md       # 8. Record the merge
+# Update docs/fork/upstream/merge-history.md       # 8. Record the merge
 git stash pop                                # 9. Restore work
 ```
 
@@ -202,7 +202,7 @@ Replace `vX.Y.Z` with the stable tag you merged.
 ### 8. Update merge history
 
 Add a new row **at the top** of the table in
-`docs-fork/upstream/merge-history.md`:
+`docs/fork/upstream/merge-history.md`:
 
 ```markdown
 | 2026-04-15 | v0.35.0 | pre-merge-backup-20260415 | abc1234 | 5 | Clean merge,
@@ -311,7 +311,7 @@ Strategy per file. All fork changes are marked with `// [FORK]`.
    `npm run build && npm run typecheck && npm test` plus
    `./scripts/fork/verify-fork-features.sh`.
 
-6. **Document each merge** — update `docs-fork/upstream/merge-history.md` with
+6. **Document each merge** — update `docs/fork/upstream/merge-history.md` with
    what was merged, conflicts resolved, and any issues found.
 
 ---

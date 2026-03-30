@@ -188,18 +188,18 @@ all modified files, build/typecheck/tests pass.
 3. **Count how many files had conflicts** (from Phase 3).
 
 4. **Update merge history** — add a new row at the TOP of the table in
-   `docs-fork/upstream/merge-history.md`:
+   `docs/fork/upstream/merge-history.md`:
    ```markdown
    | <TODAY_DATE> | <LATEST_STABLE> | <BACKUP_TAG> | <COMMIT_HASH> | <CONFLICT_COUNT> | <NOTES> |
    ```
    Use today's date in YYYY-MM-DD format.
 
 5. **Update tracking doc** — add a new Phase entry at the bottom of
-   `docs-fork/tracking/todo.md` documenting what was merged and conflicts resolved.
+   `docs/fork/tracking/todo.md` documenting what was merged and conflicts resolved.
 
 6. **Commit the doc updates**:
    ```bash
-   git add docs-fork/upstream/merge-history.md docs-fork/tracking/todo.md
+   git add docs/fork/upstream/merge-history.md docs/fork/tracking/todo.md
    git commit -m "docs: record upstream merge <LATEST_STABLE>"
    ```
 
@@ -241,4 +241,4 @@ The backup tag is recorded in `merge-history.md` for future reference.
   upstream doesn't touch them
 - The sync script at `scripts/fork/upstream-sync.sh` handles stable tag detection
   and backup tag creation
-- Full reference: `docs-fork/upstream/upstream-sync-guide.md`
+- Full reference: `docs/fork/upstream/upstream-sync-guide.md`
