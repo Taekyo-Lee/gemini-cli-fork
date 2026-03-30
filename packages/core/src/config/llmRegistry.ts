@@ -148,10 +148,17 @@ function parseModelsJson(jsonPath: string): LLMModelConfig[] | null {
 
 /** Resolve the path to the repo root's models.default.json. */
 function getRepoDefaultPath(): string {
-  // This file is at packages/core/src/config/llmRegistry.ts
-  // Repo root is 4 levels up: config → src → core → packages → repo
-  const thisDir = dirname(fileURLToPath(import.meta.url));
-  return join(thisDir, '..', '..', '..', '..', 'models.default.json');
+  // Walk up from this module's directory until we find models.default.json.
+  // Works regardless of build output structure (dist/config/ vs dist/src/config/).
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 8; i++) {
+    const candidate = join(dir, 'models.default.json');
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+  return join(dir, 'models.default.json'); // won't exist, triggers fallback
 }
 
 function loadModels(): LLMModelConfig[] {
