@@ -235,7 +235,7 @@ The backup tag is recorded in `merge-history.md` for future reference.
 - The fork's upstream is `https://github.com/google-gemini/gemini-cli.git`
   (remote named `upstream`)
 - All fork changes in upstream files are marked with `// [FORK]` comments
-- Fork-created files (in `packages/core/src/core/openai*.ts`,
+- Fork-created files (`models.default.json`, `packages/core/src/core/openai*.ts`,
   `packages/core/src/config/llmRegistry.ts`, `packages/cli/src/core/openaiInitializer.ts`,
   `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`) will NEVER conflict because
   upstream doesn't touch them
