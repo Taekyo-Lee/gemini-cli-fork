@@ -11,7 +11,6 @@ import * as os from 'node:os';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { debugLogger } from '../utils/debugLogger.js';
 
 export interface LLMModelConfig {
   model: string;
@@ -137,9 +136,6 @@ function parseModelsJson(jsonPath: string): LLMModelConfig[] | null {
 
       models.push(config);
     }
-    debugLogger.log(
-      `[LLMRegistry] Loaded ${models.length} models from ${jsonPath}`,
-    );
     return models;
   } catch {
     return null;
@@ -161,24 +157,19 @@ function getRepoDefaultPath(): string {
   return join(dir, 'models.default.json'); // won't exist, triggers fallback
 }
 
-// Process-global cache — ensures the JSON is read only once even if
-// the module is instantiated from multiple import paths.
-const CACHE_KEY = Symbol.for('__gemini_fork_llm_models__');
-const globalCache = globalThis as Record<symbol, LLMModelConfig[] | undefined>;
-
 function loadModels(): LLMModelConfig[] {
-  if (globalCache[CACHE_KEY]) return globalCache[CACHE_KEY];
-
-  const repoDefault = getRepoDefaultPath();
+  const repoDefault =
+    process.env['_GEMINI_MODELS_PATH'] ?? getRepoDefaultPath();
   if (existsSync(repoDefault)) {
     const models = parseModelsJson(repoDefault);
     if (models) {
-      globalCache[CACHE_KEY] = models;
+      // Cache the resolved path so subprocesses skip the walk-up
+      process.env['_GEMINI_MODELS_PATH'] = repoDefault;
       return models;
     }
   }
 
-  // No models found — show guide once (env var dedup survives subprocesses)
+  // No models found — show guide once (env var survives subprocesses)
   if (!process.env['_GEMINI_NO_MODELS_WARNED']) {
     process.env['_GEMINI_NO_MODELS_WARNED'] = '1';
     process.stderr.write(
@@ -193,7 +184,6 @@ function loadModels(): LLMModelConfig[] {
         '     # or: ./scripts/fork/link_global.sh\n\n',
     );
   }
-  globalCache[CACHE_KEY] = [];
   return [];
 }
 
