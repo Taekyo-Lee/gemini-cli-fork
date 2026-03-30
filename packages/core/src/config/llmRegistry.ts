@@ -161,11 +161,21 @@ function getRepoDefaultPath(): string {
   return join(dir, 'models.default.json'); // won't exist, triggers fallback
 }
 
+// Process-global cache — ensures the JSON is read only once even if
+// the module is instantiated from multiple import paths.
+const CACHE_KEY = Symbol.for('__gemini_fork_llm_models__');
+const globalCache = globalThis as Record<symbol, LLMModelConfig[] | undefined>;
+
 function loadModels(): LLMModelConfig[] {
+  if (globalCache[CACHE_KEY]) return globalCache[CACHE_KEY];
+
   const repoDefault = getRepoDefaultPath();
   if (existsSync(repoDefault)) {
     const models = parseModelsJson(repoDefault);
-    if (models) return models;
+    if (models) {
+      globalCache[CACHE_KEY] = models;
+      return models;
+    }
   }
 
   // No models found — show guide once (env var dedup survives subprocesses)
@@ -183,6 +193,7 @@ function loadModels(): LLMModelConfig[] {
         '     # or: ./scripts/fork/link_global.sh\n\n',
     );
   }
+  globalCache[CACHE_KEY] = [];
   return [];
 }
 
