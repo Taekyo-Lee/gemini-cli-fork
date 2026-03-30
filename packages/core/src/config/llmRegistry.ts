@@ -5,7 +5,7 @@
  */
 
 // [FORK] LLM model registry — loads models from models.default.json at repo root.
-// Edit that file to add/remove models. Hardcoded gpt-4o fallback if not found.
+// Edit that file to add/remove models. Warns and returns empty list if not found.
 
 import * as os from 'node:os';
 import { readFileSync, existsSync } from 'node:fs';
@@ -162,31 +162,31 @@ function getRepoDefaultPath(): string {
 }
 
 function loadModels(): LLMModelConfig[] {
-  // 1. models.default.json at repo root
   const repoDefault = getRepoDefaultPath();
   if (existsSync(repoDefault)) {
     const models = parseModelsJson(repoDefault);
     if (models) return models;
-    debugLogger.log(
-      `[LLMRegistry] Failed to parse ${repoDefault}, using hardcoded fallback`,
-    );
   }
 
-  // 2. Minimal hardcoded fallback (safety net)
-  debugLogger.log('[LLMRegistry] Using minimal hardcoded fallback');
-  return [
-    {
-      model: 'gpt-4o',
-      url: 'https://api.openai.com/v1',
-      contextLength: 128000,
-      maxTokens: 16384,
-      supportsResponsesApi: true,
-      reasoningModel: false,
-      corp: false,
-      home: true,
-      dev: true,
-    },
-  ];
+  // No models found — show actionable guide via stderr (no-console rule)
+  process.stderr.write(
+    '\n' +
+      '⚠  No models loaded — models.default.json not found.\n' +
+      '\n' +
+      '   This file should exist at the root of the gemini-cli-fork repo.\n' +
+      '   If you built from source, make sure you are running the fork binary:\n' +
+      '\n' +
+      '     cd ~/workspace/gemini-cli-fork\n' +
+      '     npm run build && node packages/cli\n' +
+      '\n' +
+      '   Or re-link globally:\n' +
+      '\n' +
+      '     ./scripts/fork/link_global.sh\n\n',
+  );
+  debugLogger.log(
+    '[LLMRegistry] models.default.json not found — no models loaded',
+  );
+  return [];
 }
 
 // ---------------------------------------------------------------------------
