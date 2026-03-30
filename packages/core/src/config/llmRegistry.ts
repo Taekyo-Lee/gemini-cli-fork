@@ -161,6 +161,8 @@ function getRepoDefaultPath(): string {
   return join(dir, 'models.default.json'); // won't exist, triggers fallback
 }
 
+let _warned = false;
+
 function loadModels(): LLMModelConfig[] {
   const repoDefault = getRepoDefaultPath();
   if (existsSync(repoDefault)) {
@@ -168,21 +170,21 @@ function loadModels(): LLMModelConfig[] {
     if (models) return models;
   }
 
-  // No models found — show actionable guide via stderr (no-console rule)
-  process.stderr.write(
-    '\n' +
-      '⚠  No models loaded — models.default.json not found.\n' +
+  // No models found — show guide once via stderr
+  if (!_warned) {
+    _warned = true;
+    process.stderr.write(
       '\n' +
-      '   This file should exist at the root of the gemini-cli-fork repo.\n' +
-      '   If you built from source, make sure you are running the fork binary:\n' +
-      '\n' +
-      '     cd ~/workspace/gemini-cli-fork\n' +
-      '     npm run build && node packages/cli\n' +
-      '\n' +
-      '   Or re-link globally:\n' +
-      '\n' +
-      '     ./scripts/fork/link_global.sh\n\n',
-  );
+        '⚠  No models loaded — models.default.json not found.\n' +
+        '\n' +
+        '   This file should exist at the root of your gemini-cli-fork repo.\n' +
+        '   Rebuild and run from the repo, or re-link globally:\n' +
+        '\n' +
+        '     cd <your-repo-path>\n' +
+        '     npm run build && node packages/cli\n' +
+        '     # or: ./scripts/fork/link_global.sh\n\n',
+    );
+  }
   debugLogger.log(
     '[LLMRegistry] models.default.json not found — no models loaded',
   );
