@@ -43,6 +43,18 @@ export function isOpenAIAuthConfig(authType: string | undefined): boolean {
 }
 
 /**
+ * Infers the default API key env var from the model's URL.
+ * Falls back to OPENAI_API_KEY for OpenAI-compatible endpoints (vLLM, etc.).
+ */
+function inferDefaultApiKeyEnv(url: string | undefined): string {
+  if (!url) return 'OPENAI_API_KEY';
+  const lower = url.toLowerCase();
+  if (lower.includes('anthropic.com')) return 'ANTHROPIC_API_KEY';
+  if (lower.includes('openrouter.ai')) return 'OPENROUTER_API_KEY';
+  return 'OPENAI_API_KEY';
+}
+
+/**
  * Creates an OpenAI-compatible ContentGenerator.
  *
  * Resolves model config from the LLM registry, sets up the API key
@@ -55,9 +67,10 @@ export function createOpenAIContentGenerator(
   const selectedModelName = config.selectedOpenAIModel ?? gcConfig.getModel();
   const modelConfig = getModelByName(selectedModelName);
   const apiKeyEnv = modelConfig?.apiKeyEnv;
+  const defaultKeyEnv = inferDefaultApiKeyEnv(modelConfig?.url);
   const apiKey =
     (apiKeyEnv ? process.env[apiKeyEnv] : undefined) ??
-    process.env['OPENAI_API_KEY'] ??
+    process.env[defaultKeyEnv] ??
     config.apiKey ??
     '';
   const baseURL =
