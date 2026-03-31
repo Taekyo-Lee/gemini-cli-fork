@@ -137,6 +137,7 @@ export async function resolveTelemetrySettings(options: {
     otlpEndpoint: otlpEndpoint ?? langfuseEndpoint,
     otlpProtocol: otlpProtocol ?? (langfuseDetected ? 'http' : undefined),
     otlpHeaders: langfuseHeaders,
+    langfuse: langfuseDetected || undefined,
     logPrompts,
     outfile,
     useCollector,
