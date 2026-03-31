@@ -108,11 +108,35 @@ export async function resolveTelemetrySettings(options: {
     parseBooleanEnvFlag(env['GEMINI_TELEMETRY_USE_COLLECTOR']) ??
     settings.useCollector;
 
+  // [FORK] Langfuse auto-configuration from LANGFUSE_* env vars.
+  // When Langfuse keys are present, auto-enable telemetry with the correct
+  // endpoint, protocol, and auth headers. Explicit GEMINI_TELEMETRY_* vars
+  // always take precedence.
+  const langfusePublicKey = env['LANGFUSE_PUBLIC_KEY'];
+  const langfuseSecretKey = env['LANGFUSE_SECRET_KEY'];
+  const langfuseBaseUrl = (
+    env['LANGFUSE_BASE_URL'] ?? 'http://localhost:3000'
+  ).replace(/\/$/, '');
+  const langfuseDetected = !!(langfusePublicKey && langfuseSecretKey);
+
+  let langfuseEndpoint: string | undefined;
+  let langfuseHeaders: Record<string, string> | undefined;
+  if (langfuseDetected) {
+    langfuseEndpoint = `${langfuseBaseUrl}/api/public/otel`;
+    const credentials = Buffer.from(
+      `${langfusePublicKey}:${langfuseSecretKey}`,
+    ).toString('base64');
+    langfuseHeaders = {
+      Authorization: `Basic ${credentials}`,
+    };
+  }
+
   return {
-    enabled,
+    enabled: enabled ?? (langfuseDetected ? true : undefined),
     target,
-    otlpEndpoint,
-    otlpProtocol,
+    otlpEndpoint: otlpEndpoint ?? langfuseEndpoint,
+    otlpProtocol: otlpProtocol ?? (langfuseDetected ? 'http' : undefined),
+    otlpHeaders: langfuseHeaders,
     logPrompts,
     outfile,
     useCollector,
