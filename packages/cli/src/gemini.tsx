@@ -546,7 +546,11 @@ export async function main() {
     await setupTerminalAndTheme(config, settings);
 
     const initAppHandle = startupProfiler.start('initialize_app');
-    const initializationResult = await initializeApp(config, settings);
+    const initializationResult = await initializeApp(
+      config,
+      settings,
+      argv.model as string | undefined, // [FORK] pass -m flag for OpenAI model override
+    );
     initAppHandle?.end();
 
     // [FORK] Skip pre-render OAuth in OpenAI-compatible mode
