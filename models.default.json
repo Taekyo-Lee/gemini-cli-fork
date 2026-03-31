@@ -3,8 +3,10 @@
 
   "models": [
 
+    { "_section": "--- Corp models (on-prem vLLM) ---" },
     {
-      "model": "GLM-5-Thinking",
+      "model": "[On-Prem] GLM-5-Thinking",
+      "modelAlias": "GLM-5-Thinking",
       "url": "http://a2g.samsungds.net:7620/v1",
       "modality": { "input": ["text"], "output": ["text"] },
       "contextLength": 157000,
@@ -16,7 +18,8 @@
       "dev": false
     },
     {
-      "model": "GLM-5-Non-Thinking",
+      "model": "[On-Prem] GLM-5-Non-Thinking",
+      "modelAlias": "GLM-5-Non-Thinking",
       "url": "http://a2g.samsungds.net:7620/v1",
       "modality": { "input": ["text"], "output": ["text"] },
       "contextLength": 157000,
@@ -28,7 +31,8 @@
       "dev": false
     },
     {
-      "model": "Kimi-K2.5-Thinking",
+      "model": "[On-Prem] Kimi-K2.5-Thinking",
+      "modelAlias": "Kimi-K2.5-Thinking",
       "url": "http://a2g.samsungds.net:7620/v1",
       "modality": { "input": ["text", "image", "video"], "output": ["text"] },
       "contextLength": 262000,
@@ -40,7 +44,8 @@
       "dev": false
     },
     {
-      "model": "Kimi-K2.5-Non-Thinking",
+      "model": "[On-Prem] Kimi-K2.5-Non-Thinking",
+      "modelAlias": "Kimi-K2.5-Non-Thinking",
       "url": "http://a2g.samsungds.net:7620/v1",
       "modality": { "input": ["text", "image", "video"], "output": ["text"] },
       "contextLength": 262000,
@@ -52,7 +57,8 @@
       "dev": false
     },
     {
-      "model": "Qwen3.5-35B-A3B",
+      "model": "[On-Prem] Qwen3.5-35B-A3B",
+      "modelAlias": "Qwen3.5-35B-A3B",
       "url": "http://a2g.samsungds.net:7620/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 128000,
@@ -64,7 +70,8 @@
       "dev": false
     },
     {
-      "model": "Qwen3.5-122B-A10B",
+      "model": "[On-Prem] Qwen3.5-122B-A10B",
+      "modelAlias": "Qwen3.5-122B-A10B",
       "url": "http://a2g.samsungds.net:7620/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 262000,
@@ -76,7 +83,8 @@
       "dev": false
     },
     {
-      "model": "gpt-oss-120b",
+      "model": "[On-Prem] gpt-oss-120b",
+      "modelAlias": "gpt-oss-120b",
       "url": "http://a2g.samsungds.net:7620/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 262000,
@@ -88,7 +96,8 @@
       "dev": false
     },
     {
-      "model": "GaussO-Owl-Ultra-Instruct",
+      "model": "[On-Prem] GaussO-Owl-Ultra-Instruct",
+      "modelAlias": "GaussO-Owl-Ultra-Instruct",
       "url": "http://apigw.samsungds.net:8000/gausso/1/gauss_o/aiserving/gauss/o/v1",
       "modality": { "input": ["text"], "output": ["text"] },
       "contextLength": 128000,
@@ -101,14 +110,10 @@
       "defaultHeaders": "__corp_auth__"
     },
 
-
-
-
-
-
-
+    { "_section": "--- OpenAI models ---" },
     {
-      "model": "gpt-4o",
+      "model": "[OpenAI] gpt-4o",
+      "modelAlias": "gpt-4o",
       "url": "https://api.openai.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 128000,
@@ -120,7 +125,8 @@
       "dev": true
     },
     {
-      "model": "gpt-4o-mini",
+      "model": "[OpenAI] gpt-4o-mini",
+      "modelAlias": "gpt-4o-mini",
       "url": "https://api.openai.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 128000,
@@ -132,7 +138,8 @@
       "dev": true
     },
     {
-      "model": "gpt-5",
+      "model": "[OpenAI] gpt-5",
+      "modelAlias": "gpt-5",
       "url": "https://api.openai.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 400000,
@@ -144,7 +151,8 @@
       "dev": true
     },
     {
-      "model": "gpt-5-mini",
+      "model": "[OpenAI] gpt-5-mini",
+      "modelAlias": "gpt-5-mini",
       "url": "https://api.openai.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 400000,
@@ -156,7 +164,8 @@
       "dev": true
     },
     {
-      "model": "gpt-5.2",
+      "model": "[OpenAI] gpt-5.2",
+      "modelAlias": "gpt-5.2",
       "url": "https://api.openai.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 400000,
@@ -168,14 +177,12 @@
       "dev": true
     },
 
-
-
-
+    { "_section": "--- Anthropic models ---" },
     {
-      "model": "claude-opus-4-6",
+      "model": "[Anthropic] claude-opus-4-6",
+      "modelAlias": "claude-opus-4-6",
       "url": "https://api.anthropic.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
-      "apiKeyEnv": "ANTHROPIC_API_KEY",
       "contextLength": 1000000,
       "maxTokens": 128000,
       "supportsResponsesApi": false,
@@ -185,10 +192,10 @@
       "dev": true
     },
     {
-      "model": "claude-sonnet-4-6",
+      "model": "[Anthropic] claude-sonnet-4-6",
+      "modelAlias": "claude-sonnet-4-6",
       "url": "https://api.anthropic.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
-      "apiKeyEnv": "ANTHROPIC_API_KEY",
       "contextLength": 1000000,
       "maxTokens": 64000,
       "supportsResponsesApi": false,
@@ -198,10 +205,10 @@
       "dev": true
     },
     {
-      "model": "claude-haiku-4-5-20251001",
+      "model": "[Anthropic] claude-haiku-4-5",
+      "modelAlias": "claude-haiku-4-5",
       "url": "https://api.anthropic.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
-      "apiKeyEnv": "ANTHROPIC_API_KEY",
       "contextLength": 200000,
       "maxTokens": 64000,
       "supportsResponsesApi": false,
@@ -211,15 +218,12 @@
       "dev": true
     },
 
-
-
-
-
+    { "_section": "--- OpenRouter models ---" },
     {
-      "model": "deepseek/deepseek-v3.2",
+      "model": "[OpenRouter] deepseek-v3.2-Thinking",
+      "modelAlias": "deepseek/deepseek-v3.2",
       "url": "https://openrouter.ai/api/v1",
       "modality": { "input": ["text"], "output": ["text"] },
-      "apiKeyEnv": "OPENROUTER_API_KEY",
       "contextLength": 128000,
       "maxTokens": 128000,
       "supportsResponsesApi": false,
@@ -230,6 +234,23 @@
       "extraBody": {
         "provider": { "sort": "throughput" },
         "reasoning": { "enabled": true }
+      }
+    },
+    {
+      "model": "[OpenRouter] deepseek-v3.2-Non-Thinking",
+      "modelAlias": "deepseek/deepseek-v3.2",
+      "url": "https://openrouter.ai/api/v1",
+      "modality": { "input": ["text"], "output": ["text"] },
+      "contextLength": 128000,
+      "maxTokens": 128000,
+      "supportsResponsesApi": false,
+      "reasoningModel": false,
+      "corp": false,
+      "home": true,
+      "dev": true,
+      "extraBody": {
+        "provider": { "sort": "throughput" },
+        "reasoning": { "enabled": false }
       }
     }
 
