@@ -136,22 +136,22 @@ do_status() {
 }
 
 # ---------------------------------------------------------------------------
-# List available LLMs (Python registry — sanity check)
+# List available LLMs (Python helper — sanity check)
 # ---------------------------------------------------------------------------
 do_list_models() {
-  log_step "Listing available LLMs (Python registry)..."
+  log_step "Listing available LLMs (Python helper)..."
   cd "$REPO_ROOT"
-  uv run --native-tls --active --env-file "$ENV_FILE" on_prem_llms_test/list_available_llms.py
+  python3 -c "import sys; sys.path.insert(0, 'scripts/fork'); from gemini_llm import list_models; list_models()"
   log_ok "Model list retrieved"
 }
 
 # ---------------------------------------------------------------------------
-# Python registry test (verify a2g_models still works)
+# Python helper test (verify gemini_llm.py works)
 # ---------------------------------------------------------------------------
 do_python_test() {
-  log_step "Running Python LLM registry test..."
+  log_step "Running Python LLM helper test..."
   cd "$REPO_ROOT"
-  uv run --native-tls --active --env-file "$ENV_FILE" on_prem_llms_test/llm_test.py
+  python3 -c "import sys; sys.path.insert(0, 'scripts/fork'); from gemini_llm import from_model; llm = from_model('gpt-4o-mini'); print(llm.invoke('Say hi in 3 words').content)"
   log_ok "Python LLM test passed"
 }
 
