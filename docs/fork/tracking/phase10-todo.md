@@ -3,7 +3,7 @@
 ## Overview
 
 Single-file Python helper for coworkers to use `models.default.json` with
-vanilla `langchain_openai.ChatOpenAI`. See `phase10-plan.md` for full design.
+vanilla `langchain_openai.ChatOpenAI`. Only dependency: `pip install langchain-openai`.
 
 ---
 
@@ -52,4 +52,4 @@ vanilla `langchain_openai.ChatOpenAI`. See `phase10-plan.md` for full design.
       model-registry-reference.md, todo.md
 - [x] **`GEMINI_CLI_MODELS_JSON` env var** — implemented in `_find_models_json()`
 - [x] **Pretty-print `list_models()`** — table format with `#`, model, context, URL
-- [ ] **Env file loading** — optional `dotenv` support for `~/.env` (deferred)
+- [x] **Env file loading** — not needed; users `source ~/.env` before running
