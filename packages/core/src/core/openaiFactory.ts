@@ -8,7 +8,7 @@
  * [FORK] OpenAI-compatible content generator factory.
  *
  * Extracted from contentGenerator.ts to minimize fork changes in that
- * upstream-owned file.  All OpenAI/a2g_models logic lives here.
+ * upstream-owned file.  All OpenAI-compatible logic lives here.
  */
 
 import type { Config } from '../config/config.js';
@@ -45,7 +45,7 @@ export function isOpenAIAuthConfig(authType: string | undefined): boolean {
 /**
  * Creates an OpenAI-compatible ContentGenerator.
  *
- * Resolves model config from the a2g_models registry, sets up the API key
+ * Resolves model config from the LLM registry, sets up the API key
  * fallback chain, and wraps in LoggingContentGenerator.
  */
 export function createOpenAIContentGenerator(
@@ -65,7 +65,7 @@ export function createOpenAIContentGenerator(
   const modelToSend =
     modelConfig?.modelAlias ?? modelConfig?.model ?? selectedModelName;
 
-  // Don't pass maxTokens when it equals contextLength — in the a2g_models
+  // Don't pass maxTokens when it equals contextLength — in the model
   // registry, max_tokens is often set to the context window size (not a safe
   // output limit).  Passing it as max_tokens to the OpenAI API would reserve
   // the entire context for output, leaving no room for input.
