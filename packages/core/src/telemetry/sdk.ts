@@ -233,6 +233,7 @@ export async function initializeTelemetry(
 
   const otlpEndpoint = config.getTelemetryOtlpEndpoint();
   const otlpProtocol = config.getTelemetryOtlpProtocol();
+  const otlpHeaders = config.getTelemetryOtlpHeaders(); // [FORK] e.g., Langfuse auth
   const telemetryTarget = config.getTelemetryTarget();
   const useCollector = config.getTelemetryUseCollector();
 
@@ -281,15 +282,19 @@ export async function initializeTelemetry(
         url.pathname = [url.pathname.replace(/\/$/, ''), path].join('/');
         return url.href;
       };
+      // [FORK] Pass custom headers (e.g., Langfuse auth) to HTTP exporters
       spanExporter = new OTLPTraceExporterHttp({
         url: buildUrl('v1/traces'),
+        ...(otlpHeaders && { headers: otlpHeaders }),
       });
       logExporter = new OTLPLogExporterHttp({
         url: buildUrl('v1/logs'),
+        ...(otlpHeaders && { headers: otlpHeaders }),
       });
       metricReader = new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporterHttp({
           url: buildUrl('v1/metrics'),
+          ...(otlpHeaders && { headers: otlpHeaders }),
         }),
         exportIntervalMillis: 10000,
       });
