@@ -19,21 +19,25 @@ import {
 import type { LoadedSettings } from '../config/settings.js';
 
 /**
- * Tries to auto-connect to the last selected OpenAI-compatible model.
+ * Tries to auto-connect to an OpenAI-compatible model.
  *
- * Reads `settings.merged.security.auth.selectedModel`, validates it against the
- * LLM registry, and calls `config.refreshAuth(OPENAI_COMPATIBLE)`.
+ * Priority: CLI -m flag > saved model from settings > show model picker.
+ * Validates the model against the LLM registry and calls
+ * `config.refreshAuth(OPENAI_COMPATIBLE)`.
  *
  * @returns true if auto-connect succeeded, false otherwise.
  */
 export async function tryOpenAIAutoConnect(
   config: Config,
   settings: LoadedSettings,
+  cliModelOverride?: string,
 ): Promise<boolean> {
-  const savedModel = settings.merged.security.auth.selectedModel;
-  if (savedModel && getModelByName(savedModel)) {
+  // [FORK] -m flag overrides the saved model
+  const modelName =
+    cliModelOverride || settings.merged.security.auth.selectedModel;
+  if (modelName && getModelByName(modelName)) {
     try {
-      config.setModel(savedModel, false);
+      config.setModel(modelName, false);
       await config.refreshAuth(AuthType.OPENAI_COMPATIBLE);
       return true;
     } catch {
