@@ -845,4 +845,26 @@ Goal: Let coworkers use models from `models.default.json` with vanilla
 - [x] **Updated test script** — `do_list_models()` and `do_python_test()` in
       `test_openai_adapter.sh` now use `gemini_llm.py` instead of deleted scripts.
 
-See `phase10-plan.md` and `phase10-todo.md` for full details.
+See `phase10-todo.md` for full details.
+
+---
+
+## Phase 10.5: Multi-Provider Routing + API Key Inference (COMPLETE)
+
+Goal: Route models to native LangChain classes by provider, and auto-detect
+the correct API key from the model URL (no more hardcoded `OPENAI_API_KEY`
+fallback).
+
+- [x] **Multi-provider routing in `gemini_llm.py`** — `from_model()` now returns
+      `ChatOpenAI`, `ChatAnthropic`, or `ChatOpenRouter` based on URL. Lazy
+      imports so coworkers only install the package(s) they need.
+- [x] **URL-based API key inference in `openaiFactory.ts`** — added
+      `inferDefaultApiKeyEnv(url)`: `anthropic.com` -> `ANTHROPIC_API_KEY`,
+      `openrouter.ai` -> `OPENROUTER_API_KEY`, fallback -> `OPENAI_API_KEY`.
+      Fixes 401 error when selecting Anthropic models in the CLI.
+- [x] **Added `apiKeyEnv` to Anthropic models in `models.default.json`** —
+      explicit `ANTHROPIC_API_KEY` for Claude models.
+- [x] **Live tested all three providers** — OpenAI, Anthropic, OpenRouter
+      invoke + stream confirmed working in both Python helper and TypeScript CLI.
+
+See `phase10.5-todo.md` for full details.
