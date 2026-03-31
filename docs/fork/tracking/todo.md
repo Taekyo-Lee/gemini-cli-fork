@@ -877,16 +877,23 @@ Leverages the upstream's existing OpenTelemetry pipeline to send traces to a
 self-hosted Langfuse instance. Auto-configures from `LANGFUSE_*` env vars — no
 new dependencies, just smart defaults on top of existing OTLP exporters.
 
-- [x] **Config layer** — added `otlpHeaders` to `TelemetrySettings` interface
-      and `getTelemetryOtlpHeaders()` getter to `Config` class.
+- [x] **Config layer** — added `otlpHeaders`, `langfuse` to `TelemetrySettings`,
+      getters to `Config` class.
 - [x] **Langfuse auto-detection** — `resolveTelemetrySettings()` detects
       `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY`, auto-configures endpoint,
       protocol (HTTP), and auth headers. Explicit `GEMINI_TELEMETRY_*` vars
       always take precedence.
-- [x] **OTLP headers passthrough** — HTTP exporters in `sdk.ts` now accept
-      custom headers (used for Langfuse `Authorization: Basic` auth).
-- [x] **Documentation** — Langfuse section in `openai-compatible.md`, env vars
-      in `CLAUDE.md`.
-- [ ] **Build & test** — rebuild, verify traces appear in Langfuse UI.
+- [x] **OTLP exporters** — HTTP exporters pass custom headers. `NoopLogExporter`
+      for Langfuse (no `/v1/logs` support). Explicit `forceFlush()` before
+      shutdown for short-lived `-p` mode.
+- [x] **Langfuse display quality** — `langfuse.observation.input/output` in
+      LangChain-style `[{"type":"text","text":"..."}]` format (multimodality-
+      ready). Streaming chunks concatenated. Trace name: `gemini-cli:{model}`.
+- [x] **`-m` flag fix** — `tryOpenAIAutoConnect()` now respects CLI `-m` flag,
+      overriding saved model from settings.
+- [x] **Documentation** — dedicated `telemetry.md`, cross-ref in
+      `openai-compatible.md`, env vars in `CLAUDE.md`.
+- [x] **Build & test** — file export, Langfuse OTLP, `-m` flag, display quality
+      all verified.
 
 See `phase11-plan.md` and `phase11-todo.md` for full details.
