@@ -77,24 +77,25 @@ runtime. Set `"defaultHeaders": "__corp_auth__"` in the config — the TypeScrip
 loader detects this marker and installs a lazy getter that computes headers from
 `FALLBACK_API_KEY_1` and `AD_ID` on each access.
 
-## Python Export (Optional)
+## Python LLM Helper
 
-If you use the `a2g_models` Python registry, you can regenerate the config from
-it:
+A lightweight helper (`scripts/fork/gemini_llm.py`) lets you use models from
+`models.default.json` with vanilla `langchain_openai.ChatOpenAI`:
 
-```bash
-cd ~/workspace/main/research/a2g_packages/src/a2g_models
-uv run --native-tls --env-file ~/.env \
-  python ~/workspace/gemini-cli-fork/scripts/fork/export_llm_registry.py
+```python
+# pip install langchain-openai
+import sys; sys.path.insert(0, "scripts/fork")
+from gemini_llm import from_model, list_models
+
+list_models()                          # Show models for your environment
+llm = from_model("GLM-5-Thinking")     # Get a configured ChatOpenAI
+llm.invoke("Hello")                    # Use it
 ```
-
-This writes to `models.default.json`. It is a convenience tool, not required at
-runtime.
 
 ## Key Files
 
-| File                                      | Role                                     |
-| ----------------------------------------- | ---------------------------------------- |
-| `models.default.json`                     | Model config (repo root, edit this)      |
-| `packages/core/src/config/llmRegistry.ts` | JSON loader, env detection, public API   |
-| `scripts/fork/export_llm_registry.py`     | Optional: regenerates config from Python |
+| File                                      | Role                                         |
+| ----------------------------------------- | --------------------------------------------- |
+| `models.default.json`                     | Model config (repo root, edit this)           |
+| `packages/core/src/config/llmRegistry.ts` | JSON loader, env detection, public API (TS)   |
+| `scripts/fork/gemini_llm.py`              | Lightweight Python helper for LangChain users |
