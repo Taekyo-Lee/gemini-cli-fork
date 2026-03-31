@@ -10,6 +10,20 @@ Routes to the native LangChain class for each provider:
 
 No a2g_models dependency — just install the provider package(s) you need.
 
+All LangChain constructor parameters are supported directly in models.default.json.
+Any key that isn't a registry key (model, url, contextLength, etc.) is passed
+through as a constructor kwarg to the LangChain class. For example:
+
+    {
+      "model": "[Anthropic] claude-opus-4-6",
+      "modelAlias": "claude-opus-4-6",
+      "url": "https://api.anthropic.com/v1",
+      "contextLength": 1000000,
+      "maxTokens": 128000,
+      "thinking": {"type": "enabled", "budget_tokens": 10000},
+      "temperature": 0.7
+    }
+
 Usage:
     from gemini_llm import from_model, list_models
 
@@ -17,15 +31,15 @@ Usage:
     list_models()
 
     # Get a configured chat model and use it
-    llm = from_model("GLM-5-Thinking")
+    llm = from_model("[On-Prem] GLM-5-Thinking")
     response = llm.invoke("Hello, how are you?")
     print(response.content)
 
-    # With custom parameters
-    llm = from_model("gpt-5", temperature=0.7, max_completion_tokens=4096)
+    # With custom parameters (override JSON defaults)
+    llm = from_model("[OpenAI] gpt-5", temperature=0.7, max_completion_tokens=4096)
 
     # Streaming
-    for chunk in from_model("claude-opus-4-6").stream("Explain Python GIL"):
+    for chunk in from_model("[Anthropic] claude-opus-4-6").stream("Explain Python GIL"):
         print(chunk.content, end="", flush=True)
 
 Environment detection:
@@ -44,6 +58,20 @@ import os
 import socket
 from pathlib import Path
 from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Registry-only keys (consumed by our code, NOT passed to LangChain)
+# ---------------------------------------------------------------------------
+
+_REGISTRY_KEYS = frozenset({
+    "model", "modelAlias", "url", "modality",
+    "apiKeyEnv", "contextLength", "maxTokens",
+    "corp", "home", "dev",
+    "supportsResponsesApi", "reasoningModel",
+    "defaultHeaders", "extraBody",
+    "_section", "_comment",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +165,17 @@ def _load_models() -> list[dict[str, Any]]:
     models = data.get("models", [])
     if not isinstance(models, list):
         raise ValueError(f"Expected 'models' array in {path}")
-    return models
+    # Skip section separators (entries without "model" or "url")
+    return [m for m in models if "model" in m and "url" in m]
+
+
+def _extract_passthrough_kwargs(model_config: dict[str, Any]) -> dict[str, Any]:
+    """Extract all non-registry keys from model config as LangChain kwargs.
+
+    Any key in models.default.json that isn't in _REGISTRY_KEYS is treated as
+    a LangChain constructor parameter and passed through directly.
+    """
+    return {k: v for k, v in model_config.items() if k not in _REGISTRY_KEYS}
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +233,9 @@ def _resolve_api_key(model_config: dict[str, Any], provider: str) -> str:
 # Per-provider builders
 # ---------------------------------------------------------------------------
 
-def _build_openai(model_config: dict[str, Any], api_key: str, **kwargs: Any) -> Any:
+def _build_openai(
+    model_config: dict[str, Any], api_key: str, passthrough: dict[str, Any], **kwargs: Any
+) -> Any:
     """Build a ChatOpenAI instance."""
     try:
         from langchain_openai import ChatOpenAI
@@ -223,11 +263,15 @@ def _build_openai(model_config: dict[str, Any], api_key: str, **kwargs: Any) -> 
     if extra_body:
         chat_kwargs["extra_body"] = extra_body
 
+    # Passthrough params from JSON, then user kwargs override
+    chat_kwargs.update(passthrough)
     chat_kwargs.update(kwargs)
     return ChatOpenAI(**chat_kwargs)
 
 
-def _build_anthropic(model_config: dict[str, Any], api_key: str, **kwargs: Any) -> Any:
+def _build_anthropic(
+    model_config: dict[str, Any], api_key: str, passthrough: dict[str, Any], **kwargs: Any
+) -> Any:
     """Build a ChatAnthropic instance."""
     try:
         from langchain_anthropic import ChatAnthropic
@@ -242,15 +286,20 @@ def _build_anthropic(model_config: dict[str, Any], api_key: str, **kwargs: Any) 
     if api_key:
         chat_kwargs["api_key"] = api_key
 
-    # Map max_completion_tokens -> max_tokens for Anthropic
-    if "max_completion_tokens" in kwargs:
-        kwargs["max_tokens"] = kwargs.pop("max_completion_tokens")
-
+    # Passthrough params from JSON, then user kwargs override
+    chat_kwargs.update(passthrough)
     chat_kwargs.update(kwargs)
+
+    # Map max_completion_tokens -> max_tokens for Anthropic
+    if "max_completion_tokens" in chat_kwargs:
+        chat_kwargs["max_tokens"] = chat_kwargs.pop("max_completion_tokens")
+
     return ChatAnthropic(**chat_kwargs)
 
 
-def _build_openrouter(model_config: dict[str, Any], api_key: str, **kwargs: Any) -> Any:
+def _build_openrouter(
+    model_config: dict[str, Any], api_key: str, passthrough: dict[str, Any], **kwargs: Any
+) -> Any:
     """Build a ChatOpenRouter instance."""
     try:
         from langchain_openrouter import ChatOpenRouter
@@ -278,6 +327,8 @@ def _build_openrouter(model_config: dict[str, Any], api_key: str, **kwargs: Any)
         if remaining:
             chat_kwargs["model_kwargs"] = remaining
 
+    # Passthrough params from JSON (overrides extraBody mappings), then user kwargs
+    chat_kwargs.update(passthrough)
     chat_kwargs.update(kwargs)
     return ChatOpenRouter(**chat_kwargs)
 
@@ -293,6 +344,17 @@ _BUILDERS = {
 # Public API
 # ---------------------------------------------------------------------------
 
+def _is_model_available(model: dict[str, Any], env: str) -> bool:
+    """Check if a model is available in the given environment.
+
+    If the model has no corp/home/dev keys, it is available everywhere.
+    """
+    has_env_flags = "corp" in model or "home" in model or "dev" in model
+    if not has_env_flags:
+        return True
+    return model.get(env, False)
+
+
 def list_models(environment: str | None = None) -> list[dict[str, Any]]:
     """List available models for the current (or specified) environment.
 
@@ -306,7 +368,10 @@ def list_models(environment: str | None = None) -> list[dict[str, Any]]:
     """
     env = environment or detect_environment()
     all_models = _load_models()
-    available = [m for m in all_models if m.get(env, False)]
+    available = [
+        m for m in all_models
+        if _is_model_available(m, env)
+    ]
 
     # Print formatted table
     if not available:
@@ -341,11 +406,14 @@ def from_model(model_name: str, **kwargs: Any) -> Any:
       - openrouter.ai      -> ChatOpenRouter    (pip install langchain-openrouter)
       - Other URLs         -> ChatOpenAI        (OpenAI-compatible fallback)
 
+    All LangChain constructor parameters are supported in models.default.json.
+    Any key that isn't a registry key is passed through to the constructor.
+    User kwargs override JSON defaults.
+
     Args:
         model_name: Model name as it appears in models.default.json
-                    (e.g., "GLM-5-Thinking", "claude-opus-4-6", "deepseek/deepseek-v3.2")
-        **kwargs: Additional arguments passed to the LangChain chat model
-                  (e.g., temperature, max_completion_tokens, max_tokens)
+        **kwargs: Additional arguments passed to the LangChain chat model.
+                  These override any values set in models.default.json.
 
     Returns:
         A configured LangChain chat model instance ready for use.
@@ -355,13 +423,13 @@ def from_model(model_name: str, **kwargs: Any) -> Any:
         ValueError: If model_name is not found in the registry.
 
     Examples:
-        >>> llm = from_model("gpt-5")
+        >>> llm = from_model("[OpenAI] gpt-5")
         >>> llm.invoke("Hello")
 
-        >>> llm = from_model("claude-opus-4-6", max_tokens=4096)
-        >>> llm.invoke("Explain quantum computing")
+        >>> # JSON has thinking config; override temperature at call time
+        >>> llm = from_model("[Anthropic] claude-opus-4-6", temperature=0.5)
 
-        >>> llm = from_model("deepseek/deepseek-v3.2", temperature=0.7)
+        >>> llm = from_model("[OpenRouter] deepseek-v3.2-Thinking")
         >>> for chunk in llm.stream("Write a poem"):
         ...     print(chunk.content, end="")
     """
@@ -381,6 +449,9 @@ def from_model(model_name: str, **kwargs: Any) -> Any:
     provider = _detect_provider(model_config["url"])
     api_key = kwargs.pop("api_key", None) or _resolve_api_key(model_config, provider)
 
+    # Extract passthrough kwargs from JSON (everything not a registry key)
+    passthrough = _extract_passthrough_kwargs(model_config)
+
     # Route to provider-specific builder
     builder = _BUILDERS[provider]
-    return builder(model_config, api_key, **kwargs)
+    return builder(model_config, api_key, passthrough, **kwargs)
