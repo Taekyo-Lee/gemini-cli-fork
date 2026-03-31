@@ -190,6 +190,7 @@ export interface TelemetrySettings {
   otlpEndpoint?: string;
   otlpProtocol?: 'grpc' | 'http';
   otlpHeaders?: Record<string, string>; // [FORK] custom headers for OTLP export (e.g., Langfuse auth)
+  langfuse?: boolean; // [FORK] true when auto-configured from LANGFUSE_* env vars
   logPrompts?: boolean;
   outfile?: string;
   useCollector?: boolean;
@@ -968,6 +969,7 @@ export class Config implements McpContext, AgentLoopContext {
       otlpEndpoint: params.telemetry?.otlpEndpoint ?? DEFAULT_OTLP_ENDPOINT,
       otlpProtocol: params.telemetry?.otlpProtocol,
       otlpHeaders: params.telemetry?.otlpHeaders, // [FORK] Langfuse auth headers
+      langfuse: params.telemetry?.langfuse, // [FORK] Langfuse mode flag
       logPrompts: params.telemetry?.logPrompts ?? true,
       outfile: params.telemetry?.outfile,
       useCollector: params.telemetry?.useCollector,
@@ -2430,6 +2432,11 @@ export class Config implements McpContext, AgentLoopContext {
   // [FORK] Custom headers for OTLP export (e.g., Langfuse auth)
   getTelemetryOtlpHeaders(): Record<string, string> | undefined {
     return this.telemetrySettings.otlpHeaders;
+  }
+
+  // [FORK] Whether telemetry was auto-configured from LANGFUSE_* env vars
+  getTelemetryLangfuse(): boolean {
+    return this.telemetrySettings.langfuse ?? false;
   }
 
   getTelemetryTarget(): TelemetryTarget {
