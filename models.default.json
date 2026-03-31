@@ -213,7 +213,7 @@
 
 
     {
-      "model": "dev-DeepSeek-V3.2",
+      "model": "deepseek/deepseek-v3.2",
       "url": "https://openrouter.ai/api/v1",
       "modality": { "input": ["text"], "output": ["text"] },
       "apiKeyEnv": "OPENROUTER_API_KEY",
@@ -227,23 +227,6 @@
       "extraBody": {
         "provider": { "sort": "throughput" },
         "reasoning": { "enabled": true }
-      }
-    },
-    {
-      "model": "dev-DeepSeek-V3.2-non-reasoning",
-      "url": "https://openrouter.ai/api/v1",
-      "modality": { "input": ["text"], "output": ["text"] },
-      "apiKeyEnv": "OPENROUTER_API_KEY",
-      "contextLength": 128000,
-      "maxTokens": 128000,
-      "supportsResponsesApi": false,
-      "reasoningModel": false,
-      "corp": false,
-      "home": true,
-      "dev": true,
-      "extraBody": {
-        "provider": { "sort": "throughput" },
-        "reasoning": { "enabled": false }
       }
     }
 
