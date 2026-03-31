@@ -8,7 +8,7 @@
  * [FORK] OpenAI-compatible model picker.
  *
  * Extracted from AuthDialog.tsx to minimize fork changes in that
- * upstream-owned file.  Shows available LLMs from the a2g_models registry
+ * upstream-owned file.  Shows available LLMs from models.default.json
  * and connects via OpenAI Chat Completions API.
  */
 
