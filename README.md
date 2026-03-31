@@ -84,8 +84,8 @@ gemini   # → Google OAuth / API key / Vertex AI
 
 ## Supported Models
 
-Models are defined in the `llmRegistry.ts` registry, mirroring the Python
-`a2g_models` package.
+Models are defined in `models.default.json` at the repo root, loaded by
+`llmRegistry.ts` at startup.
 
 | Environment        | Models                                                   | Providers            |
 | ------------------ | -------------------------------------------------------- | -------------------- |
