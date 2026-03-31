@@ -41,6 +41,7 @@ export interface InitializationResult {
 export async function initializeApp(
   config: Config,
   settings: LoadedSettings,
+  cliModelOverride?: string,
 ): Promise<InitializationResult> {
   // [FORK] Check if OpenAI-compatible mode is detected from environment
   const isOpenAIMode = getAuthTypeFromEnv() === AuthType.OPENAI_COMPATIBLE;
@@ -48,9 +49,9 @@ export async function initializeApp(
   let authError: string | null = null;
   let accountSuspensionInfo: AccountSuspensionInfo | null = null;
 
-  // [FORK] In OpenAI mode, try to auto-connect to the last selected model
+  // [FORK] In OpenAI mode, try to auto-connect (-m flag overrides saved model)
   const openAIAutoConnected = isOpenAIMode
-    ? await tryOpenAIAutoConnect(config, settings)
+    ? await tryOpenAIAutoConnect(config, settings, cliModelOverride)
     : false;
 
   if (!isOpenAIMode) {
