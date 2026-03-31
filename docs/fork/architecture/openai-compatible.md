@@ -121,20 +121,29 @@ correct ID mapping across multi-turn conversations.
 
 ## Model Categories
 
+### API Key Resolution
+
+The API key is resolved per-model via `createOpenAIContentGenerator()` in
+`openaiFactory.ts`:
+
+```
+1. modelConfig.apiKeyEnv  →  explicit env var from models.default.json
+2. inferDefaultApiKeyEnv(url)  →  auto-detect from model URL:
+     - anthropic.com  →  ANTHROPIC_API_KEY
+     - openrouter.ai  →  OPENROUTER_API_KEY
+     - everything else →  OPENAI_API_KEY
+3. config.apiKey          →  from CLI flags
+4. '' (empty string)      →  corp endpoints don't require bearer auth
+```
+
+This means `apiKeyEnv` in `models.default.json` is optional — the URL-based
+inference handles the common cases automatically.
+
 ### Corporate (On-Prem)
 
-Base URL: `http://a2g.samsungds.net:7620/v1`
+Base URL: `http://a2g.samsungds.net:7620/v1` (OpenAI-compatible vLLM)
 
-These models run on internal infrastructure and do **not** have an `apiKeyEnv`
-field. Instead, API key resolution falls through the chain in
-`createContentGenerator()`:
-
-```
-1. modelConfig.apiKeyEnv  →  (undefined for corp models)
-2. OPENAI_API_KEY         →  (standard OpenAI env var)
-3. config.apiKey          →  (from CLI flags)
-4. '' (empty string)      →  (corp endpoints don't require bearer auth)
-```
+API key: Falls through to `OPENAI_API_KEY` or empty string.
 
 Corp models authenticate via **custom HTTP headers** instead of API keys. The
 GaussO model uses a lazy getter for `defaultHeaders` that reads env vars at
@@ -148,31 +157,30 @@ access time (not import time):
 Models: GLM-5 (thinking/non-thinking), Kimi-K2.5 (thinking/non-thinking),
 Qwen3.5 (35B/122B), gpt-oss-120b, GaussO-Owl-Ultra-Instruct
 
-### Dev/Home (OpenRouter)
-
-Base URL: `https://openrouter.ai/api/v1`
-
-API key: `OPENROUTER_API_KEY`
-
-Models: DeepSeek-V3.2 (reasoning/non-reasoning), Claude Haiku 4.5
-(thinking/generic), Gemini 3.1 Pro Preview, Claude Opus 4.6
-
-### Default (OpenAI Direct)
+### OpenAI (Direct)
 
 Base URL: `https://api.openai.com/v1`
 
-API key: `OPENAI_API_KEY`
+API key: `OPENAI_API_KEY` (auto-detected from URL)
 
-Models: GPT-4o, GPT-4o-mini, GPT-4.1 (regular/mini/nano), o1, o3-mini, o4-mini,
-GPT-5 (regular/nano/mini), GPT-5.2
+Models: GPT-4o, GPT-4o-mini, GPT-5 (regular/mini), GPT-5.2
 
-### Anthropic
+### Anthropic (Direct)
 
 Base URL: `https://api.anthropic.com/v1`
 
-API key: `ANTHROPIC_API_KEY`
+API key: `ANTHROPIC_API_KEY` (auto-detected from URL)
 
-Models: claude-haiku-4.5
+Models: claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5-20251001
+
+### OpenRouter
+
+Base URL: `https://openrouter.ai/api/v1`
+
+API key: `OPENROUTER_API_KEY` (auto-detected from URL)
+
+Models: deepseek/deepseek-v3.2 (and any other OpenRouter models added to the
+registry)
 
 ## Streaming and Tool Calls
 
@@ -232,13 +240,16 @@ Model-specific:
 
 ## Files
 
-| File                                               | Role                                  |
-| -------------------------------------------------- | ------------------------------------- |
-| `packages/core/src/config/llmRegistry.ts`          | JSON config loader, env detection     |
-| `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator using OpenAI SDK     |
-| `packages/core/src/core/openaiTypeMapper.ts`       | Gemini ↔ OpenAI type conversion      |
-| `packages/core/src/core/contentGenerator.ts`       | AuthType enum, factory, env detection |
-| `packages/cli/src/ui/auth/AuthDialog.tsx`          | Model picker UI                       |
-| `packages/cli/src/core/initializer.ts`             | Auto-connect on startup               |
-| `packages/cli/src/config/settingsSchema.ts`        | Settings schema (selectedModel field) |
-| `packages/cli/src/ui/auth/useAuth.ts`              | Auth state management                 |
+| File                                               | Role                                      |
+| -------------------------------------------------- | ----------------------------------------- |
+| `models.default.json`                              | Model registry (repo root, edit this)     |
+| `packages/core/src/config/llmRegistry.ts`          | JSON config loader, env detection         |
+| `packages/core/src/core/openaiFactory.ts`          | API key inference, ContentGenerator factory |
+| `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator using OpenAI SDK         |
+| `packages/core/src/core/openaiTypeMapper.ts`       | Gemini ↔ OpenAI type conversion          |
+| `packages/core/src/core/contentGenerator.ts`       | AuthType enum, factory, env detection     |
+| `packages/cli/src/ui/auth/AuthDialog.tsx`          | Auth dialog (routes to model picker)      |
+| `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`   | Model picker UI                           |
+| `packages/cli/src/core/initializer.ts`             | Auto-connect on startup                   |
+| `packages/cli/src/ui/auth/useAuth.ts`              | Auth state management                     |
+| `scripts/fork/gemini_llm.py`                       | Python LLM helper (LangChain)             |
