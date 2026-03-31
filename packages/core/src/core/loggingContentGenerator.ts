@@ -55,6 +55,70 @@ interface StructuredError {
   status: number;
 }
 
+// [FORK] Langfuse display helpers — extract human-readable text for Input/Output columns
+const LANGFUSE_INPUT = 'langfuse.observation.input';
+const LANGFUSE_OUTPUT = 'langfuse.observation.output';
+const LANGFUSE_SPAN_NAME = 'langfuse.span.name';
+const LANGFUSE_TRACE_NAME = 'langfuse.trace.name';
+
+/** Convert Gemini Content parts to LangChain-style [{type, text/image_url}] format. */
+function partsToLangChainFormat(
+  parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }>,
+): Array<Record<string, unknown>> {
+  const result: Array<Record<string, unknown>> = [];
+  for (const p of parts) {
+    if (p.text) {
+      result.push({ type: 'text', text: p.text });
+    } else if (p.inlineData) {
+      result.push({
+        type: 'image_url',
+        image_url: {
+          url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`,
+        },
+      });
+    }
+  }
+  return result;
+}
+
+/** Extract the last user message as LangChain-style JSON string. */
+function extractLastUserInput(contents: Content[]): string | undefined {
+  for (let i = contents.length - 1; i >= 0; i--) {
+    if (contents[i].role === 'user' && contents[i].parts?.length) {
+      const formatted = partsToLangChainFormat(
+        contents[i].parts as Array<{ text?: string; inlineData?: { mimeType: string; data: string } }>,
+      );
+      if (formatted.length > 0) return JSON.stringify(formatted);
+    }
+  }
+  return undefined;
+}
+
+/** Extract model response as LangChain-style JSON string (joins all streaming chunks). */
+function extractResponseOutput(candidates?: Candidate[]): string | undefined {
+  if (!candidates?.length) return undefined;
+  const allParts = candidates.flatMap((c) => c.content?.parts ?? []);
+  // Concatenate all text chunks into one, keep images separate
+  let combinedText = '';
+  const result: Array<Record<string, unknown>> = [];
+  for (const p of allParts as Array<{ text?: string; inlineData?: { mimeType: string; data: string } }>) {
+    if (p.text) {
+      combinedText += p.text;
+    } else if (p.inlineData) {
+      if (combinedText) {
+        result.push({ type: 'text', text: combinedText });
+        combinedText = '';
+      }
+      result.push({
+        type: 'image_url',
+        image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` },
+      });
+    }
+  }
+  if (combinedText) result.push({ type: 'text', text: combinedText });
+  return result.length > 0 ? JSON.stringify(result) : undefined;
+}
+
 /**
  * Rough token estimate for non-Part config objects (tool definitions, etc.)
  * where estimateTokenCountSync cannot be used directly.
@@ -384,6 +448,13 @@ export class LoggingContentGenerator implements ContentGenerator {
             response.usageMetadata?.promptTokenCount ?? 0;
           spanMetadata.attributes[GEN_AI_USAGE_OUTPUT_TOKENS] =
             response.usageMetadata?.candidatesTokenCount ?? 0;
+          // [FORK] Langfuse-friendly Input/Output/Name
+          const userMsg = extractLastUserInput(contents);
+          if (userMsg) spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
+          const respMsg = extractResponseOutput(response.candidates);
+          if (respMsg) spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
+          spanMetadata.attributes[LANGFUSE_SPAN_NAME] = `gemini-cli:${req.model}`;
+          spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
           const durationMs = Date.now() - startTime;
           this._logApiResponse(
             contents,
@@ -561,6 +632,14 @@ export class LoggingContentGenerator implements ContentGenerator {
       spanMetadata.output = responses.map(
         (response) => response.candidates?.[0]?.content ?? null,
       );
+      // [FORK] Langfuse-friendly Input/Output/Name
+      const userMsg = extractLastUserInput(requestContents);
+      if (userMsg) spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
+      const allCandidates = responses.flatMap((r) => r.candidates ?? []);
+      const respMsg = extractResponseOutput(allCandidates);
+      if (respMsg) spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
+      spanMetadata.attributes[LANGFUSE_SPAN_NAME] = `gemini-cli:${req.model}`;
+      spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
       if (lastUsageMetadata) {
         spanMetadata.attributes[GEN_AI_USAGE_INPUT_TOKENS] =
           lastUsageMetadata.promptTokenCount ?? 0;
