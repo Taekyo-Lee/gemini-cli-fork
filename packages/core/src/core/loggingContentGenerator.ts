@@ -60,6 +60,8 @@ const LANGFUSE_INPUT = 'langfuse.observation.input';
 const LANGFUSE_OUTPUT = 'langfuse.observation.output';
 const LANGFUSE_SPAN_NAME = 'langfuse.span.name';
 const LANGFUSE_TRACE_NAME = 'langfuse.trace.name';
+const LANGFUSE_TRACE_INPUT = 'langfuse.trace.input';
+const LANGFUSE_TRACE_OUTPUT = 'langfuse.trace.output';
 
 /** Convert Gemini Content parts to LangChain-style [{type, text/image_url}] format. */
 function partsToLangChainFormat(
@@ -448,11 +450,17 @@ export class LoggingContentGenerator implements ContentGenerator {
             response.usageMetadata?.promptTokenCount ?? 0;
           spanMetadata.attributes[GEN_AI_USAGE_OUTPUT_TOKENS] =
             response.usageMetadata?.candidatesTokenCount ?? 0;
-          // [FORK] Langfuse-friendly Input/Output/Name
+          // [FORK] Langfuse-friendly Input/Output/Name (observation + trace level)
           const userMsg = extractLastUserInput(contents);
-          if (userMsg) spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
           const respMsg = extractResponseOutput(response.candidates);
-          if (respMsg) spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
+          if (userMsg) {
+            spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
+            spanMetadata.attributes[LANGFUSE_TRACE_INPUT] = userMsg;
+          }
+          if (respMsg) {
+            spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
+            spanMetadata.attributes[LANGFUSE_TRACE_OUTPUT] = respMsg;
+          }
           spanMetadata.attributes[LANGFUSE_SPAN_NAME] = `gemini-cli:${req.model}`;
           spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
           const durationMs = Date.now() - startTime;
@@ -632,12 +640,18 @@ export class LoggingContentGenerator implements ContentGenerator {
       spanMetadata.output = responses.map(
         (response) => response.candidates?.[0]?.content ?? null,
       );
-      // [FORK] Langfuse-friendly Input/Output/Name
+      // [FORK] Langfuse-friendly Input/Output/Name (observation + trace level)
       const userMsg = extractLastUserInput(requestContents);
-      if (userMsg) spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
       const allCandidates = responses.flatMap((r) => r.candidates ?? []);
       const respMsg = extractResponseOutput(allCandidates);
-      if (respMsg) spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
+      if (userMsg) {
+        spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
+        spanMetadata.attributes[LANGFUSE_TRACE_INPUT] = userMsg;
+      }
+      if (respMsg) {
+        spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
+        spanMetadata.attributes[LANGFUSE_TRACE_OUTPUT] = respMsg;
+      }
       spanMetadata.attributes[LANGFUSE_SPAN_NAME] = `gemini-cli:${req.model}`;
       spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
       if (lastUsageMetadata) {
