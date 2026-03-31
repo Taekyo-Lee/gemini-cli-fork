@@ -3,7 +3,7 @@
 ## Overview
 
 Replace the Gemini auth prompt with an LLM selection list. When user runs
-`$ gemini`, show available models from the a2g_models registry, let them pick
+`$ gemini`, show available models from `models.default.json`, let them pick
 one, and connect via OpenAI Chat Completions API.
 
 ---
@@ -33,7 +33,7 @@ one, and connect via OpenAI Chat Completions API.
 
 - [x] **Created `packages/core/src/config/llmRegistry.ts`**
 
-  Mirrors the Python `a2g_models` LLMRegistry with all 27 models:
+  Loads models from `models.default.json` with all 27 models:
   - **8 CORP models** (url: `http://a2g.samsungds.net:7620/v1`): GLM-5-Thinking,
     GLM-5-Non-Thinking, Kimi-K2.5-Thinking, Kimi-K2.5-Non-Thinking,
     Qwen3.5-35B-A3B, Qwen3.5-122B-A10B, gpt-oss-120b, GaussO-Owl-Ultra-Instruct
@@ -634,7 +634,7 @@ GLM-5 failed on first message with
 `API Error: 400 ... context length is only 157248 tokens, resulting in a maximum input length of 248 tokens`.
 Even "hello" was too long.
 
-**Root cause:** The a2g_models Python registry sets
+**Root cause:** The model registry sets
 `max_tokens = context_length` for open-source LLMs (GLM-5, KIMI, Qwen, DeepSeek,
 etc.) because these models have no distinct output limit — the value represents
 the context window size. The Python wrapper intentionally does NOT pass this to
@@ -825,3 +825,24 @@ merge execution — that's deferred to a future session.
 - [x] **Rewrote `README.md`** — now reflects fork identity: model picker,
       supported models, env config, architecture diagram, fork features, docs
       index.
+
+---
+
+## Phase 10: Lightweight Python LLM Helper (COMPLETE)
+
+Goal: Let coworkers use models from `models.default.json` with vanilla
+`langchain_openai.ChatOpenAI` — no proprietary dependencies.
+
+- [x] **Created `scripts/fork/gemini_llm.py`** — single-file helper with
+      `from_model()` and `list_models()`. Handles env detection, API key
+      resolution, model alias mapping, `__corp_auth__` headers, `extra_body`.
+      Only dependency: `pip install langchain-openai`.
+- [x] **Live tested** — gpt-4o-mini invoke, stream, and kwargs all pass.
+- [x] **Removed all `a2g_models` references** — deleted `on_prem_llms_test/`
+      directory, `export_llm_registry.py`. Updated CLAUDE.md, README.md,
+      openaiFactory.ts, OpenAIModelPicker.tsx, test_openai_adapter.sh,
+      dynamic-model-loading.md, model-registry-reference.md.
+- [x] **Updated test script** — `do_list_models()` and `do_python_test()` in
+      `test_openai_adapter.sh` now use `gemini_llm.py` instead of deleted scripts.
+
+See `phase10-plan.md` and `phase10-todo.md` for full details.
