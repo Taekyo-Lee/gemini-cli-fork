@@ -63,6 +63,8 @@ models from this registry with `langchain_openai.ChatOpenAI` — just
 - `LITE_LLM_KEY`, `LITE_URL`
 - `AD_ID`, `FALLBACK_API_KEY_1/2` (corp auth)
 - `A2G_LOCATION` (environment detection)
+- `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` (on-prem
+  Langfuse telemetry — auto-enables OTLP export when keys are present)
 
 ---
 
@@ -184,7 +186,7 @@ All fork-specific docs live in `docs/fork/` (separate from upstream `docs/`):
 | ------------------------- | -------------------------------------------- |
 | `docs/fork/overview/`     | Fork philosophy, fork-vs-upstream comparison |
 | `docs/fork/setup/`        | Install guide, troubleshooting               |
-| `docs/fork/architecture/` | OpenAI-compatible mode, model registry       |
+| `docs/fork/architecture/` | OpenAI-compatible mode, model registry, telemetry |
 | `docs/fork/upstream/`     | Upstream merge plan, conflict resolution     |
 | `docs/fork/tracking/`     | TODO, changelog                              |
 
