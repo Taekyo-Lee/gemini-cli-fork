@@ -5,7 +5,7 @@
 This is a fork of
 [Google's Gemini CLI](https://github.com/google-gemini/gemini-cli) customized to
 support **on-prem LLMs** (KIMI, DeepSeek, GLM, Qwen, etc.) and public
-OpenAI-compatible APIs via the **a2g_models** registry. Instead of prompting for
+OpenAI-compatible APIs via `models.default.json`. Instead of prompting for
 Google authentication on startup, the CLI should display a **model picker**
 showing all available LLMs and connect via OpenAI-compatible endpoints.
 
@@ -49,10 +49,9 @@ and falls back to a minimal hardcoded gpt-4o if the file is missing.
 
 See `docs/fork/architecture/dynamic-model-loading.md` for the field reference.
 
-The optional Python `a2g_models` package at
-`~/workspace/main/research/a2g_packages/src/a2g_models/` can regenerate
-`models.default.json` via `scripts/fork/export_llm_registry.py` but is NOT
-required at runtime.
+A lightweight Python helper (`scripts/fork/gemini_llm.py`) lets coworkers use
+models from this registry with `langchain_openai.ChatOpenAI` — just
+`pip install langchain-openai`, no other dependencies needed.
 
 ### Env File Location
 
@@ -80,12 +79,16 @@ All critical, medium, and minor issues from Phase 7 have been resolved. See
 
 ---
 
-## Reference Python Scripts
+## Python LLM Helper
 
-```bash
-ENV="--env-file ~/.env"
-uv run --native-tls --active $ENV on_prem_llms_test/list_available_llms.py  # List models (model picker reference)
-uv run --native-tls --active $ENV on_prem_llms_test/llm_test.py            # Test model end-to-end
+```python
+# pip install langchain-openai
+import sys; sys.path.insert(0, "scripts/fork")
+from gemini_llm import from_model, list_models
+
+list_models()                          # Show models for your environment
+llm = from_model("GLM-5-Thinking")     # Get a configured ChatOpenAI
+llm.invoke("Hello")                    # Use it
 ```
 
 ---
@@ -197,6 +200,7 @@ All fork-specific docs live in `docs/fork/` (separate from upstream `docs/`):
 | `packages/cli/src/core/openaiInitializer.ts`       | OpenAI auto-connect (extracted from initializer) |
 | `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`   | Model picker UI (extracted from AuthDialog)      |
 | `scripts/fork/test_openai_adapter.sh`              | Build/test/run script                            |
+| `scripts/fork/gemini_llm.py`                       | Python LLM helper (langchain-openai)             |
 | `scripts/fork/test_glm5_tools.py`                  | GLM-5 multi-turn tool call test                  |
 | `scripts/fork/upstream-sync.sh`                    | Upstream sync workflow                           |
 | `scripts/fork/verify-fork-features.sh`             | Post-merge feature verification                  |
