@@ -238,6 +238,19 @@ Model-specific:
 - `FALLBACK_API_KEY_1` — Corp model auth headers
 - `AD_ID` — Corp user identification
 
+## Telemetry
+
+See [telemetry.md](./telemetry.md) for the full telemetry documentation,
+including Langfuse setup, what gets traced, configuration, and Python usage.
+
+**Quick start** — add to `~/.env`:
+
+```bash
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=http://localhost:3000
+```
+
 ## Files
 
 | File                                               | Role                                      |
