@@ -204,7 +204,10 @@ export function getAvailableModels(): LLMModelConfig[] {
   const env = detectLocation();
   const envKey: 'corp' | 'dev' | 'home' =
     env === 'CORP' ? 'corp' : env === 'DEV' ? 'dev' : 'home';
-  return allModels.filter((m) => m[envKey]);
+  // Models without any env flags are available everywhere
+  return allModels.filter(
+    (m) => (!m.corp && !m.home && !m.dev) || m[envKey],
+  );
 }
 
 export function getModelByName(name: string): LLMModelConfig | undefined {
