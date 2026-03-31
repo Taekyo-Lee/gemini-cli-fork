@@ -11,8 +11,6 @@
       "modality": { "input": ["text"], "output": ["text"] },
       "contextLength": 157000,
       "maxTokens": 157000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": true,
       "home": false,
       "dev": false
@@ -24,8 +22,6 @@
       "modality": { "input": ["text"], "output": ["text"] },
       "contextLength": 157000,
       "maxTokens": 157000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": true,
       "home": false,
       "dev": false
@@ -37,8 +33,6 @@
       "modality": { "input": ["text", "image", "video"], "output": ["text"] },
       "contextLength": 262000,
       "maxTokens": 262000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": true,
       "home": false,
       "dev": false
@@ -50,8 +44,6 @@
       "modality": { "input": ["text", "image", "video"], "output": ["text"] },
       "contextLength": 262000,
       "maxTokens": 262000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": true,
       "home": false,
       "dev": false
@@ -63,8 +55,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 128000,
       "maxTokens": 128000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": true,
       "home": false,
       "dev": false
@@ -76,8 +66,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 262000,
       "maxTokens": 262000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": true,
       "home": false,
       "dev": false
@@ -89,26 +77,11 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 262000,
       "maxTokens": 262000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": true,
       "home": false,
       "dev": false
     },
-    {
-      "model": "[On-Prem] GaussO-Owl-Ultra-Instruct",
-      "modelAlias": "GaussO-Owl-Ultra-Instruct",
-      "url": "http://apigw.samsungds.net:8000/gausso/1/gauss_o/aiserving/gauss/o/v1",
-      "modality": { "input": ["text"], "output": ["text"] },
-      "contextLength": 128000,
-      "maxTokens": 128000,
-      "supportsResponsesApi": false,
-      "reasoningModel": false,
-      "corp": true,
-      "home": false,
-      "dev": false,
-      "defaultHeaders": "__corp_auth__"
-    },
+
 
     { "_section": "--- OpenAI models ---" },
     {
@@ -118,8 +91,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 128000,
       "maxTokens": 16384,
-      "supportsResponsesApi": true,
-      "reasoningModel": false,
       "corp": false,
       "home": true,
       "dev": true
@@ -131,8 +102,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 128000,
       "maxTokens": 16384,
-      "supportsResponsesApi": true,
-      "reasoningModel": false,
       "corp": false,
       "home": true,
       "dev": true
@@ -144,8 +113,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 400000,
       "maxTokens": 128000,
-      "supportsResponsesApi": true,
-      "reasoningModel": true,
       "corp": false,
       "home": true,
       "dev": true
@@ -157,8 +124,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 400000,
       "maxTokens": 128000,
-      "supportsResponsesApi": true,
-      "reasoningModel": true,
       "corp": false,
       "home": true,
       "dev": true
@@ -170,8 +135,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 400000,
       "maxTokens": 128000,
-      "supportsResponsesApi": true,
-      "reasoningModel": true,
       "corp": false,
       "home": true,
       "dev": true
@@ -185,8 +148,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 1000000,
       "maxTokens": 128000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": false,
       "home": true,
       "dev": true
@@ -198,8 +159,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 1000000,
       "maxTokens": 64000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": false,
       "home": true,
       "dev": true
@@ -211,8 +170,6 @@
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 200000,
       "maxTokens": 64000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": false,
       "home": true,
       "dev": true
@@ -226,15 +183,10 @@
       "modality": { "input": ["text"], "output": ["text"] },
       "contextLength": 128000,
       "maxTokens": 128000,
-      "supportsResponsesApi": false,
-      "reasoningModel": true,
       "corp": false,
       "home": true,
       "dev": true,
-      "extraBody": {
-        "provider": { "sort": "throughput" },
-        "reasoning": { "enabled": true }
-      }
+      "reasoning": {"effort": "high", "summary": "auto"}
     },
     {
       "model": "[OpenRouter] deepseek-v3.2-Non-Thinking",
@@ -243,15 +195,10 @@
       "modality": { "input": ["text"], "output": ["text"] },
       "contextLength": 128000,
       "maxTokens": 128000,
-      "supportsResponsesApi": false,
-      "reasoningModel": false,
       "corp": false,
       "home": true,
       "dev": true,
-      "extraBody": {
-        "provider": { "sort": "throughput" },
-        "reasoning": { "enabled": false }
-      }
+      "reasoning": {"effort": "none", "summary": "none"}
     }
 
   ]
