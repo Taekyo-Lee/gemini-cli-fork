@@ -1,8 +1,14 @@
 """
 Lightweight LLM helper for gemini-cli-fork.
 
-Reads models.default.json and returns a configured langchain_openai.ChatOpenAI
-instance. No a2g_models dependency — just `pip install langchain-openai`.
+Reads models.default.json and returns a configured LangChain chat model instance.
+Routes to the native LangChain class for each provider:
+
+  - OpenAI (api.openai.com)     -> ChatOpenAI       (pip install langchain-openai)
+  - Anthropic (api.anthropic.com) -> ChatAnthropic   (pip install langchain-anthropic)
+  - OpenRouter (openrouter.ai)  -> ChatOpenRouter    (pip install langchain-openrouter)
+
+No a2g_models dependency — just install the provider package(s) you need.
 
 Usage:
     from gemini_llm import from_model, list_models
@@ -10,16 +16,16 @@ Usage:
     # Show available models for your environment
     list_models()
 
-    # Get a configured ChatOpenAI and use it
+    # Get a configured chat model and use it
     llm = from_model("GLM-5-Thinking")
     response = llm.invoke("Hello, how are you?")
     print(response.content)
 
     # With custom parameters
-    llm = from_model("gpt-oss-120b", temperature=0.7, max_completion_tokens=4096)
+    llm = from_model("gpt-5", temperature=0.7, max_completion_tokens=4096)
 
     # Streaming
-    for chunk in from_model("Kimi-K2.5-Thinking").stream("Explain Python GIL"):
+    for chunk in from_model("claude-opus-4-6").stream("Explain Python GIL"):
         print(chunk.content, end="", flush=True)
 
 Environment detection:
@@ -38,6 +44,26 @@ import os
 import socket
 from pathlib import Path
 from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Provider detection
+# ---------------------------------------------------------------------------
+
+def _detect_provider(url: str) -> str:
+    """Detect provider from the model's API URL.
+
+    Returns:
+        "openai", "anthropic", "openrouter", or "openai" as fallback
+        (OpenAI-compatible endpoints like vLLM use the OpenAI client).
+    """
+    url_lower = url.lower()
+    if "anthropic.com" in url_lower:
+        return "anthropic"
+    if "openrouter.ai" in url_lower:
+        return "openrouter"
+    # OpenAI and any OpenAI-compatible endpoint (vLLM, etc.)
+    return "openai"
 
 
 # ---------------------------------------------------------------------------
@@ -137,15 +163,22 @@ def _build_corp_auth_headers() -> dict[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# API key resolution
+# API key resolution (per-provider defaults)
 # ---------------------------------------------------------------------------
 
-def _resolve_api_key(model_config: dict[str, Any]) -> str:
+_PROVIDER_DEFAULT_KEY_ENV = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+}
+
+
+def _resolve_api_key(model_config: dict[str, Any], provider: str) -> str:
     """Resolve API key from model config's apiKeyEnv field, with fallbacks.
 
     Resolution order:
       1. model_config["apiKeyEnv"] env var (e.g., OPENROUTER_API_KEY)
-      2. OPENAI_API_KEY env var
+      2. Provider default env var (OPENAI_API_KEY / ANTHROPIC_API_KEY / etc.)
       3. Empty string (some corp endpoints don't need a key)
     """
     api_key_env = model_config.get("apiKeyEnv")
@@ -154,7 +187,106 @@ def _resolve_api_key(model_config: dict[str, Any]) -> str:
         if key:
             return key
 
-    return os.environ.get("OPENAI_API_KEY", "")
+    default_env = _PROVIDER_DEFAULT_KEY_ENV.get(provider, "OPENAI_API_KEY")
+    return os.environ.get(default_env, "")
+
+
+# ---------------------------------------------------------------------------
+# Per-provider builders
+# ---------------------------------------------------------------------------
+
+def _build_openai(model_config: dict[str, Any], api_key: str, **kwargs: Any) -> Any:
+    """Build a ChatOpenAI instance."""
+    try:
+        from langchain_openai import ChatOpenAI
+    except ImportError:
+        raise ImportError(
+            "langchain-openai is required for OpenAI models. Install with:\n"
+            "  pip install langchain-openai"
+        ) from None
+
+    chat_kwargs: dict[str, Any] = {}
+    chat_kwargs["model"] = model_config.get("modelAlias") or model_config["model"]
+    chat_kwargs["base_url"] = model_config["url"]
+    if api_key:
+        chat_kwargs["api_key"] = api_key
+
+    # Default headers (resolve __corp_auth__ sentinel)
+    raw_headers = model_config.get("defaultHeaders")
+    if raw_headers == "__corp_auth__":
+        chat_kwargs["default_headers"] = _build_corp_auth_headers()
+    elif isinstance(raw_headers, dict):
+        chat_kwargs["default_headers"] = raw_headers
+
+    # Extra body (e.g., OpenRouter provider/reasoning config)
+    extra_body = model_config.get("extraBody")
+    if extra_body:
+        chat_kwargs["extra_body"] = extra_body
+
+    chat_kwargs.update(kwargs)
+    return ChatOpenAI(**chat_kwargs)
+
+
+def _build_anthropic(model_config: dict[str, Any], api_key: str, **kwargs: Any) -> Any:
+    """Build a ChatAnthropic instance."""
+    try:
+        from langchain_anthropic import ChatAnthropic
+    except ImportError:
+        raise ImportError(
+            "langchain-anthropic is required for Anthropic models. Install with:\n"
+            "  pip install langchain-anthropic"
+        ) from None
+
+    chat_kwargs: dict[str, Any] = {}
+    chat_kwargs["model"] = model_config.get("modelAlias") or model_config["model"]
+    if api_key:
+        chat_kwargs["api_key"] = api_key
+
+    # Map max_completion_tokens -> max_tokens for Anthropic
+    if "max_completion_tokens" in kwargs:
+        kwargs["max_tokens"] = kwargs.pop("max_completion_tokens")
+
+    chat_kwargs.update(kwargs)
+    return ChatAnthropic(**chat_kwargs)
+
+
+def _build_openrouter(model_config: dict[str, Any], api_key: str, **kwargs: Any) -> Any:
+    """Build a ChatOpenRouter instance."""
+    try:
+        from langchain_openrouter import ChatOpenRouter
+    except ImportError:
+        raise ImportError(
+            "langchain-openrouter is required for OpenRouter models. Install with:\n"
+            "  pip install langchain-openrouter"
+        ) from None
+
+    chat_kwargs: dict[str, Any] = {}
+    chat_kwargs["model"] = model_config.get("modelAlias") or model_config["model"]
+    if api_key:
+        chat_kwargs["api_key"] = api_key
+
+    # Map extraBody fields to ChatOpenRouter's native params
+    extra_body = model_config.get("extraBody")
+    if extra_body:
+        if "provider" in extra_body:
+            chat_kwargs["openrouter_provider"] = extra_body["provider"]
+        if "reasoning" in extra_body:
+            chat_kwargs["reasoning"] = extra_body["reasoning"]
+        # Pass remaining keys via model_kwargs
+        remaining = {k: v for k, v in extra_body.items()
+                     if k not in ("provider", "reasoning")}
+        if remaining:
+            chat_kwargs["model_kwargs"] = remaining
+
+    chat_kwargs.update(kwargs)
+    return ChatOpenRouter(**chat_kwargs)
+
+
+_BUILDERS = {
+    "openai": _build_openai,
+    "anthropic": _build_anthropic,
+    "openrouter": _build_openrouter,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -184,62 +316,55 @@ def list_models(environment: str | None = None) -> list[dict[str, Any]]:
 
     # Calculate column widths
     name_width = max(len(m["model"]) for m in available)
-    url_width = max(len(m.get("url", "")) for m in available)
-    name_width = max(name_width, 5)  # minimum "Model" header
-    url_width = min(max(url_width, 3), 50)  # cap URL column
+    name_width = max(name_width, 5)
 
     print(f"\n  Available models [{env.upper()}]")
-    print(f"  {'─' * (name_width + url_width + 20)}")
-    print(f"  {'#':<4} {'Model':<{name_width}}  {'Context':>9}  {'URL':<{url_width}}")
-    print(f"  {'─' * (name_width + url_width + 20)}")
+    print(f"  {'─' * (name_width + 40)}")
+    print(f"  {'#':<4} {'Model':<{name_width}}  {'Provider':<12} {'Context':>9}")
+    print(f"  {'─' * (name_width + 40)}")
 
     for i, m in enumerate(available, 1):
         ctx = f"{m.get('contextLength', 0) // 1000}k"
-        url = m.get("url", "")
-        if len(url) > url_width:
-            url = url[:url_width - 3] + "..."
-        print(f"  {i:<4} {m['model']:<{name_width}}  {ctx:>9}  {url:<{url_width}}")
+        provider = _detect_provider(m.get("url", ""))
+        print(f"  {i:<4} {m['model']:<{name_width}}  {provider:<12} {ctx:>9}")
 
-    print(f"  {'─' * (name_width + url_width + 20)}\n")
+    print(f"  {'─' * (name_width + 40)}\n")
     return available
 
 
-def from_model(model_name: str, **kwargs: Any) -> "langchain_openai.ChatOpenAI":
-    """Create a configured ChatOpenAI instance from a model name.
+def from_model(model_name: str, **kwargs: Any) -> Any:
+    """Create a configured LangChain chat model from a model name.
 
-    Looks up the model in models.default.json, resolves API key, base URL,
-    model alias, extra_body, and default_headers automatically.
+    Routes to the native LangChain class based on the model's API URL:
+      - api.openai.com     -> ChatOpenAI       (pip install langchain-openai)
+      - api.anthropic.com  -> ChatAnthropic     (pip install langchain-anthropic)
+      - openrouter.ai      -> ChatOpenRouter    (pip install langchain-openrouter)
+      - Other URLs         -> ChatOpenAI        (OpenAI-compatible fallback)
 
     Args:
         model_name: Model name as it appears in models.default.json
-                    (e.g., "GLM-5-Thinking", "gpt-oss-120b", "dev-DeepSeek-V3.2")
-        **kwargs: Additional arguments passed to ChatOpenAI
-                  (e.g., temperature, max_completion_tokens, streaming)
+                    (e.g., "GLM-5-Thinking", "claude-opus-4-6", "deepseek/deepseek-v3.2")
+        **kwargs: Additional arguments passed to the LangChain chat model
+                  (e.g., temperature, max_completion_tokens, max_tokens)
 
     Returns:
-        A configured langchain_openai.ChatOpenAI instance ready for use.
+        A configured LangChain chat model instance ready for use.
 
     Raises:
-        ImportError: If langchain-openai is not installed.
+        ImportError: If the required provider package is not installed.
         ValueError: If model_name is not found in the registry.
 
     Examples:
-        >>> llm = from_model("GLM-5-Thinking")
+        >>> llm = from_model("gpt-5")
         >>> llm.invoke("Hello")
 
-        >>> llm = from_model("gpt-oss-120b", temperature=0.7)
-        >>> llm.stream("Explain transformers")
+        >>> llm = from_model("claude-opus-4-6", max_tokens=4096)
+        >>> llm.invoke("Explain quantum computing")
 
-        >>> llm = from_model("dev-DeepSeek-V3.2", max_completion_tokens=4096)
+        >>> llm = from_model("deepseek/deepseek-v3.2", temperature=0.7)
+        >>> for chunk in llm.stream("Write a poem"):
+        ...     print(chunk.content, end="")
     """
-    try:
-        from langchain_openai import ChatOpenAI
-    except ImportError:
-        raise ImportError(
-            "langchain-openai is required. Install it with:\n"
-            "  pip install langchain-openai"
-        ) from None
-
     # Find model in registry
     all_models = _load_models()
     model_config = next((m for m in all_models if m["model"] == model_name), None)
@@ -252,33 +377,10 @@ def from_model(model_name: str, **kwargs: Any) -> "langchain_openai.ChatOpenAI":
             f"Available models for '{env}': {', '.join(available)}"
         )
 
-    # Build ChatOpenAI arguments
-    chat_kwargs: dict[str, Any] = {}
+    # Detect provider and resolve API key
+    provider = _detect_provider(model_config["url"])
+    api_key = kwargs.pop("api_key", None) or _resolve_api_key(model_config, provider)
 
-    # Model: use alias if provided (e.g., "deepseek/deepseek-v3.2")
-    chat_kwargs["model"] = model_config.get("modelAlias") or model_config["model"]
-
-    # Base URL
-    chat_kwargs["base_url"] = model_config["url"]
-
-    # API key
-    api_key = kwargs.pop("api_key", None) or _resolve_api_key(model_config)
-    if api_key:
-        chat_kwargs["api_key"] = api_key
-
-    # Default headers (resolve __corp_auth__ sentinel)
-    raw_headers = model_config.get("defaultHeaders")
-    if raw_headers == "__corp_auth__":
-        chat_kwargs["default_headers"] = _build_corp_auth_headers()
-    elif isinstance(raw_headers, dict):
-        chat_kwargs["default_headers"] = raw_headers
-
-    # Extra body (e.g., OpenRouter provider/reasoning config)
-    extra_body = model_config.get("extraBody")
-    if extra_body:
-        chat_kwargs["extra_body"] = extra_body
-
-    # User kwargs override everything
-    chat_kwargs.update(kwargs)
-
-    return ChatOpenAI(**chat_kwargs)
+    # Route to provider-specific builder
+    builder = _BUILDERS[provider]
+    return builder(model_config, api_key, **kwargs)
