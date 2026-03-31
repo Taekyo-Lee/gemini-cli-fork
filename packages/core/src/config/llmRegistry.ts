@@ -98,6 +98,9 @@ function parseModelsJson(jsonPath: string): LLMModelConfig[] | null {
 
     const models: LLMModelConfig[] = [];
     for (const entry of data.models) {
+      // Skip section separator entries (e.g., { "_section": "--- OpenAI models ---" })
+      if (!entry.model || !entry.url) continue;
+
       // Handle dynamic corp auth headers marker
       let defaultHeaders: Record<string, string> | undefined;
       if (entry.defaultHeaders === '__corp_auth__') {
