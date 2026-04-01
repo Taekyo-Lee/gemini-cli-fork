@@ -69,6 +69,9 @@ means:
 | `FALLBACK_API_KEY_1` | Corp auth token (`system_name/dep_ticket`)               | CORP only |
 | `LANGFUSE_*`         | Langfuse keys for tracing (see [Telemetry](#telemetry))  | Optional  |
 
+> **Note:** You do NOT need `*_API_BASE` URLs. Base URLs come from each model's
+> config in `models.default.json`. Only API keys are needed here.
+
 **Which `A2G_LOCATION` am I?**
 
 - **`CORP`** — You're on the company network and want to use on-prem models
