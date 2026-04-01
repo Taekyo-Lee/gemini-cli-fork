@@ -136,12 +136,12 @@ setup_env() {
     if grep -qF "$MARKER" "$BASHRC" 2>/dev/null; then
         # Update path if repo moved
         local existing_path
-        existing_path="$(grep "$MARKER" "$BASHRC" | grep -oP '(?<=source ")[^"]+' || true)"
+        existing_path="$(grep -F "$MARKER" "$BASHRC" | grep -oP '(?<=source ")[^"]+' || true)"
         if [[ "$existing_path" == "$ENV_FILE" ]]; then
             info "~/.bashrc already sources $ENV_FILE"
         else
             warn "Updating source path in ~/.bashrc (was: $existing_path)"
-            sed -i "/$MARKER/d" "$BASHRC"
+            grep -vF "$MARKER" "$BASHRC" > "$BASHRC.tmp" && mv "$BASHRC.tmp" "$BASHRC"
             echo "set -a; source \"$ENV_FILE\"; set +a  $MARKER" >> "$BASHRC"
             info "Updated ~/.bashrc → $ENV_FILE"
         fi
