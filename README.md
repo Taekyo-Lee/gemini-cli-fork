@@ -302,6 +302,36 @@ backend is active.
 
 ---
 
+## Updating from Upstream
+
+This fork tracks stable releases of
+[google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli).
+To sync with the latest upstream version:
+
+```bash
+# 1. Check if a new stable release is available
+./scripts/fork/upstream-sync.sh
+
+# 2. If a new version is found, merge it
+git merge <VERSION_TAG> --no-commit
+
+# 3. Resolve any conflicts, then build and test
+npm install --ignore-scripts
+npm run build
+npm test
+
+# 4. Verify fork features are intact
+./scripts/fork/verify-fork-features.sh
+
+# 5. Commit
+git commit -m "merge: sync with upstream <VERSION_TAG>"
+```
+
+The sync script auto-detects the latest stable tag and creates a backup tag
+before merging. See `docs/fork/upstream/` for the full guide and merge history.
+
+---
+
 ## Documentation
 
 | Path                        | Contents                                     |
