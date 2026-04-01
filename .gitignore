@@ -3,7 +3,7 @@
 .env~
 
 # User-customized model registry
-models.default.json
+config/models.default.json
 
 # Python
 __pycache__/
@@ -71,3 +71,6 @@ gemini-debug.log
 evals/logs/
 
 temp_agents/
+
+# Vitest temp workspaces (leaked by tests that mkdtemp in cwd instead of /tmp)
+gemini-cli-test-workspace*
