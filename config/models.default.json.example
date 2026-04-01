@@ -1,6 +1,7 @@
 {
   "_comment": "Model registry for gemini-cli fork. Copy to models.default.json and edit.",
   "_docs": "See docs/fork/architecture/dynamic-model-loading.md for field reference.",
+  "_note_for_company": "If you are at a company (Samsung), you can leave corp/home/dev as-is. The company proxy handles routing — all models are available regardless of these flags. These flags are mainly for personal (non-company) setups where you want to filter models by environment.",
 
   "models": [
 
