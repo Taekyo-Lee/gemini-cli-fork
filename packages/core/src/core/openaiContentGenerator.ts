@@ -42,6 +42,7 @@ export interface OpenAIContentGeneratorConfig {
   apiKey: string;
   model: string;
   maxTokens?: number;
+  maxCompletionTokens?: number; // [FORK] Explicit max_completion_tokens (takes priority)
   extraBody?: Record<string, unknown>;
   defaultHeaders?: Record<string, string>;
 }
@@ -51,6 +52,11 @@ export class OpenAIContentGenerator implements ContentGenerator {
   private readonly modelName: string;
   private readonly extraBody?: Record<string, unknown>;
   private readonly maxTokens?: number;
+  private readonly maxCompletionTokens?: number;
+  // [FORK] OpenAI's newer models (gpt-5, o1, o3, etc.) require
+  // max_completion_tokens instead of max_tokens. Explicit config takes
+  // priority; otherwise auto-detect from base URL.
+  private readonly useMaxCompletionTokens: boolean;
   private readonly tracker = new ToolCallIdTracker();
 
   userTier?: UserTierId;
@@ -65,7 +71,27 @@ export class OpenAIContentGenerator implements ContentGenerator {
     });
     this.modelName = config.model;
     this.maxTokens = config.maxTokens;
+    this.maxCompletionTokens = config.maxCompletionTokens;
     this.extraBody = config.extraBody;
+    // Explicit maxCompletionTokens in model config takes priority,
+    // otherwise auto-detect from URL (api.openai.com → max_completion_tokens)
+    this.useMaxCompletionTokens =
+      config.maxCompletionTokens != null ||
+      config.baseURL.includes('api.openai.com');
+  }
+
+  // [FORK] Build the max tokens parameter based on provider/config.
+  // 1. Explicit maxCompletionTokens → max_completion_tokens (highest priority)
+  // 2. OpenAI API URL → max_completion_tokens with maxTokens value
+  // 3. Everything else → max_tokens
+  private get maxTokensParam(): Record<string, number> | undefined {
+    if (this.maxCompletionTokens) {
+      return { max_completion_tokens: this.maxCompletionTokens };
+    }
+    if (!this.maxTokens) return undefined;
+    return this.useMaxCompletionTokens
+      ? { max_completion_tokens: this.maxTokens }
+      : { max_tokens: this.maxTokens };
   }
 
   async generateContent(
@@ -92,7 +118,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
       model: this.modelName,
       messages,
       ...(tools && { tools }),
-      ...(this.maxTokens && { max_tokens: this.maxTokens }),
+      ...(this.maxTokensParam),
       // Support JSON output for utility calls (nextSpeakerCheck, editCorrector, etc.)
       ...(request.config?.responseMimeType === 'application/json' && {
         response_format: { type: 'json_object' as const },
@@ -153,7 +179,7 @@ export class OpenAIContentGenerator implements ContentGenerator {
       model: this.modelName,
       messages,
       ...(tools && { tools }),
-      ...(this.maxTokens && { max_tokens: this.maxTokens }),
+      ...(this.maxTokensParam),
       stream: true,
       stream_options: { include_usage: true },
     });
