@@ -897,3 +897,59 @@ new dependencies, just smart defaults on top of existing OTLP exporters.
       all verified.
 
 See `phase11-plan.md` and `phase11-todo.md` for full details.
+
+---
+
+## Phase 12: Telemetry & Tracing Improvements
+
+**Status:** TODO
+
+### Completed (Phase 10-11 carry-over)
+
+- [x] Interactive mode trace parity with bash mode — removed `user_prompt`
+      wrapper span so `llm_call` is the root span in both modes
+- [x] Utility spans (`checkNextSpeaker`, compressor, etc.) no longer overwrite
+      `langfuse.trace.*` attributes — `isPrimaryLlmCall()` guard
+- [x] `max_completion_tokens` support — OpenAI models use `maxCompletionTokens`
+      field; auto-detect from URL as fallback
+
+### Tracing Quality
+
+- [ ] **Conversation history in trace input** — Currently `langfuse.trace.input`
+      only shows the LAST user message. In multi-turn interactive mode, previous
+      conversation context is invisible in Langfuse. Should include full
+      conversation history (or at least a summary) so traces are self-contained
+      for debugging.
+- [ ] **Trace output for interactive mode** — `langfuse.trace.output` is set by
+      the child `llm_call` span but may not propagate to trace level in all
+      Langfuse OTLP configurations. Consider setting it on the root span too.
+- [ ] **Tool call tracing** — Tool invocations are logged as events but don't
+      show as Langfuse "generations" or "spans" with input/output. Richer tool
+      call traces would help debug multi-step agent workflows.
+- [ ] **Token cost tracking** — Langfuse supports `gen_ai.usage.cost` or model-
+      based pricing. Currently only token counts are sent. Adding cost estimates
+      (from model registry or Langfuse pricing DB) would help track spend.
+- [ ] **Chat bubble rendering** — Wrap output in `{role: "assistant", content: [...]}`
+      format so Langfuse renders it as a proper chat view instead of key-value
+      table.
+
+### Provider Metadata
+
+- [ ] **Provider decomposition** — LangChain sends `ls_provider`, `ls_model_name`,
+      `ls_model_type` separately. Fork only sends `gen_ai.request.model` (display
+      name like `[OpenAI] gpt-4o`). Decomposing would improve Langfuse model
+      detection and cost calculation.
+- [ ] **Response annotations** — OpenAI responses include `annotations` and `id`
+      fields. These are currently stripped. Passing them through could help with
+      citation tracking.
+
+### Reliability
+
+- [ ] **Span export on crash** — If the CLI crashes mid-turn, in-flight spans may
+      be lost. Consider a `process.on('exit')` flush or periodic export.
+- [ ] **Multi-turn session traces** — In interactive mode, each turn creates a
+      separate trace. Consider linking turns under a single session-level trace
+      for better conversation-level observability.
+- [ ] **Trace sampling** — For high-volume usage, add configurable trace sampling
+      (e.g., `LANGFUSE_SAMPLE_RATE=0.1`) to avoid overloading the Langfuse
+      instance.
