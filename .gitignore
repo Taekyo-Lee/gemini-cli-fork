@@ -2,6 +2,9 @@
 .env
 .env~
 
+# User-customized model registry
+models.default.json
+
 # Python
 __pycache__/
 *.pyc
