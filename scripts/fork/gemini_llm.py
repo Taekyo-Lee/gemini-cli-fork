@@ -1,7 +1,7 @@
 """
 Lightweight LLM helper for gemini-cli-fork.
 
-Reads models.default.json and returns a configured LangChain chat model instance.
+Reads config/models.default.json and returns a configured LangChain chat model instance.
 Routes to the native LangChain class for each provider:
 
   - OpenAI (api.openai.com)     -> ChatOpenAI       (pip install langchain-openai)
@@ -10,7 +10,7 @@ Routes to the native LangChain class for each provider:
 
 No a2g_models dependency — just install the provider package(s) you need.
 
-All LangChain constructor parameters are supported directly in models.default.json.
+All LangChain constructor parameters are supported directly in config/models.default.json.
 Any key that isn't a registry key (model, url, contextLength, etc.) is passed
 through as a constructor kwarg to the LangChain class. For example:
 
@@ -48,7 +48,7 @@ Environment detection:
 
 Models JSON path resolution (in order):
     1. GEMINI_CLI_MODELS_JSON env var
-    2. Walk up from this script to find models.default.json at repo root
+    2. Walk up from this script to find config/models.default.json at repo root
 """
 
 from __future__ import annotations
@@ -128,7 +128,7 @@ def detect_environment() -> str:
 # ---------------------------------------------------------------------------
 
 def _find_models_json() -> Path:
-    """Find models.default.json by walking up from this script or via env var."""
+    """Find config/config/models.default.json by walking up from this script or via env var."""
     # 1. Env var override
     env_path = os.environ.get("GEMINI_CLI_MODELS_JSON")
     if env_path:
@@ -142,7 +142,7 @@ def _find_models_json() -> Path:
     # 2. Walk up from this script's directory
     directory = Path(__file__).resolve().parent
     for _ in range(8):
-        candidate = directory / "models.default.json"
+        candidate = directory / "config" / "config/models.default.json"
         if candidate.is_file():
             return candidate
         parent = directory.parent
@@ -151,14 +151,14 @@ def _find_models_json() -> Path:
         directory = parent
 
     raise FileNotFoundError(
-        "models.default.json not found. Either:\n"
+        "config/config/models.default.json not found. Either:\n"
         "  - Run from within the gemini-cli-fork repo, or\n"
-        "  - Set GEMINI_CLI_MODELS_JSON=/path/to/models.default.json"
+        "  - Set GEMINI_CLI_MODELS_JSON=/path/to/config/config/models.default.json"
     )
 
 
 def _load_models() -> list[dict[str, Any]]:
-    """Load and return all models from models.default.json."""
+    """Load and return all models from config/models.default.json."""
     path = _find_models_json()
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
@@ -172,7 +172,7 @@ def _load_models() -> list[dict[str, Any]]:
 def _extract_passthrough_kwargs(model_config: dict[str, Any]) -> dict[str, Any]:
     """Extract all non-registry keys from model config as LangChain kwargs.
 
-    Any key in models.default.json that isn't in _REGISTRY_KEYS is treated as
+    Any key in config/models.default.json that isn't in _REGISTRY_KEYS is treated as
     a LangChain constructor parameter and passed through directly.
     """
     return {k: v for k, v in model_config.items() if k not in _REGISTRY_KEYS}
@@ -376,7 +376,7 @@ def list_models(environment: str | None = None) -> list[dict[str, Any]]:
     # Print formatted table
     if not available:
         print(f"No models available for environment '{env}'.")
-        print("Check A2G_LOCATION env var and models.default.json.")
+        print("Check A2G_LOCATION env var and config/models.default.json.")
         return available
 
     # Calculate column widths
@@ -406,14 +406,14 @@ def from_model(model_name: str, **kwargs: Any) -> Any:
       - openrouter.ai      -> ChatOpenRouter    (pip install langchain-openrouter)
       - Other URLs         -> ChatOpenAI        (OpenAI-compatible fallback)
 
-    All LangChain constructor parameters are supported in models.default.json.
+    All LangChain constructor parameters are supported in config/models.default.json.
     Any key that isn't a registry key is passed through to the constructor.
     User kwargs override JSON defaults.
 
     Args:
-        model_name: Model name as it appears in models.default.json
+        model_name: Model name as it appears in config/models.default.json
         **kwargs: Additional arguments passed to the LangChain chat model.
-                  These override any values set in models.default.json.
+                  These override any values set in config/models.default.json.
 
     Returns:
         A configured LangChain chat model instance ready for use.
@@ -441,7 +441,7 @@ def from_model(model_name: str, **kwargs: Any) -> Any:
         env = detect_environment()
         available = [m["model"] for m in all_models if m.get(env, False)]
         raise ValueError(
-            f"Model '{model_name}' not found in models.default.json.\n"
+            f"Model '{model_name}' not found in config/models.default.json.\n"
             f"Available models for '{env}': {', '.join(available)}"
         )
 
