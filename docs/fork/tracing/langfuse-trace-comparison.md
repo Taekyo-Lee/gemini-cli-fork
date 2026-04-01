@@ -32,9 +32,9 @@ Captured 2026-03-31. Use this as a reference for future improvements.
 > single trace. Each LLM call, tool call, or agent call creates one observation.
 > In interactive mode, gemini-fork makes 2 LLM calls per turn: (1) the main
 > response generation, and (2) a `checkNextSpeaker` call that asks the model
-> whether to continue or hand control back to the user. This second call is why
-> the interactive trace may show empty output — the second span has no meaningful
-> text and can overwrite the trace-level output display.
+> whether to continue or hand control back to the user. The `checkNextSpeaker`
+> span is marked as a utility call and does **not** overwrite trace-level
+> attributes — the trace display always shows the main response.
 
 ## Trace Detail View — Preview Tab
 
@@ -188,6 +188,46 @@ The fork sends a flat array of content parts.
 | **Session tracking** | None (`service.name: unknown_service`) | `session.id`, `gen_ai.conversation.id` | Fork has better session correlation |
 | **Interactive mode** | N/A (Python scripts are one-shot) | Multi-turn with `checkNextSpeaker` spans | Fork traces multi-turn conversations |
 
+## Interactive Mode vs Bash Mode Tracing
+
+Interactive mode (`gemini` → type prompt) and bash mode (`gemini -p "hello"`)
+now produce equivalent trace-level metadata. Previously, interactive mode traces
+appeared much weaker in Langfuse.
+
+### The Problem (fixed)
+
+In interactive mode, after the main LLM response, the system calls
+`checkNextSpeaker()` — a utility LLM call that decides whether the user or model
+should speak next. This created a **second** `llm_call` span that overwrote the
+Langfuse trace-level attributes (`langfuse.trace.name`, `langfuse.trace.input`,
+`langfuse.trace.output`) with its own minimal data:
+
+- **Trace name**: showed the checker model instead of the user's model
+- **Trace input**: showed the `CHECK_PROMPT` instead of the user's message
+- **Trace output**: showed `{"next_speaker":"user"}` instead of the model's response
+
+### The Fix
+
+`loggingContentGenerator.ts` now checks the `LlmRole` parameter before setting
+trace-level attributes. Only **primary** calls (`MAIN`, `SUBAGENT`) set
+`langfuse.trace.*`. Utility calls (`UTILITY_NEXT_SPEAKER`, `UTILITY_COMPRESSOR`,
+`UTILITY_ROUTER`, etc.) only set observation-level attributes
+(`langfuse.observation.*`, `langfuse.span.*`).
+
+### What Each Mode Produces
+
+| Attribute | Bash mode (`-p`) | Interactive mode | Notes |
+|-----------|-----------------|------------------|-------|
+| `gen_ai.request.model` | Yes | Yes | Per-span, both modes |
+| `gen_ai.system_instructions` | Yes | Yes | Per-span |
+| `gen_ai.tool.definitions` | Yes | Yes | Per-span |
+| `gen_ai.usage.input_tokens` | Yes | Yes | Per-span |
+| `gen_ai.usage.output_tokens` | Yes | Yes | Per-span |
+| `langfuse.trace.name` | Yes | Yes (main span only) | Utility spans no longer overwrite |
+| `langfuse.trace.input` | Yes | Yes (main span only) | Shows user's message |
+| `langfuse.trace.output` | Yes | Yes (main span only) | Shows model's response |
+| Observation count | 1 | 2+ | Interactive has extra `checkNextSpeaker` span |
+
 ## Potential Improvements (Future)
 
 1. **Chat bubble rendering**: Wrap output in `{role: "assistant", content: [...]}` 
@@ -196,6 +236,7 @@ The fork sends a flat array of content parts.
    pricing-compatible format
 3. **Provider metadata**: Add `ls_provider`, `ls_model_type` for Langfuse's
    model detection heuristics
-4. **Interactive mode output**: Ensure trace-level output shows the main
-   response, not the `checkNextSpeaker` result
+4. ~~**Interactive mode output**: Ensure trace-level output shows the main
+   response, not the `checkNextSpeaker` result~~ — **Fixed** (utility spans no
+   longer set `langfuse.trace.*` attributes)
 5. **Annotations**: Pass through OpenAI response annotations if available
