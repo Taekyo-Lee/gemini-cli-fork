@@ -94,6 +94,7 @@ export function createOpenAIContentGenerator(
     apiKey,
     model: modelToSend,
     maxTokens: safeMaxTokens,
+    maxCompletionTokens: modelConfig?.maxCompletionTokens,
     extraBody: modelConfig?.extraBody,
     defaultHeaders: modelConfig?.defaultHeaders,
   });
