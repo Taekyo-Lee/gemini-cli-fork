@@ -5,7 +5,7 @@
 This is a fork of
 [Google's Gemini CLI](https://github.com/google-gemini/gemini-cli) customized to
 support **on-prem LLMs** (KIMI, DeepSeek, GLM, Qwen, etc.) and public
-OpenAI-compatible APIs via `models.default.json`. Instead of prompting for
+OpenAI-compatible APIs via `config/models.default.json`. Instead of prompting for
 Google authentication on startup, the CLI should display a **model picker**
 showing all available LLMs and connect via OpenAI-compatible endpoints.
 
@@ -43,7 +43,7 @@ Ink | **Testing:** Vitest | **Bundling:** esbuild
 
 ## Model Configuration
 
-Models are defined in `models.default.json` at the repo root — edit that file to
+Models are defined in `config/models.default.json` — edit that file to
 add/remove models, no code changes needed. On startup, `llmRegistry.ts` loads it
 and falls back to a minimal hardcoded gpt-4o if the file is missing.
 
@@ -53,16 +53,19 @@ A lightweight Python helper (`scripts/fork/gemini_llm.py`) lets coworkers use
 models from this registry with `langchain_openai.ChatOpenAI` — just
 `pip install langchain-openai`, no other dependencies needed.
 
-### Env File Location
+### Env File
 
-`~/.env` — contains API keys:
+`.env` at the repo root (gitignored). Template: `.env.example` (tracked).
+`scripts/fork/setup.sh` auto-copies the template and sources `.env` from
+`~/.bashrc` so env vars are available globally.
 
-- `OPENAI_API_KEY`, `OPENAI_API_BASE`
-- `ANTHROPIC_API_KEY`, `ANTHROPIC_API_BASE`
-- `OPENROUTER_API_KEY`, `OPENROUTER_API_BASE`
-- `LITE_LLM_KEY`, `LITE_URL`
-- `AD_ID`, `FALLBACK_API_KEY_1/2` (corp auth)
-- `A2G_LOCATION` (environment detection)
+API keys only — base URLs come from each model's `url` in `config/models.default.json`:
+
+- `OPENAI_API_KEY` (if using OpenAI models)
+- `ANTHROPIC_API_KEY` (if using Anthropic models)
+- `OPENROUTER_API_KEY` (if using OpenRouter models)
+- `AD_ID`, `FALLBACK_API_KEY_1` (corp on-prem auth)
+- `A2G_LOCATION` (environment detection: `CORP`, `DEV`, or `HOME`)
 - `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` (on-prem
   Langfuse telemetry — auto-enables OTLP export when keys are present)
 
@@ -195,19 +198,31 @@ All fork-specific docs live in `docs/fork/` (separate from upstream `docs/`):
 
 | File                                               | Purpose                                          |
 | -------------------------------------------------- | ------------------------------------------------ |
-| `models.default.json`                              | Shipped model config (repo root)                 |
+| `config/models.default.json`                       | User model config (gitignored, from template)    |
+| `config/models.default.json.example`               | Model config template (tracked)                  |
+| `.env`                                             | User env vars (gitignored, from template)        |
+| `.env.example`                                     | Env var template (tracked)                       |
+| `NOTICE`                                           | Apache 2.0 derivative work attribution           |
 | `packages/core/src/config/llmRegistry.ts`          | JSON loader, env detection, public API           |
 | `packages/core/src/core/openaiTypeMapper.ts`       | Gemini <> OpenAI type conversion                 |
 | `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator impl using OpenAI SDK           |
 | `packages/core/src/core/openaiFactory.ts`          | OpenAI factory (extracted from contentGenerator) |
 | `packages/cli/src/core/openaiInitializer.ts`       | OpenAI auto-connect (extracted from initializer) |
 | `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`   | Model picker UI (extracted from AuthDialog)      |
+| `scripts/fork/setup.sh`                      | One-shot setup: build, link, env, bashrc         |
 | `scripts/fork/test_openai_adapter.sh`              | Build/test/run script                            |
 | `scripts/fork/gemini_llm.py`                       | Python LLM helper (langchain-openai)             |
 | `scripts/fork/test_glm5_tools.py`                  | GLM-5 multi-turn tool call test                  |
 | `scripts/fork/upstream-sync.sh`                    | Upstream sync workflow                           |
 | `scripts/fork/verify-fork-features.sh`             | Post-merge feature verification                  |
 | `scripts/fork/fork-diff-report.sh`                 | Pre-merge conflict analysis                      |
+
+## Files Modified by Fork (Phase 10: Telemetry Parity)
+
+| File                                                  | Change                                               |
+| ----------------------------------------------------- | ---------------------------------------------------- |
+| `packages/core/src/core/loggingContentGenerator.ts`   | Utility spans skip `langfuse.trace.*` (no overwrite) |
+| `packages/cli/src/ui/hooks/useGeminiStream.ts`        | Removed `user_prompt` wrapper span for trace parity  |
 
 ## Files Modified by Fork (Phase 9: Sandbox)
 
