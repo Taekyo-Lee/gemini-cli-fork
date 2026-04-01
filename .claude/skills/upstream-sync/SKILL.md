@@ -76,7 +76,8 @@ strategy from the reference table below.
 - **Accept upstream refactors** around fork blocks (new variable names, restructured code)
 - **If upstream renamed something the fork references**, use the new name
 - **`package-lock.json`** — always delete and regenerate: `git rm package-lock.json`
-- **`README.md`** — always take upstream: `git checkout --theirs README.md && git add README.md`
+- **`README.md`** — always keep ours (fork's): `git checkout --ours README.md && git add README.md`
+  (The fork README is completely rewritten for coworker distribution — upstream's README is irrelevant)
 
 #### Per-file resolution strategy
 
@@ -102,7 +103,8 @@ For each conflicting file, look it up in this table:
 | `InputPrompt.tsx` | getLatestText() for Korean IME | Keep fork getLatestText() calls |
 | `text-buffer.ts` | getLatestText + latestLinesRef | Keep fork getLatestText + latestLinesRef |
 | `KeypressContext.tsx` | IME stdin reorder | Keep fork IME reorder logic |
-| `useGeminiStream.ts` | InvalidStream info message | Keep fork InvalidStream message |
+| `loggingContentGenerator.ts` | isPrimaryLlmCall guard + langfuse attributes | Keep fork `isPrimaryLlmCall()` + all `// [FORK]` langfuse blocks |
+| `useGeminiStream.ts` | Removed user_prompt wrapper span + InvalidStream info | Keep fork: no `runInDevTraceSpan(UserPrompt)` wrapper, keep InvalidStream message |
 
 #### How to resolve each file
 
@@ -235,10 +237,12 @@ The backup tag is recorded in `merge-history.md` for future reference.
 - The fork's upstream is `https://github.com/google-gemini/gemini-cli.git`
   (remote named `upstream`)
 - All fork changes in upstream files are marked with `// [FORK]` comments
-- Fork-created files (`models.default.json`, `packages/core/src/core/openai*.ts`,
-  `packages/core/src/config/llmRegistry.ts`, `packages/cli/src/core/openaiInitializer.ts`,
-  `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`) will NEVER conflict because
-  upstream doesn't touch them
+- Fork-created files will NEVER conflict because upstream doesn't touch them:
+  `config/models.default.json`, `config/models.default.json.example`,
+  `.env.example`, `NOTICE`, `scripts/fork/setup.sh`,
+  `packages/core/src/core/openai*.ts`, `packages/core/src/config/llmRegistry.ts`,
+  `packages/cli/src/core/openaiInitializer.ts`,
+  `packages/cli/src/ui/auth/OpenAIModelPicker.tsx`
 - The sync script at `scripts/fork/upstream-sync.sh` handles stable tag detection
   and backup tag creation
 - Full reference: `docs/fork/upstream/upstream-sync-guide.md`
