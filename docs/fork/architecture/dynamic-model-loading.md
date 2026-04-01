@@ -1,6 +1,6 @@
 # Model Configuration
 
-The gemini-cli fork loads its LLM model registry from `models.default.json` at
+The gemini-cli fork loads its LLM model registry from `config/models.default.json` at
 the repo root. To add, remove, or modify models, edit that file — no code
 changes needed.
 
@@ -8,17 +8,17 @@ changes needed.
 
 ## Config File
 
-`models.default.json` at the repo root. On startup, `llmRegistry.ts` reads it.
+`config/models.default.json` at the repo root. On startup, `llmRegistry.ts` reads it.
 If the file is missing or unparseable, a minimal gpt-4o fallback is used.
 
 ## Quick Start
 
 ```bash
-# Just run — models are loaded from models.default.json
+# Just run — models are loaded from config/models.default.json
 gemini
 
 # To add a model, edit the config
-vim models.default.json
+vim config/models.default.json
 ```
 
 ## Config Format
@@ -80,7 +80,7 @@ loader detects this marker and installs a lazy getter that computes headers from
 ## Python LLM Helper
 
 A lightweight helper (`scripts/fork/gemini_llm.py`) lets you use models from
-`models.default.json` with vanilla `langchain_openai.ChatOpenAI`:
+`config/models.default.json` with vanilla `langchain_openai.ChatOpenAI`:
 
 ```python
 # pip install langchain-openai
@@ -96,6 +96,6 @@ llm.invoke("Hello")                    # Use it
 
 | File                                      | Role                                         |
 | ----------------------------------------- | --------------------------------------------- |
-| `models.default.json`                     | Model config (repo root, edit this)           |
+| `config/models.default.json`                     | Model config (repo root, edit this)           |
 | `packages/core/src/config/llmRegistry.ts` | JSON loader, env detection, public API (TS)   |
 | `scripts/fork/gemini_llm.py`              | Lightweight Python helper for LangChain users |
