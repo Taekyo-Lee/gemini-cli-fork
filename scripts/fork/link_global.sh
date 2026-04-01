@@ -11,7 +11,7 @@
 # (or just use `npm run build` — the link persists).
 #
 # Usage:
-#   ./scripts/fork/link_global.sh           # full: build + link
+#   ./scripts/fork/link_global.sh           # full: build + link + env
 #   ./scripts/fork/link_global.sh --link    # link only (skip build)
 #   ./scripts/fork/link_global.sh --verify  # just check current state
 # ─────────────────────────────────────────────────────────────────────
@@ -83,6 +83,64 @@ verify() {
     $ok
 }
 
+# ── Env Setup ─────────────────────────────────────────────────────────
+# 1. Ensures GEMINI_FORK_DIR is set in .env (so coworkers know the repo path)
+# 2. Adds one line to ~/.bashrc:
+#      set -a; source "<repo>/.env"; set +a  # [gemini-fork]
+#    The path comes from .env's own GEMINI_FORK_DIR — but .bashrc needs
+#    a literal path to find .env in the first place, so we write the
+#    resolved path at script time.
+
+ENV_FILE="$REPO_ROOT/.env"
+BASHRC="$HOME/.bashrc"
+MARKER="# [gemini-fork] source env vars"
+
+setup_env() {
+    if [[ ! -f "$ENV_FILE" ]]; then
+        if [[ -f "$REPO_ROOT/.env.example" ]]; then
+            warn ".env not found. Copy the template first:"
+            warn "  cp $REPO_ROOT/.env.example $ENV_FILE"
+            warn "  # then fill in your API keys"
+        else
+            warn ".env not found — skipping env setup"
+        fi
+        return 0
+    fi
+
+    # Ensure GEMINI_FORK_DIR is in .env
+    if grep -q '^GEMINI_FORK_DIR=' "$ENV_FILE" 2>/dev/null; then
+        # Update if repo moved
+        local existing
+        existing="$(grep '^GEMINI_FORK_DIR=' "$ENV_FILE" | cut -d= -f2-)"
+        if [[ "$existing" != "$REPO_ROOT" ]]; then
+            sed -i "s|^GEMINI_FORK_DIR=.*|GEMINI_FORK_DIR=$REPO_ROOT|" "$ENV_FILE"
+            info "Updated GEMINI_FORK_DIR in .env (was: $existing)"
+        fi
+    else
+        # Prepend to .env
+        sed -i "1i GEMINI_FORK_DIR=$REPO_ROOT" "$ENV_FILE"
+        info "Added GEMINI_FORK_DIR=$REPO_ROOT to .env"
+    fi
+
+    # Add source line to ~/.bashrc (uses literal path to find .env)
+    if grep -qF "$MARKER" "$BASHRC" 2>/dev/null; then
+        # Update path if repo moved
+        local existing_path
+        existing_path="$(grep "$MARKER" "$BASHRC" | grep -oP '(?<=source ")[^"]+' || true)"
+        if [[ "$existing_path" == "$ENV_FILE" ]]; then
+            info "~/.bashrc already sources $ENV_FILE"
+        else
+            warn "Updating source path in ~/.bashrc (was: $existing_path)"
+            sed -i "/$MARKER/d" "$BASHRC"
+            echo "set -a; source \"$ENV_FILE\"; set +a  $MARKER" >> "$BASHRC"
+            info "Updated ~/.bashrc → $ENV_FILE"
+        fi
+    else
+        echo "set -a; source \"$ENV_FILE\"; set +a  $MARKER" >> "$BASHRC"
+        info "Added to ~/.bashrc: source \"$ENV_FILE\""
+    fi
+}
+
 # ── Main ──────────────────────────────────────────────────────────────
 main() {
     local mode="full"
@@ -97,13 +155,13 @@ main() {
 
     # Step 1: Build (unless --link)
     if [[ "$mode" == "full" ]]; then
-        echo -e "${BOLD}[1/3] Building...${NC}"
+        echo -e "${BOLD}[1/4] Building...${NC}"
         npm run build
         echo ""
     fi
 
     # Step 2: Remove any conflicting global install
-    echo -e "${BOLD}[2/3] Removing conflicting global installs...${NC}"
+    echo -e "${BOLD}[2/4] Removing conflicting global installs...${NC}"
     local gemini_path
     gemini_path="$(command -v gemini 2>/dev/null || true)"
     if [[ -n "$gemini_path" ]]; then
@@ -120,8 +178,13 @@ main() {
     echo ""
 
     # Step 3: Link
-    echo -e "${BOLD}[3/3] Linking fork globally...${NC}"
+    echo -e "${BOLD}[3/4] Linking fork globally...${NC}"
     npm link ./packages/cli 2>&1 | grep -v "^npm warn" || true
+    echo ""
+
+    # Step 4: Source .env from ~/.bashrc
+    echo -e "${BOLD}[4/4] Setting up environment...${NC}"
+    setup_env
     echo ""
 
     # Verify
