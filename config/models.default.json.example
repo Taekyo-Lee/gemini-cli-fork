@@ -24,7 +24,7 @@
       "url": "https://api.openai.com/v1",
       "modality": { "input": ["text", "image"], "output": ["text"] },
       "contextLength": 128000,
-      "maxTokens": 16384,
+      "maxCompletionTokens": 16384,
       "corp": false,
       "home": true,
       "dev": true
