@@ -186,9 +186,10 @@ All fork-specific docs live in `docs/fork/` (separate from upstream `docs/`):
 | ------------------------- | -------------------------------------------- |
 | `docs/fork/overview/`     | Fork philosophy, fork-vs-upstream comparison |
 | `docs/fork/setup/`        | Install guide, troubleshooting               |
-| `docs/fork/architecture/` | OpenAI-compatible mode, model registry, telemetry |
+| `docs/fork/architecture/` | OpenAI-compatible mode, model registry       |
+| `docs/fork/tracing/`      | Telemetry setup, Langfuse integration, trace comparison |
 | `docs/fork/upstream/`     | Upstream merge plan, conflict resolution     |
-| `docs/fork/tracking/`     | TODO, changelog                              |
+| `docs/fork/tracking/`     | TODO, changelog, phase plans                 |
 
 ## Files Created by Fork
 
