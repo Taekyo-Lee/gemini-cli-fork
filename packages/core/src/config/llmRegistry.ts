@@ -20,6 +20,7 @@ export interface LLMModelConfig {
   apiKeyEnv?: string;
   contextLength: number;
   maxTokens: number;
+  maxCompletionTokens?: number; // [FORK] When set, sends max_completion_tokens instead of max_tokens
   corp: boolean;
   home: boolean;
   dev: boolean;
@@ -68,6 +69,7 @@ interface JsonModelEntry {
   apiKeyEnv?: string;
   contextLength: number;
   maxTokens: number;
+  maxCompletionTokens?: number;
   corp?: boolean;
   home?: boolean;
   dev?: boolean;
@@ -117,6 +119,7 @@ function parseModelsJson(jsonPath: string): LLMModelConfig[] | null {
         url: entry.url,
         contextLength: entry.contextLength,
         maxTokens: entry.maxTokens ?? entry.contextLength,
+        ...(entry.maxCompletionTokens && { maxCompletionTokens: entry.maxCompletionTokens }),
         corp: entry.corp ?? false,
         home: entry.home ?? false,
         dev: entry.dev ?? false,
