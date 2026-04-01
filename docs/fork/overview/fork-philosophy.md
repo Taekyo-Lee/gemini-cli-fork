@@ -102,12 +102,12 @@ When you pass `--yolo`, you mean it. The fork ensures:
 
 ### 7. Single Source of Truth for Models
 
-`models.default.json` at the repo root is the single config file that defines
+`config/models.default.json` at the repo root is the single config file that defines
 all available models. Edit it to add, remove, or modify models — no code changes
 needed.
 
 When a new model is deployed on the on-prem vLLM server, adding it to
-`models.default.json` is all that's needed.
+`config/models.default.json` is all that's needed.
 
 ## What This Fork Is Not
 
