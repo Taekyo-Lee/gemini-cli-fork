@@ -179,10 +179,10 @@ function loadModels(): LLMModelConfig[] {
       '\n' +
         '⚠  No models loaded — models.default.json not found.\n' +
         '\n' +
-        '   This file should exist at the root of your gemini-cli-fork repo.\n' +
-        '   Rebuild and run from the repo, or re-link globally:\n' +
+        '   Copy the template and rebuild:\n' +
         '\n' +
         '     cd <your-repo-path>\n' +
+        '     cp models.default.json.example models.default.json\n' +
         '     npm run build && node packages/cli\n' +
         '     # or: ./scripts/fork/link_global.sh\n\n',
     );
