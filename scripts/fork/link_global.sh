@@ -92,19 +92,29 @@ verify() {
 #    resolved path at script time.
 
 ENV_FILE="$REPO_ROOT/.env"
+MODELS_FILE="$REPO_ROOT/models.default.json"
 BASHRC="$HOME/.bashrc"
 MARKER="# [gemini-fork] source env vars"
 
 setup_env() {
+    # Copy templates if missing
     if [[ ! -f "$ENV_FILE" ]]; then
         if [[ -f "$REPO_ROOT/.env.example" ]]; then
-            warn ".env not found. Copy the template first:"
-            warn "  cp $REPO_ROOT/.env.example $ENV_FILE"
-            warn "  # then fill in your API keys"
+            cp "$REPO_ROOT/.env.example" "$ENV_FILE"
+            info "Created .env from .env.example — fill in your API keys"
         else
-            warn ".env not found — skipping env setup"
+            warn ".env not found and no template available — skipping env setup"
+            return 0
         fi
-        return 0
+    fi
+
+    if [[ ! -f "$MODELS_FILE" ]]; then
+        if [[ -f "$REPO_ROOT/models.default.json.example" ]]; then
+            cp "$REPO_ROOT/models.default.json.example" "$MODELS_FILE"
+            info "Created models.default.json from template"
+        else
+            warn "models.default.json not found — model picker will be empty"
+        fi
     fi
 
     # Ensure GEMINI_FORK_DIR is in .env
