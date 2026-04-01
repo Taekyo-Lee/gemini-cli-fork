@@ -23,7 +23,7 @@ import {
   type ServerDetails,
   type ContextBreakdown,
 } from '../telemetry/types.js';
-import type { LlmRole } from '../telemetry/llmRole.js';
+import { LlmRole } from '../telemetry/llmRole.js';
 import type { Config } from '../config/config.js';
 import type { UserTierId, GeminiUserTier } from '../code_assist/types.js';
 import {
@@ -62,6 +62,13 @@ const LANGFUSE_SPAN_NAME = 'langfuse.span.name';
 const LANGFUSE_TRACE_NAME = 'langfuse.trace.name';
 const LANGFUSE_TRACE_INPUT = 'langfuse.trace.input';
 const LANGFUSE_TRACE_OUTPUT = 'langfuse.trace.output';
+
+/** [FORK] Returns true for primary LLM calls (main agent, subagent) — NOT utility calls
+ *  like checkNextSpeaker, compressor, router, etc. We only set langfuse.trace.*
+ *  attributes for primary calls so utility spans don't overwrite the trace display. */
+function isPrimaryLlmCall(role: LlmRole): boolean {
+  return role === LlmRole.MAIN || role === LlmRole.SUBAGENT;
+}
 
 /** Convert Gemini Content parts to LangChain-style [{type, text/image_url}] format. */
 function partsToLangChainFormat(
@@ -450,19 +457,21 @@ export class LoggingContentGenerator implements ContentGenerator {
             response.usageMetadata?.promptTokenCount ?? 0;
           spanMetadata.attributes[GEN_AI_USAGE_OUTPUT_TOKENS] =
             response.usageMetadata?.candidatesTokenCount ?? 0;
-          // [FORK] Langfuse-friendly Input/Output/Name (observation + trace level)
+          // [FORK] Langfuse-friendly Input/Output/Name
+          // Observation-level attributes always; trace-level only for primary calls
+          // so utility spans (checkNextSpeaker, etc.) don't overwrite the trace display.
           const userMsg = extractLastUserInput(contents);
           const respMsg = extractResponseOutput(response.candidates);
           if (userMsg) {
             spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
-            spanMetadata.attributes[LANGFUSE_TRACE_INPUT] = userMsg;
+            if (isPrimaryLlmCall(role)) spanMetadata.attributes[LANGFUSE_TRACE_INPUT] = userMsg;
           }
           if (respMsg) {
             spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
-            spanMetadata.attributes[LANGFUSE_TRACE_OUTPUT] = respMsg;
+            if (isPrimaryLlmCall(role)) spanMetadata.attributes[LANGFUSE_TRACE_OUTPUT] = respMsg;
           }
           spanMetadata.attributes[LANGFUSE_SPAN_NAME] = `gemini-cli:${req.model}`;
-          spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
+          if (isPrimaryLlmCall(role)) spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
           const durationMs = Date.now() - startTime;
           this._logApiResponse(
             contents,
@@ -640,20 +649,22 @@ export class LoggingContentGenerator implements ContentGenerator {
       spanMetadata.output = responses.map(
         (response) => response.candidates?.[0]?.content ?? null,
       );
-      // [FORK] Langfuse-friendly Input/Output/Name (observation + trace level)
+      // [FORK] Langfuse-friendly Input/Output/Name
+      // Observation-level attributes always; trace-level only for primary calls
+      // so utility spans (checkNextSpeaker, etc.) don't overwrite the trace display.
       const userMsg = extractLastUserInput(requestContents);
       const allCandidates = responses.flatMap((r) => r.candidates ?? []);
       const respMsg = extractResponseOutput(allCandidates);
       if (userMsg) {
         spanMetadata.attributes[LANGFUSE_INPUT] = userMsg;
-        spanMetadata.attributes[LANGFUSE_TRACE_INPUT] = userMsg;
+        if (isPrimaryLlmCall(role)) spanMetadata.attributes[LANGFUSE_TRACE_INPUT] = userMsg;
       }
       if (respMsg) {
         spanMetadata.attributes[LANGFUSE_OUTPUT] = respMsg;
-        spanMetadata.attributes[LANGFUSE_TRACE_OUTPUT] = respMsg;
+        if (isPrimaryLlmCall(role)) spanMetadata.attributes[LANGFUSE_TRACE_OUTPUT] = respMsg;
       }
       spanMetadata.attributes[LANGFUSE_SPAN_NAME] = `gemini-cli:${req.model}`;
-      spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
+      if (isPrimaryLlmCall(role)) spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
       if (lastUsageMetadata) {
         spanMetadata.attributes[GEN_AI_USAGE_INPUT_TOKENS] =
           lastUsageMetadata.promptTokenCount ?? 0;
