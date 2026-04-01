@@ -24,7 +24,6 @@ import {
   promptIdContext,
   tokenLimit,
   debugLogger,
-  runInDevTraceSpan,
   EDIT_TOOL_NAMES,
   ASK_USER_TOOL_NAME,
   processRestorableToolCalls,
@@ -35,7 +34,6 @@ import {
   CoreEvent,
   CoreToolCallStatus,
   buildUserSteeringHintPrompt,
-  GeminiCliOperation,
   getPlanModeExitMessage,
   isBackgroundExecutionData,
   Kind,
@@ -1437,15 +1435,12 @@ export const useGeminiStream = (
       options?: { isContinuation: boolean },
       prompt_id?: string,
     ) =>
-      runInDevTraceSpan(
-        {
-          operation: options?.isContinuation
-            ? GeminiCliOperation.SystemPrompt
-            : GeminiCliOperation.UserPrompt,
-        },
-        async ({ metadata: spanMetadata }) => {
-          spanMetadata.input = query;
-
+      // [FORK] Removed runInDevTraceSpan(UserPrompt) wrapper so the llm_call
+      // span (created by loggingContentGenerator) becomes the root span.
+      // This makes interactive mode traces show the same rich attributes
+      // (system_instructions, tool_definitions, token counts, langfuse.trace.*)
+      // as bash -p mode. The logUserPrompt() log event still records user input.
+      (async () => {
           if (
             (isRespondingRef.current ||
               streamingState === StreamingState.Responding ||
@@ -1573,7 +1568,6 @@ export const useGeminiStream = (
                 });
               }
             } catch (error: unknown) {
-              spanMetadata.error = error;
               if (error instanceof UnauthorizedError) {
                 onAuthError('Session expired or is unauthorized.');
               } else if (
@@ -1605,8 +1599,7 @@ export const useGeminiStream = (
               }
             }
           });
-        },
-      ),
+      })(),
     [
       streamingState,
       setModelSwitchedFromQuotaError,
