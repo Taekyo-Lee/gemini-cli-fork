@@ -240,7 +240,7 @@ Model-specific:
 
 ## Telemetry
 
-See [telemetry.md](./telemetry.md) for the full telemetry documentation,
+See [telemetry.md](../tracing/telemetry.md) for the full telemetry documentation,
 including Langfuse setup, what gets traced, configuration, and Python usage.
 
 **Quick start** — add to `~/.env`:
