@@ -127,7 +127,7 @@ The API key is resolved per-model via `createOpenAIContentGenerator()` in
 `openaiFactory.ts`:
 
 ```
-1. modelConfig.apiKeyEnv  →  explicit env var from models.default.json
+1. modelConfig.apiKeyEnv  →  explicit env var from config/models.default.json
 2. inferDefaultApiKeyEnv(url)  →  auto-detect from model URL:
      - anthropic.com  →  ANTHROPIC_API_KEY
      - openrouter.ai  →  OPENROUTER_API_KEY
@@ -136,7 +136,7 @@ The API key is resolved per-model via `createOpenAIContentGenerator()` in
 4. '' (empty string)      →  corp endpoints don't require bearer auth
 ```
 
-This means `apiKeyEnv` in `models.default.json` is optional — the URL-based
+This means `apiKeyEnv` in `config/models.default.json` is optional — the URL-based
 inference handles the common cases automatically.
 
 ### Corporate (On-Prem)
@@ -255,7 +255,7 @@ LANGFUSE_BASE_URL=http://localhost:3000
 
 | File                                               | Role                                      |
 | -------------------------------------------------- | ----------------------------------------- |
-| `models.default.json`                              | Model registry (repo root, edit this)     |
+| `config/models.default.json`                              | Model registry (repo root, edit this)     |
 | `packages/core/src/config/llmRegistry.ts`          | JSON config loader, env detection         |
 | `packages/core/src/core/openaiFactory.ts`          | API key inference, ContentGenerator factory |
 | `packages/core/src/core/openaiContentGenerator.ts` | ContentGenerator using OpenAI SDK         |
