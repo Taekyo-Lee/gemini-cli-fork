@@ -1,14 +1,18 @@
-# Gemini CLI Project Context
+# Gemini CLI Fork — Project Context
 
-Gemini CLI is an open-source AI agent that brings the power of Gemini directly
-into the terminal. It is designed to be a terminal-first, extensible, and
-powerful tool for developers.
+A fork of [Google's Gemini CLI](https://github.com/google-gemini/gemini-cli)
+that works with **any OpenAI-compatible LLM** — on-prem vLLM, OpenRouter,
+OpenAI, Anthropic, and more. Instead of Google authentication, it shows a
+**model picker** and connects via OpenAI Chat Completions API.
+
+See `CLAUDE.md` for detailed fork architecture, file inventory, and env var
+reference.
 
 ## Project Overview
 
-- **Purpose:** Provide a seamless terminal interface for Gemini models,
-  supporting code understanding, generation, automation, and integration via MCP
-  (Model Context Protocol).
+- **Purpose:** Terminal-first AI coding agent supporting any OpenAI-compatible
+  LLM (on-prem and cloud), with model selection, telemetry (Langfuse), and
+  all upstream Gemini CLI features (tools, MCP, sandbox, agents).
 - **Main Technologies:**
   - **Runtime:** Node.js (>=20.0.0, recommended ~20.19.0 for development)
   - **Language:** TypeScript
@@ -28,9 +32,27 @@ powerful tool for developers.
   - `packages/test-utils`: Shared test utilities and test rig.
   - `packages/vscode-ide-companion`: VS Code extension pairing with the CLI.
 
+## Fork Setup (for new users)
+
+```bash
+cp .env.example .env          # Fill in API keys
+cp config/models.default.json.example config/models.default.json  # Customize models
+./scripts/fork/setup.sh  # Build, link globally, configure bashrc
+source ~/.bashrc
+gemini                         # Run — shows model picker
+```
+
+## Model Configuration
+
+Models are defined in `config/models.default.json` (gitignored). Each model specifies
+its own base URL, so no `*_API_BASE` env vars are needed. Only API keys go in
+`.env`. See `docs/fork/architecture/dynamic-model-loading.md` for field
+reference.
+
 ## Building and Running
 
-- **Install Dependencies:** `npm install`
+- **Install Dependencies:** `npm install --ignore-scripts`
+- **Full Setup:** `./scripts/fork/setup.sh` (build + global link + env)
 - **Build All:** `npm run build:all` (Builds packages, sandbox, and VS Code
   companion)
 - **Build Packages:** `npm run build`
@@ -84,6 +106,10 @@ powerful tool for developers.
 
 - Always use the `docs-writer` skill when you are asked to write, edit, or
   review any documentation.
-- Documentation is located in the `docs/` directory.
+- Upstream documentation is in `docs/`.
+- Fork-specific documentation is in `docs/fork/` (setup, architecture, tracing,
+  upstream sync, tracking).
+- `CLAUDE.md` has the detailed fork context (file inventory, env vars, auth
+  flow, coding conventions).
 - Suggest documentation updates when code changes render existing documentation
   obsolete or incomplete.
