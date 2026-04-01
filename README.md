@@ -1,4 +1,4 @@
-# Gemini CLI Fork — Multi-LLM Edition
+# Gemini CLI — Bring Your Own LLM
 
 A fork of [Google's Gemini CLI](https://github.com/google-gemini/gemini-cli)
 that works with **any OpenAI-compatible LLM** — on-prem vLLM, OpenRouter,
@@ -70,7 +70,7 @@ means:
 | `LANGFUSE_*`         | Langfuse keys for tracing (see [Telemetry](#telemetry))  | Optional  |
 
 > **Note:** You do NOT need `*_API_BASE` URLs. Base URLs come from each model's
-> config in `models.default.json`. Only API keys are needed here.
+> config in `config/models.default.json`. Only API keys are needed here.
 
 **Which `A2G_LOCATION` am I?**
 
@@ -87,7 +87,7 @@ use on-prem CORP models, you don't need `OPENAI_API_KEY` at all.
 Run the setup script:
 
 ```bash
-./scripts/fork/link_global.sh
+./scripts/fork/setup.sh
 ```
 
 This does everything in one shot:
@@ -135,13 +135,13 @@ When the fork is updated:
 ```bash
 cd $GEMINI_FORK_DIR
 git pull
-./scripts/fork/link_global.sh
+./scripts/fork/setup.sh
 ```
 
 ### Verify your setup
 
 ```bash
-./scripts/fork/link_global.sh --verify
+./scripts/fork/setup.sh --verify
 ```
 
 This checks that the build exists, the `gemini` command points to the fork, and
@@ -151,7 +151,7 @@ prints the version.
 
 ```bash
 # Full rebuild + relink:
-./scripts/fork/link_global.sh
+./scripts/fork/setup.sh
 
 # Quick rebuild only (link persists):
 cd $GEMINI_FORK_DIR && npm run build
@@ -161,7 +161,7 @@ cd $GEMINI_FORK_DIR && npm run build
 
 ## Available Models
 
-Models are defined in `models.default.json` at the repo root. The model picker
+Models are defined in `config/models.default.json`. The model picker
 only shows models available in your environment.
 
 | Environment        | Models                                                    | Provider             |
@@ -241,7 +241,7 @@ Run the setup script again:
 
 ```bash
 cd /path/to/gemini-cli-fork
-./scripts/fork/link_global.sh
+./scripts/fork/setup.sh
 source ~/.bashrc
 ```
 
