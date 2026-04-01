@@ -3,7 +3,7 @@
 ## Overview
 
 Replace the Gemini auth prompt with an LLM selection list. When user runs
-`$ gemini`, show available models from `models.default.json`, let them pick
+`$ gemini`, show available models from `config/models.default.json`, let them pick
 one, and connect via OpenAI Chat Completions API.
 
 ---
@@ -33,7 +33,7 @@ one, and connect via OpenAI Chat Completions API.
 
 - [x] **Created `packages/core/src/config/llmRegistry.ts`**
 
-  Loads models from `models.default.json` with all 27 models:
+  Loads models from `config/models.default.json` with all 27 models:
   - **8 CORP models** (url: `http://a2g.samsungds.net:7620/v1`): GLM-5-Thinking,
     GLM-5-Non-Thinking, Kimi-K2.5-Thinking, Kimi-K2.5-Non-Thinking,
     Qwen3.5-35B-A3B, Qwen3.5-122B-A10B, gpt-oss-120b, GaussO-Owl-Ultra-Instruct
@@ -830,7 +830,7 @@ merge execution — that's deferred to a future session.
 
 ## Phase 10: Lightweight Python LLM Helper (COMPLETE)
 
-Goal: Let coworkers use models from `models.default.json` with vanilla
+Goal: Let coworkers use models from `config/models.default.json` with vanilla
 `langchain_openai.ChatOpenAI` — no proprietary dependencies.
 
 - [x] **Created `scripts/fork/gemini_llm.py`** — single-file helper with
@@ -862,7 +862,7 @@ fallback).
       `inferDefaultApiKeyEnv(url)`: `anthropic.com` -> `ANTHROPIC_API_KEY`,
       `openrouter.ai` -> `OPENROUTER_API_KEY`, fallback -> `OPENAI_API_KEY`.
       Fixes 401 error when selecting Anthropic models in the CLI.
-- [x] **Added `apiKeyEnv` to Anthropic models in `models.default.json`** —
+- [x] **Added `apiKeyEnv` to Anthropic models in `config/models.default.json`** —
       explicit `ANTHROPIC_API_KEY` for Claude models.
 - [x] **Live tested all three providers** — OpenAI, Anthropic, OpenRouter
       invoke + stream confirmed working in both Python helper and TypeScript CLI.
