@@ -145,19 +145,19 @@ function parseModelsJson(jsonPath: string): LLMModelConfig[] | null {
   }
 }
 
-/** Resolve the path to the repo root's models.default.json. */
+/** Resolve the path to config/models.default.json at the repo root. */
 function getRepoDefaultPath(): string {
-  // Walk up from this module's directory until we find models.default.json.
+  // Walk up from this module's directory until we find config/models.default.json.
   // Works regardless of build output structure (dist/config/ vs dist/src/config/).
   let dir = dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 8; i++) {
-    const candidate = join(dir, 'models.default.json');
+    const candidate = join(dir, 'config', 'models.default.json');
     if (existsSync(candidate)) return candidate;
     const parent = dirname(dir);
     if (parent === dir) break; // reached filesystem root
     dir = parent;
   }
-  return join(dir, 'models.default.json'); // won't exist, triggers fallback
+  return join(dir, 'config', 'models.default.json'); // won't exist, triggers fallback
 }
 
 function loadModels(): LLMModelConfig[] {
@@ -177,14 +177,14 @@ function loadModels(): LLMModelConfig[] {
     process.env['_GEMINI_NO_MODELS_WARNED'] = '1';
     process.stderr.write(
       '\n' +
-        '⚠  No models loaded — models.default.json not found.\n' +
+        '⚠  No models loaded — config/models.default.json not found.\n' +
         '\n' +
         '   Copy the template and rebuild:\n' +
         '\n' +
         '     cd <your-repo-path>\n' +
-        '     cp models.default.json.example models.default.json\n' +
+        '     cp config/models.default.json.example config/models.default.json\n' +
         '     npm run build && node packages/cli\n' +
-        '     # or: ./scripts/fork/link_global.sh\n\n',
+        '     # or: ./scripts/fork/setup.sh\n\n',
     );
   }
   return [];
