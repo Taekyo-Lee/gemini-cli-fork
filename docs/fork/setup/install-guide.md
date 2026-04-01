@@ -137,7 +137,7 @@ gemini
 You'll see a model picker with the default models. Select one and start
 chatting.
 
-**To customize models**, edit `models.default.json` at the repo root. See
+**To customize models**, edit `config/models.default.json` at the repo root. See
 `docs/fork/architecture/dynamic-model-loading.md` for the field reference.
 
 **Which models you see depends on `A2G_LOCATION`:**
@@ -209,19 +209,19 @@ npm run build
 Or use the link script which builds, re-links, and verifies everything:
 
 ```bash
-./scripts/fork/link_global.sh           # build + link + verify (recommended)
-./scripts/fork/link_global.sh --link    # link only (skip build)
-./scripts/fork/link_global.sh --verify  # just check if gemini points to the fork
+./scripts/fork/setup.sh           # build + link + verify (recommended)
+./scripts/fork/setup.sh --link    # link only (skip build)
+./scripts/fork/setup.sh --verify  # just check if gemini points to the fork
 ```
 
 > **When to use which:**
 >
 > - `npm run build` — fast, sufficient for day-to-day rebuilds (the link
 >   persists across builds)
-> - `./scripts/fork/link_global.sh` — use if the link breaks (e.g. after
+> - `./scripts/fork/setup.sh` — use if the link breaks (e.g. after
 >   accidentally installing the upstream package globally), or if you want a
 >   single command that always guarantees correctness
-> - `./scripts/fork/link_global.sh --verify` — quick sanity check, run this if
+> - `./scripts/fork/setup.sh --verify` — quick sanity check, run this if
 >   `gemini` starts behaving unexpectedly
 
 ## Quick Reference
@@ -253,7 +253,7 @@ gemini "explain this code"  # one-shot prompt
 # After editing source code
 cd ~/workspace/gemini-cli-fork
 npm run build               # rebuild (link persists)
-./scripts/fork/link_global.sh    # or: build + re-link + verify (safer)
+./scripts/fork/setup.sh    # or: build + re-link + verify (safer)
 ```
 
 ## Switching Between Modes
