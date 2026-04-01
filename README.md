@@ -1,5 +1,7 @@
 # Gemini CLI — Bring Your Own LLM
 
+**English** | [한국어](README.ko.md)
+
 A fork of [Google's Gemini CLI](https://github.com/google-gemini/gemini-cli)
 that works with **any OpenAI-compatible LLM** — on-prem vLLM, OpenRouter,
 OpenAI, Anthropic, and more.
