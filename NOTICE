@@ -1,0 +1,33 @@
+Gemini CLI Fork
+Copyright 2025 Google LLC (original work)
+Copyright 2026 Taekyo Lee (fork modifications)
+
+This product includes software developed at Google LLC
+(https://github.com/google-gemini/gemini-cli).
+
+Licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
+
+== Derivative Work Notice ==
+
+This is a derivative work (fork) of Google's Gemini CLI. The following
+modifications have been made:
+
+- Added OpenAI-compatible API support, enabling use with any LLM provider
+  (on-prem vLLM, Ollama, OpenAI, Anthropic, OpenRouter, etc.)
+- Replaced the Google authentication prompt with a model picker UI
+- Added a JSON-based model registry (models.default.json) for configuring
+  LLM endpoints without code changes
+- Added Langfuse integration for on-prem LLM observability/tracing
+- Added a Python helper (scripts/fork/gemini_llm.py) for LangChain integration
+- Various bug fixes for streaming tool calls, token handling, and
+  multi-provider compatibility
+
+Modified files in the original codebase carry "// [FORK]" comments.
+Fork-specific files are listed in CLAUDE.md.
+
+== Trademarks ==
+
+"Gemini" is a trademark of Google LLC. This fork is not affiliated with
+or endorsed by Google. The use of the name "gemini" in the CLI command
+is retained for compatibility with the upstream project.
