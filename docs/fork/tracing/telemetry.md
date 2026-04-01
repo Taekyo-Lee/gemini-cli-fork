@@ -27,7 +27,7 @@ coworkers can get full LLM tracing on a self-hosted Langfuse instance by setting
 
 ### Setup
 
-Add to `~/.env`:
+Add to `.env` (in the repo root):
 
 ```bash
 LANGFUSE_PUBLIC_KEY=pk-lf-...
