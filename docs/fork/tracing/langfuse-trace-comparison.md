@@ -126,7 +126,7 @@ The fork sends a flat array of content parts.
 
 | Key | Meaning |
 |-----|---------|
-| `gen_ai.request.model` | Model display name from `models.default.json` (e.g., `[OpenAI] gpt-4o-mini`) |
+| `gen_ai.request.model` | Model display name from `config/models.default.json` (e.g., `[OpenAI] gpt-4o-mini`) |
 | `gen_ai.system_instructions` | Full system prompt sent to the model (JSON string, can be very large) |
 | `gen_ai.tool.definitions` | All tool/function schemas available to the model (JSON array) |
 | `gen_ai.operation.name` | Type of operation: `llm_call`, `tool_call`, `agent_call`, etc. |
