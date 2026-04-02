@@ -221,20 +221,15 @@ export class OpenAIContentGenerator implements ContentGenerator {
         for (const tc of choice.delta.tool_calls) {
           const existing = pendingToolCalls.get(tc.index);
           if (existing) {
-            // If tc.id is set, some providers (vLLM/GLM-5) send a new
-            // complete tool call on the same index — replace, don't append.
-            if (tc.id) {
-              existing.id = tc.id;
-              if (tc.function?.name) existing.name = tc.function.name;
-              // Only replace arguments when the duplicate chunk has non-empty args.
-              // GLM-5 sends a final confirmation chunk (same id, empty args) after
-              // the streaming deltas — replacing with '' would erase accumulated args.
-              if (tc.function?.arguments) {
-                existing.arguments = tc.function.arguments;
-              }
-            } else {
-              existing.arguments += tc.function?.arguments ?? '';
-            }
+            // Update id and name if provided (vLLM/GLM-5 sends these on every chunk)
+            if (tc.id && !existing.id) existing.id = tc.id;
+            if (tc.function?.name) existing.name = tc.function.name;
+            // Always append arguments. GLM-5-Thinking sends incremental
+            // fragments with tc.id on every chunk — replacing would lose
+            // prior fragments. If a provider sends duplicate complete args
+            // (original GLM-5 behavior), sanitizeToolCallArgs() extracts
+            // the last valid JSON from the garbled concatenation.
+            existing.arguments += tc.function?.arguments ?? '';
           } else {
             pendingToolCalls.set(tc.index, {
               id: tc.id ?? '',
@@ -245,6 +240,12 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
           // If this chunk has a finish_reason, the tool calls are complete
           if (choice.finish_reason === 'tool_calls') {
+            // Debug: log accumulated args before sanitization
+            for (const [idx, pending] of pendingToolCalls.entries()) {
+              debugLogger.debug(
+                `[OpenAI] Emitting tool_call idx=${idx} name=${pending.name} args_len=${pending.arguments.length} args_preview="${pending.arguments.substring(0, 120)}"`,
+              );
+            }
             // Emit the accumulated tool calls as a single response
             const completedChunk = {
               ...chunk,
@@ -302,6 +303,11 @@ export class OpenAIContentGenerator implements ContentGenerator {
     // Some providers (OpenRouter, vLLM) return finish_reason "stop" even when
     // tool calls are present. Emit any accumulated tool calls before ending.
     if (pendingToolCalls.size > 0) {
+      for (const [idx, pending] of pendingToolCalls.entries()) {
+        debugLogger.debug(
+          `[OpenAI] Fallback emit tool_call idx=${idx} name=${pending.name} args_len=${pending.arguments.length} args_preview="${pending.arguments.substring(0, 120)}"`,
+        );
+      }
       const finalChunk: OpenAI.Chat.Completions.ChatCompletionChunk = {
         id: '',
         object: 'chat.completion.chunk',
@@ -374,22 +380,25 @@ function sanitizeToolCallArgs(args: string): string {
     JSON.parse(args);
     return args;
   } catch {
-    // Try to find the last valid JSON object in the string
-    const lastBrace = args.lastIndexOf('{');
-    if (lastBrace > 0) {
-      const candidate = args.substring(lastBrace);
+    // Garbled JSON from duplicate streaming chunks (e.g., vLLM/GLM-5 appending
+    // the same complete args twice: `{"cmd":"x"}{"cmd":"x"}`).
+    // Try each '{' from the end to find the last complete valid JSON object.
+    let pos = args.length;
+    while ((pos = args.lastIndexOf('{', pos - 1)) >= 0) {
+      if (pos === 0) break; // position 0 is the whole string, already tried
+      const candidate = args.substring(pos);
       try {
         JSON.parse(candidate);
         debugLogger.debug(
-          `[OpenAI] Repaired garbled tool call args: "${args}" → "${candidate}"`,
+          `[OpenAI] Repaired garbled tool call args (len=${args.length}): extracted valid JSON at offset ${pos}`,
         );
         return candidate;
       } catch {
-        // fall through
+        continue;
       }
     }
     debugLogger.debug(
-      `[OpenAI] Could not parse tool call args: "${args}", using empty object`,
+      `[OpenAI] Could not parse tool call args (len=${args.length}): "${args.substring(0, 200)}", using empty object`,
     );
     return '{}';
   }
