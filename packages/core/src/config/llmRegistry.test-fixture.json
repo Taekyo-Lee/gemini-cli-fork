@@ -1,0 +1,50 @@
+{
+  "_comment": "Test fixture for llmRegistry.test.ts — do not edit manually.",
+  "models": [
+    {
+      "model": "corp-OnlyModel",
+      "modelAlias": "corp-only",
+      "url": "http://corp-server:8000/v1",
+      "contextLength": 32000,
+      "maxTokens": 32000,
+      "corp": true,
+      "home": false,
+      "dev": false
+    },
+    {
+      "model": "home-OnlyModel",
+      "modelAlias": "home-only",
+      "url": "https://api.example.com/v1",
+      "contextLength": 128000,
+      "maxTokens": 128000,
+      "corp": false,
+      "home": true,
+      "dev": false
+    },
+    {
+      "model": "dev-TestModel",
+      "modelAlias": "dev-test",
+      "url": "https://openrouter.ai/api/v1",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
+      "contextLength": 64000,
+      "maxTokens": 64000,
+      "corp": false,
+      "home": false,
+      "dev": true
+    },
+    {
+      "model": "shared-HomeDevModel",
+      "modelAlias": "shared-model",
+      "url": "https://api.openai.com/v1",
+      "modality": { "input": ["text", "image"], "output": ["text"] },
+      "contextLength": 128000,
+      "maxCompletionTokens": 16384,
+      "maxTokens": 128000,
+      "supportsResponsesApi": true,
+      "reasoningModel": false,
+      "corp": false,
+      "home": true,
+      "dev": true
+    }
+  ]
+}
