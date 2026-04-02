@@ -56,13 +56,21 @@ main() {
     fi
     echo ""
 
-    # Step 2: Remove bashrc source line
+    # Step 2: Remove bashrc entries (env sourcing + alias)
     echo -e "${BOLD}[2/3] Cleaning ~/.bashrc...${NC}"
+    local cleaned=false
     if grep -qF "$MARKER" "$BASHRC" 2>/dev/null; then
         grep -vF "$MARKER" "$BASHRC" > "$BASHRC.tmp" && mv "$BASHRC.tmp" "$BASHRC"
         info "Removed env sourcing line from ~/.bashrc"
-    else
-        info "No gemini-fork line found in ~/.bashrc (already clean)"
+        cleaned=true
+    fi
+    if grep -q "alias gemini=" "$BASHRC" 2>/dev/null; then
+        grep -v "alias gemini=" "$BASHRC" > "$BASHRC.tmp" && mv "$BASHRC.tmp" "$BASHRC"
+        info "Removed gemini alias from ~/.bashrc"
+        cleaned=true
+    fi
+    if ! $cleaned; then
+        info "No gemini-fork entries found in ~/.bashrc (already clean)"
     fi
     echo ""
 
@@ -85,10 +93,9 @@ main() {
     echo ""
 
     # Summary
-    echo -e "${BOLD}Done.${NC}"
+    echo -e "${BOLD}Done.${NC} Open a new terminal to take effect."
     echo ""
-    echo "  To reinstall:  ./scripts/fork/setup.sh"
-    echo "  To apply now:  source ~/.bashrc"
+    echo "  To reinstall:  ./scripts/fork/setup.sh && source ~/.bashrc"
 }
 
 main "$@"
