@@ -145,6 +145,15 @@ git pull
 
 빌드 존재 여부, `gemini` 명령어가 포크를 가리키는지, 버전 정보를 확인합니다.
 
+### 삭제 (언인스톨)
+
+```bash
+./scripts/fork/uninstall.sh          # gemini 명령어 + bashrc 설정 제거
+./scripts/fork/uninstall.sh --all    # ~/.gemini (설정, 대화 이력)도 함께 제거
+```
+
+저장소와 `node_modules/`는 유지됩니다 — `./scripts/fork/setup.sh`로 언제든 재설치 가능합니다.
+
 ### 코드 변경 후 재빌드
 
 ```bash
