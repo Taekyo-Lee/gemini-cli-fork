@@ -1,0 +1,152 @@
+[2026-04-02T05:43:18.827Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:43:18.858Z] [LOG] Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+[2026-04-02T05:43:18.860Z] [WARN] The 'metricReader' option is deprecated. Please use 'metricReaders' instead.
+[2026-04-02T05:43:18.869Z] [DEBUG] Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /home/jetlee/workspace/gemini-cli-fork/node_modules/keytar/lib/keytar.js
+[2026-04-02T05:43:18.871Z] [DEBUG] Using FileKeychain fallback for secure storage.
+[2026-04-02T05:43:18.908Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:43:20.587Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:43:20.615Z] [LOG] Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+[2026-04-02T05:43:20.616Z] [WARN] The 'metricReader' option is deprecated. Please use 'metricReaders' instead.
+[2026-04-02T05:43:20.624Z] [DEBUG] Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /home/jetlee/workspace/gemini-cli-fork/node_modules/keytar/lib/keytar.js
+[2026-04-02T05:43:20.626Z] [DEBUG] Using FileKeychain fallback for secure storage.
+[2026-04-02T05:43:20.662Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:43:20.673Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:43:20.704Z] [LOG] Detected terminal background color: #191a1b
+[2026-04-02T05:43:20.704Z] [LOG] Detected terminal name: xterm.js(6.1.0-beta.191)
+[2026-04-02T05:43:20.709Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:43:22.475Z] [DEBUG] [DEBUG] [IDEConnectionUtils] Failed to read IDE connection directory: Error: ENOENT: no such file or directory, scandir '/tmp/gemini/ide'
+    at async Object.readdir (node:internal/fs/promises:947:18)
+    at async getConnectionConfigFromFile (file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-connection-utils.js:97:21)
+    at async file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-client.js:58:23
+    at async initializeApp (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/core/initializer.js:42:27)
+    at async main (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/gemini.js:365:38) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/tmp/gemini/ide'
+}
+[2026-04-02T05:43:22.476Z] [DEBUG] [DEBUG] [IDEConnectionUtils] Failed to read IDE connection directory: Error: ENOENT: no such file or directory, scandir '/tmp/gemini/ide'
+    at async Object.readdir (node:internal/fs/promises:947:18)
+    at async getConnectionConfigFromFile (file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-connection-utils.js:97:21)
+    at async IdeClient.connect (file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-client.js:86:15)
+    at async initializeApp (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/core/initializer.js:43:9)
+    at async main (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/gemini.js:365:38) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/tmp/gemini/ide'
+}
+[2026-04-02T05:43:22.476Z] [ERROR] [ERROR] [IDEClient] Failed to connect to IDE companion extension. Please ensure the extension is running. To install the extension, run /ide install.
+[2026-04-02T05:43:23.822Z] [LOG] Enabling Kitty keyboard protocol
+[2026-04-02T05:43:23.950Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:43:24.075Z] [DEBUG] Skill "skill-creator" from "/home/jetlee/.agents/skills/skill-creator/SKILL.md" is overriding the built-in skill.
+[2026-04-02T05:43:24.077Z] [DEBUG] Hook registry initialized with 0 hook entries
+[2026-04-02T05:43:24.077Z] [DEBUG] Hook system initialized successfully
+[2026-04-02T05:43:24.077Z] [DEBUG] [DEBUG] [MemoryDiscovery] Found global memory file: /home/jetlee/.gemini/GEMINI.md
+[2026-04-02T05:43:24.077Z] [DEBUG] [DEBUG] [MemoryDiscovery] Loading environment memory for trusted root: /home/jetlee/workspace/Skills-for-SWE (Stopping at git root: /home/jetlee/workspace/Skills-for-SWE)
+[2026-04-02T05:43:24.078Z] [DEBUG] [DEBUG] [MemoryDiscovery] Starting upward search from /home/jetlee/workspace/Skills-for-SWE stopping at /home/jetlee/workspace/Skills-for-SWE
+[2026-04-02T05:43:24.078Z] [DEBUG] [DEBUG] [MemoryDiscovery] deduplication: keeping /home/jetlee/.gemini/GEMINI.md (dev: 2064, ino: 459143)
+[2026-04-02T05:43:24.080Z] [DEBUG] [DEBUG] [MemoryDiscovery] Successfully read and processed imports: /home/jetlee/.gemini/GEMINI.md (Length: 91)
+[2026-04-02T05:43:24.110Z] [DEBUG] [STARTUP] StartupProfiler.flush() called with 7 phases
+[2026-04-02T05:43:24.110Z] [DEBUG] [STARTUP] Recording metric for phase: cli_startup duration: 2046.963902
+[2026-04-02T05:43:24.111Z] [DEBUG] [STARTUP] Recording metric for phase: load_settings duration: 7.666406999999936
+[2026-04-02T05:43:24.111Z] [DEBUG] [STARTUP] Recording metric for phase: parse_arguments duration: 10.502073999999993
+[2026-04-02T05:43:24.111Z] [DEBUG] [STARTUP] Recording metric for phase: load_cli_config duration: 22.538900000000012
+[2026-04-02T05:43:24.111Z] [DEBUG] [STARTUP] Recording metric for phase: initialize_app duration: 1779.3907250000002
+[2026-04-02T05:43:24.111Z] [DEBUG] [STARTUP] Recording metric for phase: load_builtin_commands duration: 137.21514000000025
+[2026-04-02T05:43:24.112Z] [DEBUG] [STARTUP] Recording metric for phase: discover_tools duration: 117.95076699999936
+[2026-04-02T05:43:24.132Z] [DEBUG] [SessionSummary] Most recent session already has summary
+[2026-04-02T05:43:25.364Z] [WARN] Failed to check for updates: TypeError: fetch failed
+[2026-04-02T05:43:36.483Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:51:22.365Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:51:22.399Z] [LOG] Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+[2026-04-02T05:51:22.401Z] [WARN] The 'metricReader' option is deprecated. Please use 'metricReaders' instead.
+[2026-04-02T05:51:22.411Z] [DEBUG] Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /home/jetlee/workspace/gemini-cli-fork/node_modules/keytar/lib/keytar.js
+[2026-04-02T05:51:22.413Z] [DEBUG] Using FileKeychain fallback for secure storage.
+[2026-04-02T05:51:22.458Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:51:24.561Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:51:24.602Z] [LOG] Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+[2026-04-02T05:51:24.604Z] [WARN] The 'metricReader' option is deprecated. Please use 'metricReaders' instead.
+[2026-04-02T05:51:24.612Z] [DEBUG] Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /home/jetlee/workspace/gemini-cli-fork/node_modules/keytar/lib/keytar.js
+[2026-04-02T05:51:24.614Z] [DEBUG] Using FileKeychain fallback for secure storage.
+[2026-04-02T05:51:24.657Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:51:24.671Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:51:24.706Z] [LOG] Detected terminal background color: #191a1b
+[2026-04-02T05:51:24.706Z] [LOG] Detected terminal name: xterm.js(6.1.0-beta.191)
+[2026-04-02T05:51:24.713Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:51:26.533Z] [DEBUG] [DEBUG] [IDEConnectionUtils] Failed to read IDE connection directory: Error: ENOENT: no such file or directory, scandir '/tmp/gemini/ide'
+    at async Object.readdir (node:internal/fs/promises:947:18)
+    at async getConnectionConfigFromFile (file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-connection-utils.js:97:21)
+    at async file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-client.js:58:23
+    at async initializeApp (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/core/initializer.js:42:27)
+    at async main (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/gemini.js:365:38) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/tmp/gemini/ide'
+}
+[2026-04-02T05:51:26.534Z] [DEBUG] [DEBUG] [IDEConnectionUtils] Failed to read IDE connection directory: Error: ENOENT: no such file or directory, scandir '/tmp/gemini/ide'
+    at async Object.readdir (node:internal/fs/promises:947:18)
+    at async getConnectionConfigFromFile (file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-connection-utils.js:97:21)
+    at async IdeClient.connect (file:///home/jetlee/workspace/gemini-cli-fork/packages/core/dist/src/ide/ide-client.js:86:15)
+    at async initializeApp (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/core/initializer.js:43:9)
+    at async main (file:///home/jetlee/workspace/gemini-cli-fork/packages/cli/dist/src/gemini.js:365:38) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/tmp/gemini/ide'
+}
+[2026-04-02T05:51:26.534Z] [ERROR] [ERROR] [IDEClient] Failed to connect to IDE companion extension. Please ensure the extension is running. To install the extension, run /ide install.
+[2026-04-02T05:51:27.910Z] [LOG] Enabling Kitty keyboard protocol
+[2026-04-02T05:51:28.003Z] [DEBUG] Ignore file not found: /home/jetlee/workspace/Skills-for-SWE/.geminiignore, continue without it.
+[2026-04-02T05:51:28.181Z] [DEBUG] Skill "skill-creator" from "/home/jetlee/.agents/skills/skill-creator/SKILL.md" is overriding the built-in skill.
+[2026-04-02T05:51:28.183Z] [DEBUG] Hook registry initialized with 0 hook entries
+[2026-04-02T05:51:28.183Z] [DEBUG] Hook system initialized successfully
+[2026-04-02T05:51:28.183Z] [DEBUG] [DEBUG] [MemoryDiscovery] Found global memory file: /home/jetlee/.gemini/GEMINI.md
+[2026-04-02T05:51:28.184Z] [DEBUG] [DEBUG] [MemoryDiscovery] Loading environment memory for trusted root: /home/jetlee/workspace/Skills-for-SWE (Stopping at git root: /home/jetlee/workspace/Skills-for-SWE)
+[2026-04-02T05:51:28.184Z] [DEBUG] [DEBUG] [MemoryDiscovery] Starting upward search from /home/jetlee/workspace/Skills-for-SWE stopping at /home/jetlee/workspace/Skills-for-SWE
+[2026-04-02T05:51:28.184Z] [DEBUG] [DEBUG] [MemoryDiscovery] deduplication: keeping /home/jetlee/.gemini/GEMINI.md (dev: 2064, ino: 459143)
+[2026-04-02T05:51:28.186Z] [DEBUG] [DEBUG] [MemoryDiscovery] Successfully read and processed imports: /home/jetlee/.gemini/GEMINI.md (Length: 91)
+[2026-04-02T05:51:28.223Z] [DEBUG] [STARTUP] StartupProfiler.flush() called with 7 phases
+[2026-04-02T05:51:28.223Z] [DEBUG] [STARTUP] Recording metric for phase: cli_startup duration: 2143.2293170000003
+[2026-04-02T05:51:28.224Z] [DEBUG] [STARTUP] Recording metric for phase: load_settings duration: 9.432321999999886
+[2026-04-02T05:51:28.224Z] [DEBUG] [STARTUP] Recording metric for phase: parse_arguments duration: 13.227735999999823
+[2026-04-02T05:51:28.224Z] [DEBUG] [STARTUP] Recording metric for phase: load_cli_config duration: 26.378353999999945
+[2026-04-02T05:51:28.224Z] [DEBUG] [STARTUP] Recording metric for phase: initialize_app duration: 1838.3691949999998
+[2026-04-02T05:51:28.224Z] [DEBUG] [STARTUP] Recording metric for phase: load_builtin_commands duration: 107.25917000000027
+[2026-04-02T05:51:28.224Z] [DEBUG] [STARTUP] Recording metric for phase: discover_tools duration: 150.11091699999997
+[2026-04-02T05:51:28.247Z] [DEBUG] [SessionSummary] Most recent session already has summary
+[2026-04-02T05:51:29.489Z] [WARN] Failed to check for updates: TypeError: fetch failed
+[2026-04-02T05:51:43.761Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
