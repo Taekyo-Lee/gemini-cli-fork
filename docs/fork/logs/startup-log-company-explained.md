@@ -2,7 +2,7 @@
 
 This document walks through the startup log captured on the **company PC**,
 explaining each step and highlighting differences from the
-[home PC log](startup-log-explained.md).
+[home/development network PC log](startup-log-explained.md).
 
 **Reference log:** [startup-debug-company.log](startup-debug-company.log)
 
@@ -27,7 +27,7 @@ running from `/home/jetlee/workspace/Skills-for-SWE/` (not the fork repo itself)
 12. [Session Summary](#12-session-summary)
 13. [Update Check (FAILED)](#13-update-check-failed)
 14. [Duplicate Log Blocks](#14-duplicate-log-blocks)
-15. [Comparison: Home vs Company](#15-comparison-home-vs-company)
+15. [Comparison: home/development network vs Company](#15-comparison-home/development network-vs-company)
 
 ---
 
@@ -40,7 +40,7 @@ running from `/home/jetlee/workspace/Skills-for-SWE/` (not the fork repo itself)
 **What:** The CLI looks for `.geminiignore` in the current working directory but
 doesn't find one.
 
-**Difference from home:** At home, the CLI runs from the fork repo which has a
+**Difference from home/developmet network:** At home/developmet network, the CLI runs from the fork repo which has a
 `.geminiignore`. Here it runs from `Skills-for-SWE/` which doesn't have one.
 
 **Impact:** None — the CLI simply skips ignore filtering and processes all files.
@@ -56,9 +56,9 @@ focused.
 [WARN] The 'metricReader' option is deprecated. Please use 'metricReaders' instead.
 ```
 
-**What:** Same OpenTelemetry warnings as the home log. Harmless.
+**What:** Same OpenTelemetry warnings as the home/developmet network log. Harmless.
 
-**No difference from home.**
+**No difference from home/developmet network.**
 
 ---
 
@@ -69,10 +69,10 @@ focused.
 [DEBUG] Using FileKeychain fallback for secure storage.
 ```
 
-**What:** Same keytar failure and FileKeychain fallback as home. Expected on
+**What:** Same keytar failure and FileKeychain fallback as home/developmet network. Expected on
 WSL2.
 
-**No difference from home.**
+**No difference from home/developmet network.**
 
 ---
 
@@ -87,7 +87,7 @@ WSL2.
 
 **What:** Google's experiment system loads empty. Expected for the fork.
 
-**No difference from home.**
+**No difference from home/developmet network.**
 
 ---
 
@@ -101,7 +101,7 @@ WSL2.
 **What:** Same terminal type (VS Code's xterm.js), but a slightly different dark
 theme color.
 
-| | Home | Company |
+| | home/developmet network | Company |
 |---|---|---|
 | Background | `#121314` (darker) | `#191a1b` (slightly lighter) |
 | Terminal | xterm.js 6.1.0-beta.191 | xterm.js 6.1.0-beta.191 |
@@ -121,7 +121,7 @@ either way.
   Please ensure the extension is running. To install the extension, run /ide install.
 ```
 
-**What:** This is the biggest difference from the home log. The CLI tries to
+**What:** This is the biggest difference from the home/developmet network log. The CLI tries to
 connect to VS Code's Gemini companion extension via MCP, but the connection
 directory (`/tmp/gemini/ide`) doesn't exist.
 
@@ -129,9 +129,9 @@ directory (`/tmp/gemini/ide`) doesn't exist.
 company PC. The extension creates the `/tmp/gemini/ide/` directory with a
 connection JSON file when it starts — no extension means no directory.
 
-**Home comparison:**
+**home/developmet network comparison:**
 
-| | Home | Company |
+| | home/developmet network | Company |
 |---|---|---|
 | IDE connection | Connected to `127.0.0.1:33613/mcp` | ENOENT — directory missing |
 | Tools discovered | `openDiff`, `closeDiff` | None |
@@ -153,9 +153,9 @@ slower (see [Startup Profiler](#11-startup-profiler-5x-slower)).
 [LOG] Enabling Kitty keyboard protocol
 ```
 
-**What:** Same as home. Enables rich keyboard input handling.
+**What:** Same as home/developmet network. Enables rich keyboard input handling.
 
-**No difference from home.**
+**No difference from home/developmet network.**
 
 ---
 
@@ -170,7 +170,7 @@ slower (see [Startup Profiler](#11-startup-profiler-5x-slower)).
 `~/.agents/skills/skill-creator/SKILL.md` that overrides the built-in
 `skill-creator` skill.
 
-**This is unique to the company PC** — the home log doesn't show this. It means
+**This is unique to the company PC** — the home/developmet network log doesn't show this. It means
 you've installed a customized version of the skill-creator skill in your global
 agents directory.
 
@@ -187,9 +187,9 @@ as a built-in one, the custom version takes priority.
 [DEBUG] Hook system initialized successfully
 ```
 
-**What:** Same as home — no hooks configured.
+**What:** Same as home/developmet network — no hooks configured.
 
-**No difference from home.**
+**No difference from home/developmet network.**
 
 ---
 
@@ -207,15 +207,15 @@ as a built-in one, the custom version takes priority.
 `~/.gemini/GEMINI.md` (91 characters). The `Skills-for-SWE` project doesn't have
 its own `GEMINI.md`.
 
-**Home comparison:**
+**home/developmet network comparison:**
 
-| | Home | Company |
+| | home/developmet network | Company |
 |---|---|---|
 | Project GEMINI.md | Yes (5,209 chars) | No |
 | Global GEMINI.md | Checked but deduped | Found (91 chars) |
 | Total context | Rich project instructions | Minimal global instructions |
 
-**Impact:** At home, the LLM gets detailed project context (build commands,
+**Impact:** At home/developmet network, the LLM gets detailed project context (build commands,
 architecture, conventions). At company (in `Skills-for-SWE`), it only gets 91
 characters of global instructions — much less context to work with.
 
@@ -236,10 +236,10 @@ project-specific instructions.
 [STARTUP] Recording metric for phase: discover_tools        duration:  118ms
 ```
 
-**What:** Total startup takes ~2 seconds — nearly **5x slower** than home
+**What:** Total startup takes ~2 seconds — nearly **5x slower** than home/developmet network
 (428ms). Here's a side-by-side:
 
-| Phase | Home | Company | Diff |
+| Phase | home/developmet network | Company | Diff |
 |---|---|---|---|
 | `cli_startup` (total) | 428ms | 2047ms | **+1619ms** |
 | `load_settings` | 4ms | 8ms | +4ms |
@@ -250,7 +250,7 @@ project-specific instructions.
 | `discover_tools` | 37ms | 118ms | +81ms |
 
 **Root cause:** Almost all the extra time (1589ms) is in `initialize_app`. This
-phase includes the IDE connection attempt, which at home succeeds quickly (VS
+phase includes the IDE connection attempt, which at home/developmet network succeeds quickly (VS
 Code responds) but at company **times out** waiting for a response from an
 extension that isn't running.
 
@@ -268,11 +268,11 @@ extension that isn't running.
 [SessionSummary] Most recent session already has summary
 ```
 
-**What:** Unlike home where a new summary was generated, the most recent session
+**What:** Unlike home/developmet network where a new summary was generated, the most recent session
 here already had a summary saved from a previous run.
 
-**Home comparison:**
-- **Home:** `Generated: "Ask about a project later"` (new summary created)
+**home/developmet network comparison:**
+- **home/developmet network:** `Generated: "Ask about a project later"` (new summary created)
 - **Company:** `Most recent session already has summary` (skipped)
 
 **Impact:** None — this just means the previous session was already summarized,
@@ -289,7 +289,7 @@ so no LLM call is needed. Slightly faster.
 **What:** The CLI tries to check if a newer version is available by fetching from
 an update server. On the corporate network, this HTTP request fails.
 
-**This is unique to the company PC** — the home log doesn't show this error.
+**This is unique to the company PC** — the home/developmet network log doesn't show this error.
 
 **Why it fails:** Corporate firewalls/proxies block or restrict outbound HTTP
 requests to external update servers. The `fetch failed` error means the request
@@ -308,12 +308,12 @@ first session was exited and a new one started ~8 minutes later
 (05:43:18 → 05:51:22). Both sessions show the same behavior.
 
 Within each startup, the init blocks (ignore, telemetry, keychain, experiments)
-appear twice due to the two-layer architecture (CLI + Core), same as the home
-log. See [Section 13 of the home log explanation](startup-log-explained.md#13-why-some-blocks-appear-twice).
+appear twice due to the two-layer architecture (CLI + Core), same as the home/developmet network
+log. See [Section 13 of the home/developmet network log explanation](startup-log-explained.md#13-why-some-blocks-appear-twice).
 
 ---
 
-## 15. Comparison: Home vs Company
+## 15. Comparison: home/developmet network vs Company
 
 ### What's the Same
 
@@ -327,7 +327,7 @@ log. See [Section 13 of the home log explanation](startup-log-explained.md#13-wh
 
 ### What's Different
 
-| Feature | Home | Company | Impact |
+| Feature | home/developmet network | Company | Impact |
 |---|---|---|---|
 | `.geminiignore` | Found | Not found | Minor — different project |
 | IDE connection | Connected (openDiff, closeDiff) | **FAILED** (no extension) | No in-editor diffs |
