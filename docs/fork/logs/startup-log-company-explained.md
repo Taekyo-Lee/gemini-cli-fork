@@ -27,7 +27,7 @@ running from `/home/jetlee/workspace/Skills-for-SWE/` (not the fork repo itself)
 12. [Session Summary](#12-session-summary)
 13. [Update Check (FAILED)](#13-update-check-failed)
 14. [Duplicate Log Blocks](#14-duplicate-log-blocks)
-15. [Comparison: home/development network vs Company](#15-comparison-home/development network-vs-company)
+15. [Comparison: Home vs Company](#15-comparison-home-vs-company)
 
 ---
 
@@ -313,7 +313,7 @@ log. See [Section 13 of the home/developmet network log explanation](startup-log
 
 ---
 
-## 15. Comparison: home/developmet network vs Company
+## 15. Comparison: Home vs Company
 
 ### What's the Same
 
