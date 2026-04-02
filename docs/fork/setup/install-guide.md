@@ -267,8 +267,17 @@ npm run build               # rebuild (link persists)
 ```
 
 This removes the global symlink and the env sourcing from `~/.bashrc`. The repo
-and `node_modules/` remain untouched — reinstall anytime with
-`./scripts/fork/setup.sh`.
+and `node_modules/` remain untouched — reinstall anytime with:
+
+```bash
+./scripts/fork/setup.sh
+source ~/.bashrc
+```
+
+`source ~/.bashrc` is needed because `setup.sh` runs in a child process — it
+adds the env sourcing line to `~/.bashrc` but can't load it into your current
+terminal. You only need to re-run these two commands; `npm install` and `.env`
+setup can be skipped.
 
 ## Switching Between Modes
 
