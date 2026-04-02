@@ -79,6 +79,16 @@ class NoopLogExporter implements LogRecordExporter {
   }
 }
 
+// [FORK] Silent no-op metric exporter for Langfuse (which doesn't support /v1/metrics)
+class NoopMetricExporter extends ConsoleMetricExporter {
+  override export(
+    _metrics: unknown,
+    resultCallback: (result: ExportResult) => void,
+  ): void {
+    resultCallback({ code: ExportResultCode.SUCCESS });
+  }
+}
+
 // For troubleshooting, set the log level to DiagLogLevel.DEBUG
 class DiagLoggerAdapter {
   error(message: string, ...args: unknown[]): void {
@@ -301,8 +311,8 @@ export async function initializeTelemetry(
         return url.href;
       };
       // [FORK] Pass custom headers (e.g., Langfuse auth) to HTTP exporters.
-      // Langfuse only supports /v1/traces and /v1/metrics — skip /v1/logs
-      // to avoid 404 error spam.
+      // Langfuse only supports /v1/traces — skip /v1/logs and /v1/metrics
+      // to avoid error spam (404 / Unauthorized).
       spanExporter = new OTLPTraceExporterHttp({
         url: buildUrl('v1/traces'),
         ...(otlpHeaders && { headers: otlpHeaders }),
@@ -314,10 +324,12 @@ export async function initializeTelemetry(
             ...(otlpHeaders && { headers: otlpHeaders }),
           });
       metricReader = new PeriodicExportingMetricReader({
-        exporter: new OTLPMetricExporterHttp({
-          url: buildUrl('v1/metrics'),
-          ...(otlpHeaders && { headers: otlpHeaders }),
-        }),
+        exporter: isLangfuse
+          ? new NoopMetricExporter()
+          : new OTLPMetricExporterHttp({
+              url: buildUrl('v1/metrics'),
+              ...(otlpHeaders && { headers: otlpHeaders }),
+            }),
         exportIntervalMillis: 10000,
       });
     } else {
