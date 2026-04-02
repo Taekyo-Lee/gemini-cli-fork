@@ -152,7 +152,17 @@ git pull
 ./scripts/fork/uninstall.sh --all    # ~/.gemini (설정, 대화 이력)도 함께 제거
 ```
 
-저장소와 `node_modules/`는 유지됩니다 — `./scripts/fork/setup.sh`로 언제든 재설치 가능합니다.
+저장소와 `node_modules/`는 유지됩니다 — 4단계부터 다시 실행하면 재설치됩니다:
+
+```bash
+./scripts/fork/setup.sh
+source ~/.bashrc
+```
+
+`source ~/.bashrc`가 필요한 이유: `setup.sh`는 자식 프로세스에서 실행되므로
+`~/.bashrc`에 환경변수 소싱 라인을 추가하지만 현재 터미널에는 로드할 수 없습니다.
+1-3단계 (Node.js, 클론, npm install, .env)는 이미 완료되어 있으므로 건너뛸 수
+있습니다.
 
 ### 코드 변경 후 재빌드
 
