@@ -92,6 +92,12 @@ class NoopMetricExporter extends ConsoleMetricExporter {
 // For troubleshooting, set the log level to DiagLogLevel.DEBUG
 class DiagLoggerAdapter {
   error(message: string, ...args: unknown[]): void {
+    // [FORK] Suppress noisy OTLP export errors (e.g., Langfuse 401 on shutdown).
+    // These are non-actionable for end users; traces sent during the session
+    // are already delivered.
+    if (typeof message === 'string' && message.includes('export failed')) {
+      return;
+    }
     debugLogger.error(message, ...args);
   }
 
@@ -438,18 +444,20 @@ export async function shutdownTelemetry(
     // The HTTP OTLP exporter needs time to complete network requests;
     // sdk.shutdown() alone may not wait long enough for short-lived processes.
     if (spanProcessor) {
-      await spanProcessor.forceFlush();
+      await spanProcessor.forceFlush().catch(() => {});
     }
     if (logRecordProcessor) {
-      await logRecordProcessor.forceFlush();
+      await logRecordProcessor.forceFlush().catch(() => {});
     }
     ClearcutLogger.getInstance()?.shutdown();
     await sdk.shutdown();
     if (config.getDebugMode() && fromProcessExit) {
       debugLogger.log('OpenTelemetry SDK shut down successfully.');
     }
-  } catch (error) {
-    debugLogger.error('Error shutting down SDK:', error);
+  } catch {
+    // [FORK] Silently ignore OTLP export errors on shutdown (e.g., Langfuse
+    // returning 401 during final flush). Spans exported during the session
+    // are already delivered; the shutdown flush is best-effort.
   } finally {
     telemetryInitialized = false;
     sdk = undefined;
