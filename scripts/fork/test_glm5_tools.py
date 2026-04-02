@@ -158,14 +158,14 @@ for chunk in stream:
                     "arguments": tc.function.arguments if tc.function and tc.function.arguments else "",
                 }
             else:
-                # FIX: If tc.id is set, vLLM/GLM-5 is sending a new complete
-                # tool call on the same index — replace, don't append.
-                if tc.id:
+                # Always append arguments. GLM-5-Thinking sends incremental
+                # fragments with tc.id on every chunk — replacing loses prior
+                # fragments. Duplicate complete args are handled by sanitization.
+                if tc.id and not accumulated_tool_calls[tc.index]["id"]:
                     accumulated_tool_calls[tc.index]["id"] = tc.id
-                    if tc.function and tc.function.name:
-                        accumulated_tool_calls[tc.index]["name"] = tc.function.name
-                    accumulated_tool_calls[tc.index]["arguments"] = tc.function.arguments if tc.function and tc.function.arguments else ""
-                elif tc.function and tc.function.arguments:
+                if tc.function and tc.function.name:
+                    accumulated_tool_calls[tc.index]["name"] = tc.function.name
+                if tc.function and tc.function.arguments:
                     accumulated_tool_calls[tc.index]["arguments"] += tc.function.arguments
 
     if finish_reason:
