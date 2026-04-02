@@ -443,10 +443,29 @@ export async function shutdownTelemetry(
   if (!telemetryInitialized || !sdk) {
     return;
   }
+  // [FORK] Suppress OTLP export error messages during shutdown.
+  // The retrying-transport logs via diag.info → debugLogger.log → console.log.
+  // Temporarily intercept console output to swallow these non-actionable errors.
+  const origLog = console.log;
+  const origError = console.error;
+  const origWarn = console.warn;
+  const suppress = (...args: unknown[]) => {
+    const msg = String(args[0] ?? '');
+    if (msg.includes('export failed') || msg.includes('OTLPExporter')) return;
+    origLog(...args);
+  };
+  console.log = suppress;
+  console.error = (...args: unknown[]) => {
+    const msg = String(args[0] ?? '');
+    if (msg.includes('export failed') || msg.includes('OTLPExporter')) return;
+    origError(...args);
+  };
+  console.warn = (...args: unknown[]) => {
+    const msg = String(args[0] ?? '');
+    if (msg.includes('export failed') || msg.includes('OTLPExporter')) return;
+    origWarn(...args);
+  };
   try {
-    // [FORK] Explicitly flush span and log processors before SDK shutdown.
-    // The HTTP OTLP exporter needs time to complete network requests;
-    // sdk.shutdown() alone may not wait long enough for short-lived processes.
     if (spanProcessor) {
       await spanProcessor.forceFlush().catch(() => {});
     }
@@ -456,13 +475,14 @@ export async function shutdownTelemetry(
     ClearcutLogger.getInstance()?.shutdown();
     await sdk.shutdown();
     if (config.getDebugMode() && fromProcessExit) {
-      debugLogger.log('OpenTelemetry SDK shut down successfully.');
+      origLog('OpenTelemetry SDK shut down successfully.');
     }
   } catch {
-    // [FORK] Silently ignore OTLP export errors on shutdown (e.g., Langfuse
-    // returning 401 during final flush). Spans exported during the session
-    // are already delivered; the shutdown flush is best-effort.
+    // Silently ignore OTLP export errors on shutdown.
   } finally {
+    console.log = origLog;
+    console.error = origError;
+    console.warn = origWarn;
     telemetryInitialized = false;
     sdk = undefined;
     // Fully reset the global APIs to allow for re-initialization.
