@@ -953,3 +953,21 @@ See `phase11-plan.md` and `phase11-todo.md` for full details.
 - [ ] **Trace sampling** — For high-volume usage, add configurable trace sampling
       (e.g., `LANGFUSE_SAMPLE_RATE=0.1`) to avoid overloading the Langfuse
       instance.
+
+---
+
+## Phase 11: Upstream Sync — v0.36.0 (2026-04-02)
+
+- [x] Synced with upstream v0.36.0 (92 commits, jumped from v0.34.0)
+- [x] Resolved 4 conflicts: package.json, package-lock.json, initializer.ts, mcp-tool.ts
+- [x] Fixed sandboxConfig.test.ts: upstream changed `networkAccess` default from `false` to `true`
+- [x] Fixed Footer.test.tsx: added `getSandbox()` to mock config (new upstream method)
+- [x] Fixed KeypressContext.tsx: removed temp file-based debug logger, restored upstream `debugLogger.log`
+- [x] Fixed useGeminiStream.test.tsx: adapted 2 tests for fork's intentionally removed `runInDevTraceSpan` wrapper
+- [x] Updated snapshot files for upstream UI changes (AppHeader, AppHeaderIcon, AlternateBuffer, App)
+- [x] Fixed verify-fork-features.sh: `((PASS++))` arithmetic under `set -e`
+- [x] All fork `[FORK]` markers preserved in upstream files
+- [x] Build + typecheck pass (including after `npm run clean`)
+- [x] CLI tests: 6274/6274 pass (zero failures)
+- [x] Core tests: 31 pre-existing failures (unchanged from before merge)
+- [x] **Lesson learned:** lint-staged pre-commit hook uses `git stash` internally, which corrupts merge commits by dropping auto-merged files. Must use `--no-verify` for merge commits.
