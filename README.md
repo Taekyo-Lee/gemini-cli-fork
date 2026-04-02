@@ -156,7 +156,18 @@ prints the version.
 ./scripts/fork/uninstall.sh --all    # also remove ~/.gemini (settings, history)
 ```
 
-The repo and `node_modules/` are kept — reinstall anytime with `./scripts/fork/setup.sh`.
+The repo and `node_modules/` are kept — reinstall anytime by re-running from
+Step 4:
+
+```bash
+./scripts/fork/setup.sh
+source ~/.bashrc
+```
+
+`source ~/.bashrc` is needed because `setup.sh` runs in a child process — it
+adds the env sourcing line to `~/.bashrc` but can't load it into your current
+terminal. Steps 1-3 (Node.js, clone, npm install, .env) can be skipped since
+they're already done.
 
 ### Rebuilding after code changes
 
