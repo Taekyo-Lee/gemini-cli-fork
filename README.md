@@ -149,6 +149,15 @@ git pull
 This checks that the build exists, the `gemini` command points to the fork, and
 prints the version.
 
+### Uninstalling
+
+```bash
+./scripts/fork/uninstall.sh          # remove gemini command + bashrc config
+./scripts/fork/uninstall.sh --all    # also remove ~/.gemini (settings, history)
+```
+
+The repo and `node_modules/` are kept — reinstall anytime with `./scripts/fork/setup.sh`.
+
 ### Rebuilding after code changes
 
 ```bash
