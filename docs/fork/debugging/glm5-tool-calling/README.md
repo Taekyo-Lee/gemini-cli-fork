@@ -3,6 +3,9 @@
 GLM-5 (served via vLLM) has non-standard tool calling behavior that requires
 special handling in our OpenAI-compatible adapter.
 
+**Status (2026-04-02):** Both issues fixed and tested at company. GLM-5-Thinking
+works for tool calling including complex nested arguments.
+
 ## Root Cause: Non-Standard Tool Call Format
 
 GLM-5 was trained with a custom XML format for tool calls (see
@@ -19,7 +22,7 @@ to OpenAI streaming format, but the conversion introduces quirks:
 - Arguments may arrive as fragments or as duplicate complete chunks
 - Complex nested arguments (arrays of objects) are more prone to issues
 
-## Issue 1: Duplicate Streaming Chunks (Phase 8 — 2026-03)
+## Issue 1: Duplicate Streaming Chunks (Phase 8 -- 2026-03)
 
 **Symptom:** Simple tool calls like `run_command({"command": "date"})` produced
 garbled JSON: `{"command":"date"}{"command":"date"}`.
@@ -35,15 +38,18 @@ concatenation.
 
 **Files changed:** `packages/core/src/core/openaiContentGenerator.ts`
 
-## Issue 2: Complex Tool Call Arguments Lost (Phase 11 — 2026-04)
+## Issue 2: Complex Tool Call Arguments Lost (Phase 11 -- 2026-04)
 
 **Symptom:** Simple tools (`ReadManyFiles`) worked fine. Complex tools
 (`Ask User` with nested `questions` array) failed with
-`params must have required property 'questions'` — arguments arrived as `{}`.
+`params must have required property 'questions'` -- arguments arrived as `{}`.
 
-**Root cause:** GLM-5-Thinking (replacing KIMI-2.5 on corp) sends **incremental
-argument fragments** with `tc.id` on every chunk. The Phase 8 "replace" logic
-discarded all prior fragments on each new chunk, leaving only the last fragment.
+**Context:** KIMI-2.5 was shut down by AI resource team on 2026-04-02. Replaced
+by GLM-5-Thinking on the same vLLM endpoint.
+
+**Root cause:** GLM-5-Thinking sends **incremental argument fragments** with
+`tc.id` on every chunk. The Phase 8 "replace" logic discarded all prior
+fragments on each new chunk, leaving only the last fragment.
 `sanitizeToolCallArgs()` couldn't parse the fragment and returned `'{}'`.
 
 **Why simple tools worked:** Small arguments (`{"patterns":["README.md"]}`) fit
