@@ -259,6 +259,17 @@ npm run build               # rebuild (link persists)
 ./scripts/fork/setup.sh    # or: build + re-link + verify (safer)
 ```
 
+## Uninstall
+
+```bash
+./scripts/fork/uninstall.sh          # remove gemini command + bashrc line
+./scripts/fork/uninstall.sh --all    # also remove ~/.gemini config
+```
+
+This removes the global symlink and the env sourcing from `~/.bashrc`. The repo
+and `node_modules/` remain untouched — reinstall anytime with
+`./scripts/fork/setup.sh`.
+
 ## Switching Between Modes
 
 To switch from OpenAI mode back to Google auth mode in the same shell:
