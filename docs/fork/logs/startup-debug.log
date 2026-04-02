@@ -1,0 +1,61 @@
+[2026-04-02T05:17:00.846Z] [DEBUG] Loading ignore patterns from: /home/jetlee/workspace/gemini-cli-fork/.geminiignore
+[2026-04-02T05:17:00.867Z] [LOG] Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+[2026-04-02T05:17:00.868Z] [WARN] The 'metricReader' option is deprecated. Please use 'metricReaders' instead.
+[2026-04-02T05:17:00.874Z] [DEBUG] Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /home/jetlee/workspace/gemini-cli-fork/node_modules/keytar/lib/keytar.js
+[2026-04-02T05:17:00.875Z] [DEBUG] Using FileKeychain fallback for secure storage.
+[2026-04-02T05:17:00.907Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:17:02.019Z] [DEBUG] Loading ignore patterns from: /home/jetlee/workspace/gemini-cli-fork/.geminiignore
+[2026-04-02T05:17:02.038Z] [LOG] Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+[2026-04-02T05:17:02.039Z] [WARN] The 'metricReader' option is deprecated. Please use 'metricReaders' instead.
+[2026-04-02T05:17:02.045Z] [DEBUG] Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /home/jetlee/workspace/gemini-cli-fork/node_modules/keytar/lib/keytar.js
+[2026-04-02T05:17:02.047Z] [DEBUG] Using FileKeychain fallback for secure storage.
+[2026-04-02T05:17:02.082Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:17:02.090Z] [DEBUG] Loading ignore patterns from: /home/jetlee/workspace/gemini-cli-fork/.geminiignore
+[2026-04-02T05:17:02.127Z] [LOG] Detected terminal background color: #121314
+[2026-04-02T05:17:02.127Z] [LOG] Detected terminal name: xterm.js(6.1.0-beta.191)
+[2026-04-02T05:17:02.131Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
+[2026-04-02T05:17:02.284Z] [DEBUG] [DEBUG] [IDEConnectionUtils] Selected IDE connection file (matched port from env): gemini-ide-server-6496-33613.json
+[2026-04-02T05:17:02.285Z] [DEBUG] [DEBUG] [IDEConnectionUtils] Selected IDE connection file (matched port from env): gemini-ide-server-6496-33613.json
+[2026-04-02T05:17:02.285Z] [DEBUG] [DEBUG] [IDEConnectionUtils] [getIdeServerHost] Mapping IdeServerHost to '127.0.0.1'
+[2026-04-02T05:17:02.285Z] [DEBUG] [DEBUG] [IDEClient] Attempting to connect to IDE via HTTP SSE
+[2026-04-02T05:17:02.285Z] [DEBUG] [DEBUG] [IDEClient] Server URL: http://127.0.0.1:33613/mcp
+[2026-04-02T05:17:02.312Z] [DEBUG] [DEBUG] [IDEClient] Discovering tools from IDE...
+[2026-04-02T05:17:02.317Z] [DEBUG] [DEBUG] [IDEClient] Discovered 2 tools from IDE: openDiff, closeDiff
+[2026-04-02T05:17:02.591Z] [LOG] Enabling Kitty keyboard protocol
+[2026-04-02T05:17:02.656Z] [DEBUG] Loading ignore patterns from: /home/jetlee/workspace/gemini-cli-fork/.geminiignore
+[2026-04-02T05:17:02.657Z] [DEBUG] Loading ignore patterns from: /home/jetlee/workspace/gemini-cli-fork/.geminiignore
+[2026-04-02T05:17:02.727Z] [DEBUG] Hook registry initialized with 0 hook entries
+[2026-04-02T05:17:02.727Z] [DEBUG] Hook system initialized successfully
+[2026-04-02T05:17:02.728Z] [DEBUG] [DEBUG] [MemoryDiscovery] Loading environment memory for trusted root: /home/jetlee/workspace/gemini-cli-fork (Stopping at git root: /home/jetlee/workspace/gemini-cli-fork)
+[2026-04-02T05:17:02.728Z] [DEBUG] [DEBUG] [MemoryDiscovery] Starting upward search from /home/jetlee/workspace/gemini-cli-fork stopping at /home/jetlee/workspace/gemini-cli-fork
+[2026-04-02T05:17:02.728Z] [DEBUG] [DEBUG] [MemoryDiscovery] Loading environment memory for trusted root: /home/jetlee/.gemini (Stopping at trusted root: /home/jetlee/.gemini — no git root found)
+[2026-04-02T05:17:02.728Z] [DEBUG] [DEBUG] [MemoryDiscovery] Starting upward search from /home/jetlee/.gemini stopping at /home/jetlee/.gemini
+[2026-04-02T05:17:02.728Z] [DEBUG] [DEBUG] [MemoryDiscovery] deduplication: keeping /home/jetlee/workspace/gemini-cli-fork/GEMINI.md (dev: 2096, ino: 203129)
+[2026-04-02T05:17:02.729Z] [DEBUG] [DEBUG] [MemoryDiscovery] Successfully read and processed imports: /home/jetlee/workspace/gemini-cli-fork/GEMINI.md (Length: 5209)
+[2026-04-02T05:17:02.750Z] [DEBUG] [STARTUP] StartupProfiler.flush() called with 7 phases
+[2026-04-02T05:17:02.750Z] [DEBUG] [STARTUP] Recording metric for phase: cli_startup duration: 428.4306170000001
+[2026-04-02T05:17:02.750Z] [DEBUG] [STARTUP] Recording metric for phase: load_settings duration: 3.8286050000000387
+[2026-04-02T05:17:02.751Z] [DEBUG] [STARTUP] Recording metric for phase: parse_arguments duration: 7.980829000000085
+[2026-04-02T05:17:02.751Z] [DEBUG] [STARTUP] Recording metric for phase: load_cli_config duration: 12.565632999999934
+[2026-04-02T05:17:02.751Z] [DEBUG] [STARTUP] Recording metric for phase: initialize_app duration: 190.02853000000005
+[2026-04-02T05:17:02.751Z] [DEBUG] [STARTUP] Recording metric for phase: load_builtin_commands duration: 92.52630799999997
+[2026-04-02T05:17:02.751Z] [DEBUG] [STARTUP] Recording metric for phase: discover_tools duration: 36.533908999999994
+[2026-04-02T05:17:03.593Z] [DEBUG] [SessionSummary] Generated: "Ask about a project later"
+[2026-04-02T05:17:03.594Z] [DEBUG] [SessionSummary] Saved summary for /home/jetlee/.gemini/tmp/gemini-cli-fork/chats/session-2026-04-01T07-27-e92d3fe0.json: "Ask about a project later"
+[2026-04-02T05:17:07.179Z] [DEBUG] Experiments loaded {
+  experimentIds: [],
+  flags: []
+}
