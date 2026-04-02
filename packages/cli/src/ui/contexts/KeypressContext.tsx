@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import fs from 'node:fs';
 import { debugLogger, type Config } from '@google/gemini-cli-core';
 import { useStdin } from 'ink';
 import { MultiMap } from 'mnemonist';
@@ -893,19 +892,11 @@ export function KeypressProvider({
     processor = bufferPaste(processor);
     let dataListener = createDataListener(processor);
 
-    {
+    if (debugKeystrokeLogging) {
       const old = dataListener;
       dataListener = (data: string) => {
         if (data.length > 0) {
-          // [FORK] Temporary: write raw stdin to file for Korean IME debugging
-          try {
-            fs.appendFileSync(
-              '/tmp/gemini_ime_debug.log',
-              `[STDIN] ${JSON.stringify(data)}\n`,
-            );
-          } catch {
-            /* ignore write errors */
-          }
+          debugLogger.log(`[DEBUG] Raw StdIn: ${JSON.stringify(data)}`);
         }
         old(data);
       };

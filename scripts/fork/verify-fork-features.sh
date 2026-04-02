@@ -20,10 +20,10 @@ check() {
   shift
   if "$@" &>/dev/null; then
     echo "  [PASS] $desc"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
     echo "  [FAIL] $desc"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
@@ -33,13 +33,13 @@ check_marker() {
   local desc="$3"
   if [[ -f "$file" ]] && grep -q "$marker" "$file"; then
     echo "  [PASS] $desc"
-    ((PASS++))
+    PASS=$((PASS + 1))
   elif [[ ! -f "$file" ]]; then
     echo "  [FAIL] $desc (file missing: $file)"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   else
     echo "  [FAIL] $desc (marker not found: $marker)"
-    ((FAIL++))
+    FAIL=$((FAIL + 1))
   fi
 }
 
@@ -93,10 +93,10 @@ echo ""
 echo "3. Build:"
 if npm run build &>/dev/null; then
   echo "  [PASS] npm run build"
-  ((PASS++))
+  PASS=$((PASS + 1))
 else
   echo "  [FAIL] npm run build"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 fi
 
 echo ""
@@ -105,10 +105,10 @@ echo ""
 echo "4. Typecheck:"
 if npm run typecheck &>/dev/null; then
   echo "  [PASS] npm run typecheck"
-  ((PASS++))
+  PASS=$((PASS + 1))
 else
   echo "  [FAIL] npm run typecheck"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 fi
 
 echo ""
@@ -117,10 +117,10 @@ echo ""
 echo "5. Tests:"
 if npm test &>/dev/null; then
   echo "  [PASS] npm test"
-  ((PASS++))
+  PASS=$((PASS + 1))
 else
   echo "  [FAIL] npm test"
-  ((FAIL++))
+  FAIL=$((FAIL + 1))
 fi
 
 echo ""

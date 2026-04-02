@@ -48,6 +48,7 @@ import { debugLogger } from '../utils/debugLogger.js';
 import { LocalAgentExecutor, type ActivityCallback } from './local-executor.js';
 import { makeFakeConfig } from '../test-utils/config.js';
 import { ToolRegistry } from '../tools/tool-registry.js';
+import type { MessageBus } from '../confirmation-bus/message-bus.js';
 import { PromptRegistry } from '../prompts/prompt-registry.js';
 import { ResourceRegistry } from '../resources/resource-registry.js';
 import { DiscoveredMCPTool } from '../tools/mcp-tool.js';
@@ -175,6 +176,7 @@ vi.mock('../utils/promptIdContext.js', async (importOriginal) => {
   return {
     ...actual,
     promptIdContext: {
+      // eslint-disable-next-line @typescript-eslint/no-misused-spread
       ...actual.promptIdContext,
       getStore: vi.fn(),
       run: vi.fn((_id, fn) => fn()),
@@ -343,10 +345,9 @@ describe('LocalAgentExecutor', () => {
       get: () => 'test-prompt-id',
       configurable: true,
     });
-    parentToolRegistry = new ToolRegistry(mockConfig, mockConfig.messageBus);
-    parentToolRegistry.registerTool(
-      new LSTool(mockConfig, mockConfig.messageBus),
-    );
+    const { messageBus } = mockConfig as unknown as { messageBus: MessageBus };
+    parentToolRegistry = new ToolRegistry(mockConfig, messageBus);
+    parentToolRegistry.registerTool(new LSTool(mockConfig, messageBus));
     parentToolRegistry.registerTool(
       new MockTool({ name: READ_FILE_TOOL_NAME }),
     );
@@ -685,6 +686,25 @@ describe('LocalAgentExecutor', () => {
 
       // Assert that there is exactly ONE schema for this tool
       expect(foundSchemas).toHaveLength(1);
+    });
+
+    it('should provide tools to the model when toolConfig is OMITTED (default to all tools)', async () => {
+      const fullDefinition = createTestDefinition();
+      const { toolConfig: _, ...definition } = fullDefinition;
+
+      const executor = await LocalAgentExecutor.create(
+        definition as LocalAgentDefinition,
+        mockConfig,
+        onActivity,
+      );
+
+      const toolsList = (
+        executor as unknown as { prepareToolsList: () => FunctionDeclaration[] }
+      ).prepareToolsList();
+
+      // Verify that LS_TOOL_NAME is in the list (since LS was registered in beforeEach)
+      const toolNames = toolsList.map((t) => t.name);
+      expect(toolNames).toContain(LS_TOOL_NAME);
     });
   });
 

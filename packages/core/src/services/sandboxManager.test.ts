@@ -6,11 +6,29 @@
 
 import os from 'node:os';
 import { describe, expect, it, vi } from 'vitest';
-import { NoopSandboxManager } from './sandboxManager.js';
+import { NoopSandboxManager, sanitizePaths } from './sandboxManager.js';
 import { createSandboxManager } from './sandboxManagerFactory.js';
 import { LinuxSandboxManager } from '../sandbox/linux/LinuxSandboxManager.js';
 import { MacOsSandboxManager } from '../sandbox/macos/MacOsSandboxManager.js';
-import { WindowsSandboxManager } from './windowsSandboxManager.js';
+import { WindowsSandboxManager } from '../sandbox/windows/WindowsSandboxManager.js';
+
+describe('sanitizePaths', () => {
+  it('should return undefined if no paths are provided', () => {
+    expect(sanitizePaths(undefined)).toBeUndefined();
+  });
+
+  it('should deduplicate paths and return them', () => {
+    const paths = ['/workspace/foo', '/workspace/bar', '/workspace/foo'];
+    expect(sanitizePaths(paths)).toEqual(['/workspace/foo', '/workspace/bar']);
+  });
+
+  it('should throw an error if a path is not absolute', () => {
+    const paths = ['/workspace/foo', 'relative/path'];
+    expect(() => sanitizePaths(paths)).toThrow(
+      'Sandbox path must be absolute: relative/path',
+    );
+  });
+});
 
 describe('NoopSandboxManager', () => {
   const sandboxManager = new NoopSandboxManager();
@@ -40,6 +58,11 @@ describe('NoopSandboxManager', () => {
         MY_SECRET: 'super-secret',
         SAFE_VAR: 'is-safe',
       },
+      policy: {
+        sanitizationConfig: {
+          enableEnvironmentVariableRedaction: true,
+        },
+      },
     };
 
     const result = await sandboxManager.prepareCommand(req);
@@ -50,7 +73,7 @@ describe('NoopSandboxManager', () => {
     expect(result.env['MY_SECRET']).toBeUndefined();
   });
 
-  it('should NOT allow disabling environment variable redaction if requested in config (vulnerability fix)', async () => {
+  it('should allow disabling environment variable redaction if requested in config', async () => {
     const req = {
       command: 'echo',
       args: ['hello'],
@@ -58,7 +81,7 @@ describe('NoopSandboxManager', () => {
       env: {
         API_KEY: 'sensitive-key',
       },
-      config: {
+      policy: {
         sanitizationConfig: {
           enableEnvironmentVariableRedaction: false,
         },
@@ -67,8 +90,8 @@ describe('NoopSandboxManager', () => {
 
     const result = await sandboxManager.prepareCommand(req);
 
-    // API_KEY should be redacted because SandboxManager forces redaction and API_KEY matches NEVER_ALLOWED_NAME_PATTERNS
-    expect(result.env['API_KEY']).toBeUndefined();
+    // API_KEY should be preserved because redaction was explicitly disabled
+    expect(result.env['API_KEY']).toBe('sensitive-key');
   });
 
   it('should respect allowedEnvironmentVariables in config but filter sensitive ones', async () => {
@@ -80,9 +103,10 @@ describe('NoopSandboxManager', () => {
         MY_SAFE_VAR: 'safe-value',
         MY_TOKEN: 'secret-token',
       },
-      config: {
+      policy: {
         sanitizationConfig: {
           allowedEnvironmentVariables: ['MY_SAFE_VAR', 'MY_TOKEN'],
+          enableEnvironmentVariableRedaction: true,
         },
       },
     };
@@ -103,9 +127,10 @@ describe('NoopSandboxManager', () => {
         SAFE_VAR: 'safe-value',
         BLOCKED_VAR: 'blocked-value',
       },
-      config: {
+      policy: {
         sanitizationConfig: {
           blockedEnvironmentVariables: ['BLOCKED_VAR'],
+          enableEnvironmentVariableRedaction: true,
         },
       },
     };

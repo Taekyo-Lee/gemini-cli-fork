@@ -177,13 +177,11 @@ function GoogleAuthDialog({
         }
 
         if (authType === AuthType.USE_GEMINI) {
-          if (process.env['GEMINI_API_KEY'] !== undefined) {
-            setAuthState(AuthState.Unauthenticated);
-            return;
-          } else {
-            setAuthState(AuthState.AwaitingApiKeyInput);
-            return;
-          }
+          // Always show the API key input dialog so the user can
+          // explicitly enter or confirm their key, regardless of
+          // whether GEMINI_API_KEY env var or a stored key exists.
+          setAuthState(AuthState.AwaitingApiKeyInput);
+          return;
         }
       }
       setAuthState(AuthState.Unauthenticated);

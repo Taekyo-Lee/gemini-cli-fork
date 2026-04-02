@@ -524,6 +524,8 @@ const baseMockUiState = {
   nightly: false,
   updateInfo: null,
   pendingHistoryItems: [],
+  mainControlsRef: () => {},
+  rootUiRef: { current: null },
 };
 
 export const mockAppState: AppState = {
@@ -665,7 +667,7 @@ export const renderWithProviders = async (
     );
   }
 
-  const mainAreaWidth = terminalWidth;
+  const mainAreaWidth = providedUiState?.mainAreaWidth ?? terminalWidth;
 
   const finalUiState = {
     ...baseState,
@@ -778,7 +780,6 @@ export async function renderHook<Result, Props>(
   generateSvg: () => string;
 }> {
   const result = { current: undefined as unknown as Result };
-
   let currentProps = options?.initialProps as Props;
 
   function TestComponent({

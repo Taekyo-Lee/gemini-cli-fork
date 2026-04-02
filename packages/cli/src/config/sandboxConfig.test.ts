@@ -93,7 +93,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'docker',
         image: 'default/image',
       });
@@ -122,7 +122,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'lxc',
         image: 'default/image',
       });
@@ -148,7 +148,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'sandbox-exec',
         image: 'default/image',
       });
@@ -161,7 +161,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'sandbox-exec',
         image: 'default/image',
       });
@@ -174,7 +174,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'docker',
         image: 'default/image',
       });
@@ -187,7 +187,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'podman',
         image: 'default/image',
       });
@@ -210,7 +210,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'podman',
         image: 'default/image',
       });
@@ -244,7 +244,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'docker',
         image: 'env/image',
       });
@@ -257,7 +257,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'docker',
         image: 'default/image',
       });
@@ -287,7 +287,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'docker',
         image: 'default/image',
       });
@@ -310,7 +310,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'sandbox-exec',
         image: 'default/image',
       });
@@ -330,7 +330,7 @@ describe('loadSandboxConfig', () => {
         expect(config).toEqual({
           enabled: true,
           allowedPaths: [],
-          networkAccess: false,
+          networkAccess: true,
           command: 'docker',
           image: 'default/image',
         });
@@ -384,7 +384,7 @@ describe('loadSandboxConfig', () => {
               enabled: true,
               command: 'podman',
               allowedPaths: [],
-              networkAccess: false,
+              networkAccess: true,
             },
           },
         },
@@ -401,7 +401,7 @@ describe('loadSandboxConfig', () => {
               enabled: true,
               image: 'custom/image',
               allowedPaths: [],
-              networkAccess: false,
+              networkAccess: true,
             },
           },
         },
@@ -417,7 +417,7 @@ describe('loadSandboxConfig', () => {
             sandbox: {
               enabled: false,
               allowedPaths: [],
-              networkAccess: false,
+              networkAccess: true,
             },
           },
         },
@@ -433,7 +433,7 @@ describe('loadSandboxConfig', () => {
             sandbox: {
               enabled: true,
               allowedPaths: ['/settings-path'],
-              networkAccess: false,
+              networkAccess: true,
             },
           },
         },
@@ -455,7 +455,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'runsc',
         image: 'default/image',
       });
@@ -470,7 +470,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'runsc',
         image: 'default/image',
       });
@@ -487,7 +487,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'runsc',
         image: 'default/image',
       });
@@ -505,7 +505,7 @@ describe('loadSandboxConfig', () => {
       expect(config).toEqual({
         enabled: true,
         allowedPaths: [],
-        networkAccess: false,
+        networkAccess: true,
         command: 'runsc',
         image: 'default/image',
       });

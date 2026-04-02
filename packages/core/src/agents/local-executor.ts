@@ -1240,6 +1240,7 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
             name: toolName,
             id: call.request.callId,
             output: call.response.resultDisplay,
+            data: call.response.data,
           });
         } else if (call.status === 'error') {
           this.emitActivity('ERROR', {
@@ -1334,9 +1335,13 @@ export class LocalAgentExecutor<TOutput extends z.ZodTypeAny> {
           toolsList.push(toolRef);
         }
       }
-      // Add schemas from tools that were explicitly registered by name, wildcard, or instance.
-      toolsList.push(...this.toolRegistry.getFunctionDeclarations());
     }
+    // Add schemas from tools that were explicitly registered by name, wildcard, or instance.
+    toolsList.push(
+      ...this.toolRegistry.getFunctionDeclarations(
+        this.definition.modelConfig.model,
+      ),
+    );
 
     // Always inject complete_task.
     // Configure its schema based on whether output is expected.

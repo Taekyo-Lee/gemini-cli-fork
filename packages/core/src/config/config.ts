@@ -6,6 +6,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { SandboxPolicyManager } from '../policy/sandboxPolicyManager.js';
 import { inspect } from 'node:util';
 import process from 'node:process';
 import { z } from 'zod';
@@ -166,7 +167,7 @@ import { ConsecaSafetyChecker } from '../safety/conseca/conseca.js';
 import type { AgentLoopContext } from './agent-loop-context.js';
 
 export interface AccessibilitySettings {
-  /** @deprecated Use ui.loadingPhrases instead. */
+  /** @deprecated Use ui.statusHints instead. */
   enableLoadingPhrases?: boolean;
   screenReader?: boolean;
 }
@@ -732,7 +733,8 @@ export class Config implements McpContext, AgentLoopContext {
   private readonly telemetrySettings: TelemetrySettings;
   private readonly usageStatisticsEnabled: boolean;
   private _geminiClient!: GeminiClient;
-  private readonly _sandboxManager: SandboxManager;
+  private _sandboxManager: SandboxManager;
+  private readonly _sandboxPolicyManager: SandboxPolicyManager;
   private baseLlmClient!: BaseLlmClient;
   private localLiteRtLmClient?: LocalLiteRtLmClient;
   private modelRouterService: ModelRouterService;
@@ -907,14 +909,14 @@ export class Config implements McpContext, AgentLoopContext {
       params.embeddingModel ?? DEFAULT_GEMINI_EMBEDDING_MODEL;
     this.sandbox = params.sandbox
       ? {
-          enabled: params.sandbox.enabled ?? false,
+          enabled: params.sandbox.enabled || params.toolSandboxing || false,
           allowedPaths: params.sandbox.allowedPaths ?? [],
           networkAccess: params.sandbox.networkAccess ?? false,
           command: params.sandbox.command,
           image: params.sandbox.image,
         }
       : {
-          enabled: false,
+          enabled: params.toolSandboxing || false,
           allowedPaths: [],
           networkAccess: false,
         };
@@ -924,6 +926,30 @@ export class Config implements McpContext, AgentLoopContext {
     if (
       !(this._sandboxManager instanceof NoopSandboxManager) &&
       this.sandbox.enabled
+    ) {
+      this.fileSystemService = new SandboxedFileSystemService(
+        this._sandboxManager,
+        params.targetDir,
+      );
+    } else {
+      this.fileSystemService = new StandardFileSystemService();
+    }
+
+    this._sandboxPolicyManager = new SandboxPolicyManager();
+    const initialApprovalMode =
+      params.approvalMode ??
+      params.policyEngineConfig?.approvalMode ??
+      'default';
+    this._sandboxManager = createSandboxManager(
+      this.sandbox,
+      params.targetDir,
+      this._sandboxPolicyManager,
+      initialApprovalMode,
+    );
+
+    if (
+      !(this._sandboxManager instanceof NoopSandboxManager) &&
+      this.sandbox?.enabled
     ) {
       this.fileSystemService = new SandboxedFileSystemService(
         this._sandboxManager,
@@ -1065,7 +1091,7 @@ export class Config implements McpContext, AgentLoopContext {
       modelConfigServiceConfig ?? DEFAULT_MODEL_CONFIGS,
     );
 
-    this.experimentalJitContext = params.experimentalJitContext ?? true;
+    this.experimentalJitContext = params.experimentalJitContext ?? false;
     this.experimentalMemoryManager = params.experimentalMemoryManager ?? false;
     this.topicUpdateNarration = params.topicUpdateNarration ?? false;
     this.modelSteering = params.modelSteering ?? false;
@@ -1164,12 +1190,19 @@ export class Config implements McpContext, AgentLoopContext {
       params.policyUpdateConfirmationRequest;
 
     this.disableAlwaysAllow = params.disableAlwaysAllow ?? false;
+    const engineApprovalMode =
+      params.approvalMode ??
+      params.policyEngineConfig?.approvalMode ??
+      ApprovalMode.DEFAULT;
     this.policyEngine = new PolicyEngine(
       {
         ...params.policyEngineConfig,
-        approvalMode:
-          params.approvalMode ?? params.policyEngineConfig?.approvalMode,
+        approvalMode: engineApprovalMode,
         disableAlwaysAllow: this.disableAlwaysAllow,
+        toolSandboxEnabled: this.getSandboxEnabled(),
+        sandboxApprovedTools:
+          this.sandboxPolicyManager?.getModeConfig(engineApprovalMode)
+            ?.approvedTools ?? [],
       },
       checkerRunner,
     );
@@ -1564,6 +1597,20 @@ export class Config implements McpContext, AgentLoopContext {
     return this._geminiClient;
   }
 
+  private refreshSandboxManager(): void {
+    this._sandboxManager = createSandboxManager(
+      this.sandbox,
+      this.targetDir,
+      this._sandboxPolicyManager,
+      this.getApprovalMode(),
+    );
+    this.shellExecutionConfig.sandboxManager = this._sandboxManager;
+  }
+
+  get sandboxPolicyManager() {
+    return this._sandboxPolicyManager;
+  }
+
   get sandboxManager(): SandboxManager {
     return this._sandboxManager;
   }
@@ -1778,6 +1825,10 @@ export class Config implements McpContext, AgentLoopContext {
     const primaryModel = resolveModel(
       this.getModel(),
       this.getGemini31LaunchedSync(),
+      this.getGemini31FlashLiteLaunchedSync(),
+      this.getUseCustomToolModelSync(),
+      this.getHasAccessToPreviewModel(),
+      this,
     );
     return this.modelQuotas.get(primaryModel)?.remaining;
   }
@@ -1790,6 +1841,10 @@ export class Config implements McpContext, AgentLoopContext {
     const primaryModel = resolveModel(
       this.getModel(),
       this.getGemini31LaunchedSync(),
+      this.getGemini31FlashLiteLaunchedSync(),
+      this.getUseCustomToolModelSync(),
+      this.getHasAccessToPreviewModel(),
+      this,
     );
     return this.modelQuotas.get(primaryModel)?.limit;
   }
@@ -1802,6 +1857,10 @@ export class Config implements McpContext, AgentLoopContext {
     const primaryModel = resolveModel(
       this.getModel(),
       this.getGemini31LaunchedSync(),
+      this.getGemini31FlashLiteLaunchedSync(),
+      this.getUseCustomToolModelSync(),
+      this.getHasAccessToPreviewModel(),
+      this,
     );
     return this.modelQuotas.get(primaryModel)?.resetTime;
   }
@@ -2292,6 +2351,10 @@ export class Config implements McpContext, AgentLoopContext {
     return this.policyEngine.getApprovalMode();
   }
 
+  isPlanMode(): boolean {
+    return this.getApprovalMode() === ApprovalMode.PLAN;
+  }
+
   getPolicyUpdateConfirmationRequest():
     | PolicyUpdateConfirmationRequest
     | undefined {
@@ -2343,7 +2406,11 @@ export class Config implements McpContext, AgentLoopContext {
       );
     }
 
-    this.policyEngine.setApprovalMode(mode);
+    this.policyEngine.setApprovalMode(
+      mode,
+      this.sandboxPolicyManager?.getModeConfig(mode)?.approvedTools ?? [],
+    );
+    this.refreshSandboxManager();
 
     const isPlanModeTransition =
       currentMode !== mode &&
@@ -2870,12 +2937,21 @@ export class Config implements McpContext, AgentLoopContext {
   }
 
   /**
-   * Returns whether Gemini 3.1 has been launched.
+   * Returns whether Gemini 3.1 Pro has been launched.
    * This method is async and ensures that experiments are loaded before returning the result.
    */
   async getGemini31Launched(): Promise<boolean> {
     await this.ensureExperimentsLoaded();
     return this.getGemini31LaunchedSync();
+  }
+
+  /**
+   * Returns whether Gemini 3.1 Flash Lite has been launched.
+   * This method is async and ensures that experiments are loaded before returning the result.
+   */
+  async getGemini31FlashLiteLaunched(): Promise<boolean> {
+    await this.ensureExperimentsLoaded();
+    return this.getGemini31FlashLiteLaunchedSync();
   }
 
   /**
@@ -2915,6 +2991,27 @@ export class Config implements McpContext, AgentLoopContext {
     }
     return (
       this.experiments?.flags[ExperimentFlags.GEMINI_3_1_PRO_LAUNCHED]
+        ?.boolValue ?? false
+    );
+  }
+
+  /**
+   * Returns whether Gemini 3.1 Flash Lite has been launched.
+   *
+   * Note: This method should only be called after startup, once experiments have been loaded.
+   * If you need to call this during startup or from an async context, use
+   * getGemini31FlashLiteLaunched instead.
+   */
+  getGemini31FlashLiteLaunchedSync(): boolean {
+    const authType = this.contentGeneratorConfig?.authType;
+    if (
+      authType === AuthType.USE_GEMINI ||
+      authType === AuthType.USE_VERTEX_AI
+    ) {
+      return true;
+    }
+    return (
+      this.experiments?.flags[ExperimentFlags.GEMINI_3_1_FLASH_LITE_LAUNCHED]
         ?.boolValue ?? false
     );
   }
@@ -3315,9 +3412,28 @@ export class Config implements McpContext, AgentLoopContext {
    */
   private registerSubAgentTools(registry: ToolRegistry): void {
     const agentsOverrides = this.getAgentsSettings().overrides ?? {};
-    const definitions = this.agentRegistry.getAllDefinitions();
+    const discoveredDefinitions =
+      this.agentRegistry.getAllDiscoveredAgentNames();
 
-    for (const definition of definitions) {
+    // First, unregister any agents that are now disabled
+    for (const agentName of discoveredDefinitions) {
+      if (
+        !this.isAgentsEnabled() ||
+        agentsOverrides[agentName]?.enabled === false
+      ) {
+        const tool = registry.getTool(agentName);
+        if (tool instanceof SubagentTool) {
+          registry.unregisterTool(agentName);
+        }
+      }
+    }
+
+    const discoveredNames = this.agentRegistry.getAllDiscoveredAgentNames();
+    for (const agentName of discoveredNames) {
+      const definition = this.agentRegistry.getDiscoveredDefinition(agentName);
+      if (!definition) {
+        continue;
+      }
       try {
         if (
           !this.isAgentsEnabled() ||

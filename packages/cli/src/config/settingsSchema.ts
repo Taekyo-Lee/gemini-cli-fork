@@ -657,6 +657,16 @@ const SETTINGS_SCHEMA = {
         description: 'Hide the footer from the UI',
         showInDialog: true,
       },
+      collapseDrawerDuringApproval: {
+        type: 'boolean',
+        label: 'Collapse Drawer During Approval',
+        category: 'UI',
+        requiresRestart: false,
+        default: true,
+        description:
+          'Whether to collapse the UI drawer when a tool is awaiting confirmation.',
+        showInDialog: false,
+      },
       showMemoryUsage: {
         type: 'boolean',
         label: 'Show Memory Usage',
@@ -1998,7 +2008,7 @@ const SETTINGS_SCHEMA = {
         label: 'JIT Context Loading',
         category: 'Experimental',
         requiresRestart: true,
-        default: true,
+        default: false,
         description: 'Enable Just-In-Time (JIT) context loading.',
         showInDialog: false,
       },
@@ -3014,6 +3024,7 @@ export const SETTINGS_SCHEMA_DEFINITIONS: Record<
               type: 'object',
               properties: {
                 useGemini3_1: { type: 'boolean' },
+                useGemini3_1FlashLite: { type: 'boolean' },
                 useCustomTools: { type: 'boolean' },
                 hasAccessToPreview: { type: 'boolean' },
                 requestedModels: {
