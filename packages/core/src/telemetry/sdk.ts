@@ -106,6 +106,10 @@ class DiagLoggerAdapter {
   }
 
   info(message: string, ...args: unknown[]): void {
+    // [FORK] Suppress "Export failed with non-retryable error" from OTLP transport
+    if (typeof message === 'string' && message.includes('export failed')) {
+      return;
+    }
     debugLogger.log(message, ...args);
   }
 
