@@ -1,6 +1,6 @@
 # Gemini CLI — Local Setup Guide (From Source)
 
-> **Want the quick version?** See the [Setup section in README.md](../../README.md#setup-5-minutes)
+> **Want the quick version?** See the [Setup section in README.md](../../../README.md#setup-5-minutes)
 > for a streamlined 5-minute install using `setup.sh`.
 
 This guide walks you through building and installing Gemini CLI from this cloned
