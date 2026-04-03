@@ -78,8 +78,9 @@ cp .env.example .env
 - **`CORP`** — 사내망에서 온프레미스 모델 사용 (GLM-5, Kimi, Qwen 등)
 - **`DEV`** 또는 **`HOME`** — 공개 API 사용 (OpenAI, Anthropic, OpenRouter)
 
-실제로 사용하는 제공자의 API 키만 있으면 됩니다. 예를 들어 사내 CORP 모델만
-쓴다면 `OPENAI_API_KEY`는 필요 없습니다.
+실제로 사용하는 제공자의 API 키만 있으면 됩니다. `OPENAI_API_KEY`는 OpenAI
+모델뿐만 아니라 사내 CORP 모델에도 필요합니다 (온프레미스 엔드포인트도 API 키를
+요구합니다).
 
 ### 4단계: 빌드, 링크, 활성화
 
@@ -292,7 +293,7 @@ echo $A2G_LOCATION   # CORP, DEV, 또는 HOME이 출력되어야 합니다
 | `openrouter.ai`       | `OPENROUTER_API_KEY` |
 | 그 외 모두            | `OPENAI_API_KEY`     |
 
-CORP 모델은 API 키가 필요 없습니다 — `AD_ID`와 `FALLBACK_API_KEY_1`을 사용합니다.
+CORP 모델은 `OPENAI_API_KEY`와 함께 `AD_ID`, `FALLBACK_API_KEY_1`을 인증 헤더로 사용합니다.
 
 ---
 
