@@ -10,6 +10,49 @@ auth dialog with an **LLM model picker**. The selected model is accessed via the
 [OpenAI Chat Completions API](https://platform.openai.com/docs/api-reference/chat),
 which is supported by most LLM providers (OpenRouter, vLLM, LiteLLM, etc.).
 
+## Startup Decision Flow
+
+On startup, two **independent** decisions determine what the user sees:
+
+```
+$ gemini
+
+  1. Are OpenAI env vars set?
+     (A2G_LOCATION / OPENROUTER_API_KEY / OPENAI_BASE_URL)
+     │
+     ├── YES → OpenAI mode
+     │   │
+     │   2. Can models.default.json be loaded?
+     │      │
+     │      ├── YES → Model picker with models listed
+     │      │         User picks one → OpenAIContentGenerator → API call
+     │      │
+     │      └── NO  → Model picker with EMPTY list + stderr warning
+     │                ⚠ No models loaded — config/models.default.json not found.
+     │                (does NOT fall back to Google auth)
+     │
+     └── NO  → Google mode
+              Google auth dialog (Login / API Key / Vertex AI)
+```
+
+**Key point:** A missing or broken `models.default.json` does **not** cause a
+fallback to Google auth. The mode decision (OpenAI vs Google) depends entirely on
+environment variables. The JSON file only affects which models appear in the
+picker.
+
+| What goes wrong                          | Result                                  |
+| ---------------------------------------- | --------------------------------------- |
+| Env vars not set                         | Google auth dialog (original behavior)  |
+| Env vars set, JSON file missing          | Empty model picker + warning on stderr  |
+| Env vars set, JSON file has syntax error | Empty model picker + warning on stderr  |
+| Env vars set, JSON file OK               | Model picker with available models      |
+
+**Where this is decided:**
+- Mode selection: `getAuthTypeFromEnv()` in `contentGenerator.ts` → checked in
+  `initializer.ts` line 48
+- JSON loading: `loadModels()` in `llmRegistry.ts` → returns `[]` on failure
+  (lines 166-194)
+
 ## How It Works
 
 ### 1. Environment Detection
@@ -24,8 +67,26 @@ order):
 | `OPENROUTER_API_KEY` | OpenRouter API key available      |
 | `OPENAI_BASE_URL`    | Custom OpenAI-compatible endpoint |
 
-If **any** of these are set, the auth type is set to `OPENAI_COMPATIBLE` and the
-Google auth flow is skipped entirely.
+If **any one** of these is set, the auth type is set to `OPENAI_COMPATIBLE` and
+the Google auth flow is skipped entirely. The check is a simple OR
+(`detectOpenAIMode()` in `openaiFactory.ts`):
+
+```typescript
+export function detectOpenAIMode(): boolean {
+  return !!(
+    process.env['OPENAI_BASE_URL'] ||
+    process.env['OPENROUTER_API_KEY'] ||
+    process.env['A2G_LOCATION']
+  );
+}
+```
+
+> **Why not `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`?** These keys only provide
+> credentials, not intent. Many developers have them set globally for other tools
+> (e.g., Claude Code). Using them as triggers would unexpectedly activate the
+> model picker for anyone who didn't intend to use this fork's OpenAI mode. In
+> contrast, `A2G_LOCATION` is fork-specific, `OPENAI_BASE_URL` implies a specific
+> endpoint, and `OPENROUTER_API_KEY` is niche enough to signal clear intent.
 
 > **Priority note:** OpenAI-compatible mode takes precedence over all Google
 > auth methods. The detection order in `getAuthTypeFromEnv()` is:
@@ -64,13 +125,22 @@ interface LLMModelConfig {
 
 ### 3. Environment-Based Filtering
 
-`detectLocation()` reads `A2G_LOCATION` and maps it:
+`detectLocation()` in `llmRegistry.ts` reads `A2G_LOCATION` (case-insensitive)
+and maps it to one of three environments:
 
-| Env Value                       | Environment | Models shown                     |
-| ------------------------------- | ----------- | -------------------------------- |
-| `COMPANY`, `PRODUCTION`, `CORP` | CORP        | On-prem models (corp-flagged)    |
-| `DEVELOPMENT`, `DEV`            | DEV         | Dev + default + Anthropic models |
-| `HOME` (or unset)               | HOME        | Same as DEV                      |
+| You set `A2G_LOCATION` to      | Maps to | Models shown                     |
+| ------------------------------- | ------- | -------------------------------- |
+| `COMPANY`, `PRODUCTION`, `CORP` | `CORP`  | On-prem models (corp=true)       |
+| `DEVELOPMENT`, `DEV`            | `DEV`   | Dev models (dev=true)            |
+| `HOME`                          | `HOME`  | Home models (home=true)          |
+
+Case doesn't matter — `corp`, `Corp`, `CORP` all work.
+
+**What if the value doesn't match?** For example, `A2G_LOCATION=banana`:
+- `detectOpenAIMode()` still returns `true` (the var is set), so the **model
+  picker still activates**
+- But `detectLocation()` doesn't match any known value, so it falls through to
+  a hostname-based guess, and if that also fails, defaults to `HOME`
 
 `getAvailableModels()` filters by the detected environment and returns only
 models where the corresponding flag (`corp`, `dev`, `home`) is `true`.
@@ -133,7 +203,7 @@ The API key is resolved per-model via `createOpenAIContentGenerator()` in
      - openrouter.ai  →  OPENROUTER_API_KEY
      - everything else →  OPENAI_API_KEY
 3. config.apiKey          →  from CLI flags
-4. '' (empty string)      →  corp endpoints don't require bearer auth
+4. '' (empty string)      →  fallback (unlikely in practice)
 ```
 
 This means `apiKeyEnv` in `config/models.default.json` is optional — the URL-based
@@ -143,9 +213,10 @@ inference handles the common cases automatically.
 
 Base URL: `http://a2g.samsungds.net:7620/v1` (OpenAI-compatible vLLM)
 
-API key: Falls through to `OPENAI_API_KEY` or empty string.
+API key: Falls through to `OPENAI_API_KEY` (on-prem endpoints also require an
+API key).
 
-Corp models authenticate via **custom HTTP headers** instead of API keys. The
+Corp models additionally authenticate via **custom HTTP headers**. The
 GaussO model uses a lazy getter for `defaultHeaders` that reads env vars at
 access time (not import time):
 
