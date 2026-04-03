@@ -81,8 +81,9 @@ means:
 - **`DEV`** or **`HOME`** — You're using public APIs (OpenAI, Anthropic,
   OpenRouter)
 
-You only need API keys for providers you actually use. For example, if you only
-use on-prem CORP models, you don't need `OPENAI_API_KEY` at all.
+You only need API keys for providers you actually use. `OPENAI_API_KEY` is
+needed for both OpenAI models and on-prem CORP models (our on-prem endpoints
+also require an API key).
 
 ### Step 4: Build, link, and activate
 
@@ -297,7 +298,7 @@ the model's URL:
 | `openrouter.ai`       | `OPENROUTER_API_KEY` |
 | Everything else       | `OPENAI_API_KEY`     |
 
-CORP models don't need API keys — they use `AD_ID` and `FALLBACK_API_KEY_1`.
+CORP models use `OPENAI_API_KEY` plus `AD_ID` and `FALLBACK_API_KEY_1` for auth headers.
 
 ---
 
