@@ -41,6 +41,9 @@ Thumbs.db
 # Ignore built ts files
 dist
 
+# Debug logs
+*.log
+
 # Docker folder to help skip auth refreshes
 .docker
 
