@@ -606,10 +606,10 @@ export function loadEnvironment(
             continue;
           }
 
-          // Load variable only if it's not already set in the environment.
-          if (!Object.hasOwn(process.env, key)) {
-            process.env[key] = value;
-          }
+          // [FORK] Project .env overrides global ~/.env (sourced in ~/.bashrc).
+          // Upstream skipped existing vars, but that lets stale global values
+          // (e.g. wrong Langfuse keys) shadow the project-level config.
+          process.env[key] = value;
         }
       }
     } catch (_e) {
