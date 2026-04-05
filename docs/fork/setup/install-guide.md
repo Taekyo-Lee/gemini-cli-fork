@@ -1,7 +1,8 @@
 # Gemini CLI — Local Setup Guide (From Source)
 
-> **Want the quick version?** See the [Setup section in README.md](../../../README.md#setup-5-minutes)
-> for a streamlined 5-minute install using `setup.sh`.
+> **Want the quick version?** See the
+> [Setup section in README.md](../../../README.md#setup-5-minutes) for a
+> streamlined 5-minute install using `setup.sh`.
 
 This guide walks you through building and installing Gemini CLI from this cloned
 repo so you can type `gemini` anywhere in your terminal — just like `claude`.
@@ -116,20 +117,14 @@ and the **original Google auth mode**.
 This mode replaces the Google auth prompt with a model picker. It activates
 automatically when certain env vars are set.
 
-**Setup:** Load your env file (API keys + environment detection):
+**Setup:** Ensure your global `~/.env` has API keys (e.g. `OPENAI_API_KEY`). The
+project `.env` at the repo root is loaded automatically at startup and overrides
+any conflicting values from `~/.env` — no manual sourcing needed.
 
-```bash
-# Option 1: Source in current shell
-set -a && source ~/.env && set +a
-
-# Option 2: Auto-load on every new terminal
-echo 'set -a && source ~/.env && set +a' >> ~/.bashrc
-source ~/.bashrc
-```
-
-> **Why `set -a`?** The `.env` file uses `KEY=VALUE` format without `export`.
-> `set -a` tells bash to automatically export all variables so child processes
-> (like `node`) can see them. `set +a` turns it off after sourcing.
+> **How it works:** `~/.bashrc` sources `~/.env` globally (baseline API keys).
+> When gemini-cli starts, `loadEnvironment()` reads the project `.env` and
+> overrides `process.env`, so project-level config (Langfuse keys,
+> `A2G_LOCATION`, etc.) always takes precedence.
 
 **Run:**
 
@@ -221,9 +216,9 @@ Or use the link script which builds, re-links, and verifies everything:
 >
 > - `npm run build` — fast, sufficient for day-to-day rebuilds (the link
 >   persists across builds)
-> - `./scripts/fork/setup.sh` — use if the link breaks (e.g. after
->   accidentally installing the upstream package globally), or if you want a
->   single command that always guarantees correctness
+> - `./scripts/fork/setup.sh` — use if the link breaks (e.g. after accidentally
+>   installing the upstream package globally), or if you want a single command
+>   that always guarantees correctness
 > - `./scripts/fork/setup.sh --verify` — quick sanity check, run this if
 >   `gemini` starts behaving unexpectedly
 
@@ -238,7 +233,7 @@ npm run build
 npm link ./packages/cli     # or use alias method above
 
 # ----- OpenAI-compatible mode (on-prem/cloud LLMs) -----
-set -a && source ~/.env && set +a
+# Project .env is loaded automatically — just run:
 gemini                      # shows model picker
 
 # Or use the test script:
@@ -262,22 +257,19 @@ npm run build               # rebuild (link persists)
 ## Uninstall
 
 ```bash
-./scripts/fork/uninstall.sh          # remove gemini command + bashrc line
+./scripts/fork/uninstall.sh          # remove gemini command
 ./scripts/fork/uninstall.sh --all    # also remove ~/.gemini config
 ```
 
-This removes the global symlink and the env sourcing from `~/.bashrc`. The repo
-and `node_modules/` remain untouched — reinstall anytime with:
+This removes the global symlink. The repo and `node_modules/` remain untouched —
+reinstall anytime with:
 
 ```bash
 ./scripts/fork/setup.sh
-source ~/.bashrc
 ```
 
-`source ~/.bashrc` is needed because `setup.sh` runs in a child process — it
-adds the env sourcing line to `~/.bashrc` but can't load it into your current
-terminal. You only need to re-run these two commands; `npm install` and `.env`
-setup can be skipped.
+You only need to re-run this one command; `npm install` and `.env` setup can be
+skipped.
 
 ## Switching Between Modes
 
@@ -291,8 +283,7 @@ gemini
 To switch from Google mode to OpenAI mode:
 
 ```bash
-set -a && source ~/.env && set +a
-gemini
+gemini    # project .env is loaded automatically at startup
 ```
 
 ## Troubleshooting
@@ -315,19 +306,17 @@ cd ~/workspace/gemini-cli-fork
 npm link ./packages/cli
 ```
 
-**Cause 2: Env vars aren't exported to child processes.**
+**Cause 2: Global `~/.env` isn't sourced in `~/.bashrc`.**
 
-```bash
-node -e "console.log(process.env.A2G_LOCATION)"
-```
-
-If this prints `undefined`, you sourced the `.env` file without `set -a`. Fix:
+The project `.env` is loaded automatically at startup, but it still needs a
+baseline `~/.env` with API keys. Check that `~/.bashrc` contains:
 
 ```bash
 set -a && source ~/.env && set +a
 ```
 
-If you already added `source .env` to `~/.bashrc` without `set -a`, fix it:
+If it uses `source ~/.env` without `set -a`, variables won't be exported to
+child processes. Fix:
 
 ```bash
 sed -i 's|source ~/.env|set -a \&\& source ~/.env \&\& set +a|' ~/.bashrc

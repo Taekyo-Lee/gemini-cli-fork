@@ -133,22 +133,14 @@ setup_env() {
         info "Added GEMINI_FORK_DIR=$REPO_ROOT to .env"
     fi
 
-    # Add source line to ~/.bashrc (uses literal path to find .env)
+    # [FORK] No longer sourcing project .env from ~/.bashrc.
+    # Project .env is loaded at process startup by loadEnvironment() in
+    # settings.ts, which overrides global ~/.env values. This keeps API
+    # keys scoped to the gemini-fork process instead of leaking globally.
+    # Clean up the old marker if it exists from a previous setup run.
     if grep -qF "$MARKER" "$BASHRC" 2>/dev/null; then
-        # Update path if repo moved
-        local existing_path
-        existing_path="$(grep -F "$MARKER" "$BASHRC" | grep -oP '(?<=source ")[^"]+' || true)"
-        if [[ "$existing_path" == "$ENV_FILE" ]]; then
-            info "~/.bashrc already sources $ENV_FILE"
-        else
-            warn "Updating source path in ~/.bashrc (was: $existing_path)"
-            grep -vF "$MARKER" "$BASHRC" > "$BASHRC.tmp" && mv "$BASHRC.tmp" "$BASHRC"
-            echo "set -a; source \"$ENV_FILE\"; set +a  $MARKER" >> "$BASHRC"
-            info "Updated ~/.bashrc → $ENV_FILE"
-        fi
-    else
-        echo "set -a; source \"$ENV_FILE\"; set +a  $MARKER" >> "$BASHRC"
-        info "Added to ~/.bashrc: source \"$ENV_FILE\""
+        grep -vF "$MARKER" "$BASHRC" > "$BASHRC.tmp" && mv "$BASHRC.tmp" "$BASHRC"
+        info "Removed old source line from ~/.bashrc (env is now loaded at process level)"
     fi
 }
 
