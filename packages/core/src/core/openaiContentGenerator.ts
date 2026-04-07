@@ -33,6 +33,7 @@ import {
   geminiToolsToOpenAITools,
   openaiResponseToGeminiResponse,
   openaiStreamChunkToGeminiResponse,
+  openaiReasoningToGeminiResponse,
   ToolCallIdTracker,
 } from './openaiTypeMapper.js';
 import { debugLogger } from '../utils/debugLogger.js';
@@ -195,9 +196,20 @@ export class OpenAIContentGenerator implements ContentGenerator {
       number,
       { id: string; name: string; arguments: string }
     >();
+    // [FORK] Accumulate reasoning content across chunks (like pendingToolCalls).
+    // Reasoning models send many small delta.reasoning chunks. We buffer them
+    // and yield ONE consolidated thought part when reasoning ends, so the UI
+    // renders a single readable ThinkingMessage instead of one line per chunk.
+    let pendingReasoning = '';
 
     for await (const chunk of stream) {
       const choice = chunk.choices[0];
+
+      // [FORK] Extract reasoning content for reasoning models (GLM-5, DeepSeek R1, QwQ, etc.)
+      // OpenRouter sends "reasoning", some providers use "reasoning_content"
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- reasoning fields are not in OpenAI types yet
+      const deltaAny = choice?.delta as unknown as Record<string, unknown> | undefined;
+      const reasoningContent = (deltaAny?.['reasoning'] ?? deltaAny?.['reasoning_content']) as string | undefined;
 
       // Debug: log each chunk summary
       if (choice?.delta?.tool_calls) {
@@ -206,6 +218,10 @@ export class OpenAIContentGenerator implements ContentGenerator {
             `[OpenAI] Stream chunk: tool_call idx=${tc.index} id=${tc.id ?? '(none)'} name=${tc.function?.name ?? '(cont)'} args=${tc.function?.arguments ?? ''} finish=${choice.finish_reason ?? '(none)'}`,
           );
         }
+      } else if (reasoningContent) {
+        debugLogger.debug(
+          `[OpenAI] Stream chunk: reasoning="${reasoningContent.substring(0, 80)}" finish=${choice?.finish_reason ?? '(none)'}`,
+        );
       } else if (choice?.delta?.content) {
         debugLogger.debug(
           `[OpenAI] Stream chunk: text="${choice.delta.content}" finish=${choice.finish_reason ?? '(none)'}`,
@@ -284,6 +300,30 @@ export class OpenAIContentGenerator implements ContentGenerator {
         if (!choice.finish_reason) {
           continue;
         }
+      }
+
+      // [FORK] Accumulate reasoning content — don't yield individual chunks.
+      // This buffers the full reasoning text and emits it as a single thought
+      // part when reasoning ends (i.e., when text content or finish_reason arrives).
+      // Controlled by GEMINI_SHOW_REASONING env var (default: true).
+      const showReasoning = process.env['GEMINI_SHOW_REASONING'] !== 'false' && process.env['GEMINI_SHOW_REASONING'] !== '0';
+      if (reasoningContent && showReasoning) {
+        pendingReasoning += reasoningContent;
+        // Don't yield yet — continue accumulating
+        if (!choice?.finish_reason && !choice?.delta?.content) {
+          continue;
+        }
+      }
+
+      // [FORK] Flush accumulated reasoning as a single thought part before
+      // yielding text content or finish. This produces one clean ThinkingMessage.
+      if (pendingReasoning && (choice?.delta?.content || choice?.finish_reason)) {
+        yield openaiReasoningToGeminiResponse(
+          chunk,
+          pendingReasoning,
+          this.tracker,
+        );
+        pendingReasoning = '';
       }
 
       // For text content chunks and finish-only chunks, yield immediately.
