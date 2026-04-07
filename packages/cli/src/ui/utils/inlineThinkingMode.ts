@@ -11,5 +11,7 @@ export type InlineThinkingMode = 'off' | 'full';
 export function getInlineThinkingMode(
   settings: LoadedSettings,
 ): InlineThinkingMode {
-  return settings.merged.ui?.inlineThinkingMode ?? 'off';
+  // [FORK] Default to 'full' so reasoning models (GLM-5, DeepSeek R1, QwQ, etc.)
+  // display thinking tokens in real-time. Users can set to 'off' in settings.
+  return settings.merged.ui?.inlineThinkingMode ?? 'full';
 }
