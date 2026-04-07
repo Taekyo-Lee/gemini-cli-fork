@@ -50,6 +50,12 @@ import {
 import { safeJsonStringify } from '../utils/safeJsonStringify.js';
 import { isMcpToolName } from '../tools/mcp-tool.js';
 import { estimateTokenCountSync } from '../utils/tokenCalculation.js';
+import { createHash } from 'crypto';
+
+// [FORK] Short hash for system prompt change tracking (matches claude-fork's pattern)
+function shortHash(text: string): string {
+  return createHash('sha256').update(text).digest('hex').slice(0, 12);
+}
 
 interface StructuredError {
   status: number;
@@ -473,7 +479,18 @@ export class LoggingContentGenerator implements ContentGenerator {
           }
           spanMetadata.attributes[LANGFUSE_SPAN_NAME] = `gemini-cli:${req.model}`;
           if (isPrimaryLlmCall(role)) spanMetadata.attributes[LANGFUSE_TRACE_NAME] = `gemini-cli:${req.model}`;
+          // [FORK] Enhanced telemetry attributes (backported from claude-fork)
           const durationMs = Date.now() - startTime;
+          spanMetadata.attributes['duration_ms'] = durationMs;
+          spanMetadata.attributes['success'] = true;
+          spanMetadata.attributes['query_source'] = role;
+          spanMetadata.attributes['response.has_tool_call'] = response.candidates?.some(
+            (c) => c.content?.parts?.some((p) => p.functionCall),
+          ) ?? false;
+          const systemPromptText = safeJsonStringify(req.config?.systemInstruction ?? []);
+          spanMetadata.attributes['system_prompt_hash'] = `sp_${shortHash(systemPromptText)}`;
+          spanMetadata.attributes['system_prompt_length'] = systemPromptText.length;
+          spanMetadata.attributes['tools_count'] = Array.isArray(req.config?.tools) ? req.config.tools.length : 0;
           this._logApiResponse(
             contents,
             durationMs,
@@ -499,12 +516,14 @@ export class LoggingContentGenerator implements ContentGenerator {
           return response;
         } catch (error) {
           spanMetadata.error = error;
-          const durationMs = Date.now() - startTime;
+          const errorDurationMs = Date.now() - startTime;
+          spanMetadata.attributes['duration_ms'] = errorDurationMs;
+          spanMetadata.attributes['success'] = false;
 
           this._fixGaxiosErrorData(error);
 
           this._logApiError(
-            durationMs,
+            errorDurationMs,
             error,
             req.model,
             userPromptId,
@@ -609,10 +628,14 @@ export class LoggingContentGenerator implements ContentGenerator {
     const responses: GenerateContentResponse[] = [];
 
     let lastUsageMetadata: GenerateContentResponseUsageMetadata | undefined;
+    let ttftMs: number | undefined;
     const serverDetails = this._getEndpointUrl(req, 'generateContentStream');
     const requestContents: Content[] = toContents(req.contents);
     try {
       for await (const response of stream) {
+        if (ttftMs === undefined) {
+          ttftMs = Date.now() - startTime;
+        }
         responses.push(response);
         if (response.usageMetadata) {
           lastUsageMetadata = response.usageMetadata;
@@ -670,11 +693,25 @@ export class LoggingContentGenerator implements ContentGenerator {
         spanMetadata.attributes[GEN_AI_USAGE_OUTPUT_TOKENS] =
           lastUsageMetadata.candidatesTokenCount ?? 0;
       }
+      // [FORK] Enhanced telemetry attributes (backported from claude-fork)
+      spanMetadata.attributes['duration_ms'] = durationMs;
+      if (ttftMs !== undefined) spanMetadata.attributes['ttft_ms'] = ttftMs;
+      spanMetadata.attributes['success'] = true;
+      spanMetadata.attributes['query_source'] = role;
+      spanMetadata.attributes['response.has_tool_call'] = allCandidates.some(
+        (c) => c.content?.parts?.some((p) => p.functionCall),
+      );
+      const systemPromptText = safeJsonStringify(req.config?.systemInstruction ?? []);
+      spanMetadata.attributes['system_prompt_hash'] = `sp_${shortHash(systemPromptText)}`;
+      spanMetadata.attributes['system_prompt_length'] = systemPromptText.length;
+      spanMetadata.attributes['tools_count'] = Array.isArray(req.config?.tools) ? req.config.tools.length : 0;
     } catch (error) {
       spanMetadata.error = error;
-      const durationMs = Date.now() - startTime;
+      const errorDurationMs = Date.now() - startTime;
+      spanMetadata.attributes['duration_ms'] = errorDurationMs;
+      spanMetadata.attributes['success'] = false;
       this._logApiError(
-        durationMs,
+        errorDurationMs,
         error,
         responses[0]?.modelVersion || req.model,
         userPromptId,
