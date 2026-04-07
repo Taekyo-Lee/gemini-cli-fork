@@ -33,7 +33,6 @@ import {
   geminiToolsToOpenAITools,
   openaiResponseToGeminiResponse,
   openaiStreamChunkToGeminiResponse,
-  openaiReasoningToGeminiResponse,
   ToolCallIdTracker,
 } from './openaiTypeMapper.js';
 import { debugLogger } from '../utils/debugLogger.js';
@@ -196,12 +195,6 @@ export class OpenAIContentGenerator implements ContentGenerator {
       number,
       { id: string; name: string; arguments: string }
     >();
-    // [FORK] Accumulate reasoning content across chunks (like pendingToolCalls).
-    // Reasoning models send many small delta.reasoning chunks. We buffer them
-    // and yield ONE consolidated thought part when reasoning ends, so the UI
-    // renders a single readable ThinkingMessage instead of one line per chunk.
-    let pendingReasoning = '';
-
     for await (const chunk of stream) {
       const choice = chunk.choices[0];
 
@@ -302,36 +295,18 @@ export class OpenAIContentGenerator implements ContentGenerator {
         }
       }
 
-      // [FORK] Accumulate reasoning content — don't yield individual chunks.
-      // This buffers the full reasoning text and emits it as a single thought
-      // part when reasoning ends (i.e., when text content or finish_reason arrives).
+      // [FORK] Yield reasoning chunks individually for real-time streaming.
+      // The UI layer (useGeminiStream pendingThought) handles accumulation and live display.
       // Controlled by GEMINI_SHOW_REASONING env var (default: true).
       const showReasoning = process.env['GEMINI_SHOW_REASONING'] !== 'false' && process.env['GEMINI_SHOW_REASONING'] !== '0';
-      if (reasoningContent && showReasoning) {
-        pendingReasoning += reasoningContent;
-        // Don't yield yet — continue accumulating
-        if (!choice?.finish_reason && !choice?.delta?.content) {
-          continue;
-        }
-      }
 
-      // [FORK] Flush accumulated reasoning as a single thought part before
-      // yielding text content or finish. This produces one clean ThinkingMessage.
-      if (pendingReasoning && (choice?.delta?.content || choice?.finish_reason)) {
-        yield openaiReasoningToGeminiResponse(
-          chunk,
-          pendingReasoning,
-          this.tracker,
-        );
-        pendingReasoning = '';
-      }
-
-      // For text content chunks and finish-only chunks, yield immediately.
+      // For text/reasoning content chunks and finish-only chunks, yield immediately.
       // The finish-only chunk (finish_reason set, no content/tool_calls) must
       // be yielded so geminiChat captures the finishReason and avoids
       // throwing InvalidStreamError('NO_FINISH_REASON').
       if (
         choice?.delta?.content ||
+        (reasoningContent && showReasoning) ||
         !choice ||
         chunk.usage ||
         (choice?.finish_reason && !choice?.delta?.tool_calls)
