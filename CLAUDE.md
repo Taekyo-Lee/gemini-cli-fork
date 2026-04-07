@@ -239,6 +239,10 @@ All fork-specific docs live in `docs/fork/` (separate from upstream `docs/`):
 | `packages/cli/src/utils/sandbox.ts`         | Env file mount, fork repo volume mount           |
 | `packages/cli/src/utils/sandboxUtils.ts`    | Env file sourcing, local clone detection         |
 
+## Lessons Learned
+
+- **Check existing infrastructure before building.** Both Gemini CLI and Claude Code have extensive built-in mechanisms (streaming states, rendering pipelines, pending item patterns). Before implementing a feature manually, trace how the analogous existing feature works end-to-end (e.g., how text streams via `handleContentEvent` → `setPendingHistoryItem` → renders outside `<Static>` → live updates). The infrastructure you need likely already exists — you just need to wire it up. Example: reasoning token streaming was initially built with manual accumulation and `addItem()` to static history, but the existing `pendingHistoryItem` pattern already solves real-time streaming — it just needed a `pendingThought` state using the same pattern.
+
 ## Files NOT to Modify
 
 - `packages/core/src/prompts/snippets.legacy.ts` — historical snapshot
