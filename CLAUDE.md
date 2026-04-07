@@ -15,6 +15,10 @@ showing all available LLMs and connect via OpenAI-compatible endpoints.
 **Goal:** Make this fork as reliable and polished as Claude CLI for daily coding
 use.
 
+## Sister Project: claude-code-fork
+
+After this project, we applied the same approach to Anthropic's Claude Code CLI — [claude-code-fork](https://github.com/Taekyo-Lee/claude-code-fork). Claude Code is not open source, but we forked it and made it work with any OpenAI-compatible endpoint using the same shim pattern. Many solutions from this project (streaming, tool call ID mapping, type conversion, model registry) were carried over. **When debugging a problem in this repo, claude-code-fork may also have relevant solutions** (especially `services/api/openai/shim.ts`, `typeMapper.ts`, `streamAdapter.ts`, and `registry.ts`).
+
 ## Workflow Rule
 
 **After completing any Phase (or sub-phase), always update
