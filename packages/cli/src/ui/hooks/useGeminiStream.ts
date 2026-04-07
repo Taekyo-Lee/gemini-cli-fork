@@ -250,6 +250,11 @@ export const useGeminiStream = (
   );
   const [thought, thoughtRef, setThought] =
     useStateAndRef<ThoughtSummary | null>(null);
+  // [FORK] Pending thought for real-time streaming display. Uses the same
+  // pattern as pendingHistoryItem — rendered outside <Static> so it re-renders
+  // on every update, enabling live accumulation of reasoning tokens.
+  const [pendingThought, pendingThoughtRef, setPendingThought] =
+    useStateAndRef<HistoryItemWithoutId | null>(null);
   const [pendingHistoryItem, pendingHistoryItemRef, setPendingHistoryItem] =
     useStateAndRef<HistoryItemWithoutId | null>(null);
 
@@ -1012,13 +1017,33 @@ export const useGeminiStream = (
       setThought(eventValue);
 
       if (getInlineThinkingMode(settings) === 'full') {
-        addItem({
-          type: 'thinking',
-          thought: eventValue,
-        } as HistoryItemThinking);
+        // [FORK] Use pendingThought for real-time streaming instead of addItem().
+        // Each thought event accumulates into a single live ThinkingMessage
+        // rendered outside <Static>, enabling progressive display.
+        // Use raw description (not subject) to preserve spacing — parseThought()
+        // trims each chunk, losing leading spaces needed for word boundaries.
+        // Sanitize ** → * to prevent parseThought() from misinterpreting
+        // markdown bold markers as **Subject** delimiters.
+        const rawText = (eventValue.subject ? eventValue.subject + ' ' : '') + eventValue.description;
+        const sanitized = rawText.replace(/\*\*/g, '*');
+        setPendingThought((current) => {
+          const prev = current && current.type === 'thinking'
+            ? (current as HistoryItemThinking).thought.description
+            : '';
+          // Add space between chunks — parseThought() trims each chunk,
+          // stripping the leading spaces that serve as word separators.
+          const separator = prev ? ' ' : '';
+          return {
+            type: 'thinking',
+            thought: {
+              subject: '',
+              description: prev + separator + sanitized,
+            },
+          } as HistoryItemThinking;
+        });
       }
     },
-    [addItem, settings, setThought],
+    [settings, setThought, setPendingThought],
   );
 
   const handleUserCancelledEvent = useCallback(
@@ -1339,6 +1364,11 @@ export const useGeminiStream = (
           thoughtRef.current !== null
         ) {
           setThought(null);
+          // [FORK] Flush pending thought to permanent history when thinking ends.
+          if (pendingThoughtRef.current && getInlineThinkingMode(settings) === 'full') {
+            addItem(pendingThoughtRef.current, userMessageTimestamp);
+            setPendingThought(null);
+          }
         }
 
         switch (event.type) {
@@ -1938,12 +1968,14 @@ export const useGeminiStream = (
     ],
   );
 
+  // [FORK] Include pendingThought before pendingHistoryItem so thinking
+  // renders above the streaming answer, matching the natural reasoning→answer order.
   const pendingHistoryItems = useMemo(
     () =>
-      [pendingHistoryItem, ...pendingToolGroupItems].filter(
+      [pendingThought, pendingHistoryItem, ...pendingToolGroupItems].filter(
         (i): i is HistoryItemWithoutId => i !== undefined && i !== null,
       ),
-    [pendingHistoryItem, pendingToolGroupItems],
+    [pendingThought, pendingHistoryItem, pendingToolGroupItems],
   );
 
   useEffect(() => {
