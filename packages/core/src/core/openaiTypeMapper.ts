@@ -318,6 +318,17 @@ export function openaiResponseToGeminiResponse(
   const parts: Part[] = [];
   const msg = choice.message;
 
+  // [FORK] Handle reasoning/thinking content from reasoning models
+  // OpenRouter sends "reasoning", some providers use "reasoning_content"
+  // Controlled by GEMINI_SHOW_REASONING env var (default: true).
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- reasoning fields are not in OpenAI types yet
+  const msgAny = msg as unknown as Record<string, unknown>;
+  const reasoningContent = (msgAny['reasoning'] ?? msgAny['reasoning_content']) as string | undefined;
+  const showReasoning = process.env['GEMINI_SHOW_REASONING'] !== 'false' && process.env['GEMINI_SHOW_REASONING'] !== '0';
+  if (reasoningContent && showReasoning) {
+    parts.push({ thought: true, text: reasoningContent });
+  }
+
   if (msg.content) {
     parts.push({ text: msg.content });
   }
@@ -399,6 +410,16 @@ export function openaiStreamChunkToGeminiResponse(
   const parts: Part[] = [];
   const delta = choice.delta;
 
+  // [FORK] Handle reasoning/thinking content from reasoning models (GLM-5, DeepSeek R1, QwQ, etc.)
+  // OpenRouter sends "reasoning", some providers use "reasoning_content".
+  // Map to Gemini Part with thought=true so turn.ts yields ServerGeminiThoughtEvent.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- reasoning fields are not in OpenAI types yet
+  const deltaAny = delta as unknown as Record<string, unknown>;
+  const reasoningContent = (deltaAny['reasoning'] ?? deltaAny['reasoning_content']) as string | undefined;
+  if (reasoningContent) {
+    parts.push({ thought: true, text: reasoningContent });
+  }
+
   if (delta.content) {
     parts.push({ text: delta.content });
   }
@@ -457,6 +478,38 @@ export function openaiStreamChunkToGeminiResponse(
     {
       candidates: [candidate],
       usageMetadata,
+      modelVersion: chunk.model,
+      responseId: chunk.id,
+    },
+    GenerateContentResponse.prototype,
+  );
+}
+
+/**
+ * [FORK] Creates a Gemini response containing a single accumulated thought part.
+ * Used by openaiContentGenerator to flush buffered reasoning content as one
+ * consolidated ThinkingMessage instead of many per-chunk lines.
+ */
+export function openaiReasoningToGeminiResponse(
+  chunk: ChatCompletionChunk,
+  accumulatedReasoning: string,
+  _tracker: ToolCallIdTracker = new ToolCallIdTracker(),
+): GeminiResponse {
+  // Replace ** with * to prevent parseThought() from misinterpreting
+  // markdown bold markers (e.g., s-t-**r**-a-w) as **Subject** delimiters.
+  const sanitized = accumulatedReasoning.replace(/\*\*/g, '*');
+  const candidate: Candidate = {
+    content: {
+      parts: [{ thought: true, text: sanitized }],
+      role: 'model',
+    },
+    index: 0,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- Object.setPrototypeOf returns any
+  return Object.setPrototypeOf(
+    {
+      candidates: [candidate],
       modelVersion: chunk.model,
       responseId: chunk.id,
     },
