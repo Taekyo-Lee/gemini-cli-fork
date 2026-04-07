@@ -10,6 +10,7 @@ import { theme } from '../semantic-colors.js';
 import { colorizeCode } from './CodeColorizer.js';
 import { TableRenderer } from './TableRenderer.js';
 import { RenderInline } from './InlineMarkdownRenderer.js';
+import { latexToUnicode } from './latexToUnicode.js';
 import { useSettings } from '../contexts/SettingsContext.js';
 import { useAlternateBuffer } from '../hooks/useAlternateBuffer.js';
 
@@ -59,7 +60,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
     );
   }
 
-  const lines = text.split(/\r?\n/);
+  const lines = latexToUnicode(text).split(/\r?\n/);
   const headerRegex = /^ *(#{1,4}) +(.*)/;
   const codeFenceRegex = /^ *(`{3,}|~{3,}) *(\w*?) *$/;
   const ulItemRegex = /^([ \t]*)([-*+]) +(.*)/;
