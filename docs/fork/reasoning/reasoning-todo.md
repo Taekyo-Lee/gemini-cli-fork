@@ -77,6 +77,67 @@ Implementation checklist for displaying reasoning/thinking tokens from OpenAI-co
 
 ---
 
+## P0: Real-Time Streaming of Thinking (Phase 2)
+
+Currently reasoning is accumulated and displayed all at once. Text streams via the
+`pendingHistoryItem` pattern (rendered outside `<Static>`). Apply the same pattern to thinking.
+
+**Approach:** Leverage the existing `pendingHistoryItem` infrastructure. Text already
+streams in real-time via `setPendingHistoryItem()` → renders outside `<Static>` →
+re-renders every frame. Apply the identical pattern with a `pendingThought` state.
+
+**What we revert (Phase 1 manual implementation, replaced by infrastructure):**
+- `openaiContentGenerator.ts`: Remove `pendingReasoning` buffer and accumulation logic
+- `openaiContentGenerator.ts`: Remove `openaiReasoningToGeminiResponse()` call — yield chunks directly instead
+- `handleThoughtEvent`: Remove `addItem()` call — use `setPendingThought()` instead
+
+**What we keep (Phase 1, still needed):**
+- `openaiStreamChunkToGeminiResponse()`: per-chunk reasoning→thought mapping (the data source)
+- `openaiReasoningToGeminiResponse()`: keep for non-streaming path only
+- `GEMINI_SHOW_REASONING` env var gate
+- Debug logging for reasoning chunks
+- `inlineThinkingMode` default change to `'full'`
+
+**What we DON'T need to build (already exists):**
+- `pendingHistoryItems` rendering outside `<Static>` (MainContent.tsx:128-173, 256-270)
+- `ThinkingMessage` component (already renders thinking)
+- `HistoryItemThinking` type (types.ts:277-280)
+- `turn.ts` thought extraction from `part.thought` → `ServerGeminiThoughtEvent`
+- `isFirstThinking` detection in MainContent.tsx
+
+**What we add (wiring the infrastructure):**
+
+- [x] **Revert accumulation in `openaiContentGenerator.ts`** (2026-04-07)
+  - Removed `pendingReasoning` buffer and flush logic
+  - Re-added `reasoningContent` to yield condition (chunks yield individually)
+  - Removed `openaiReasoningToGeminiResponse` import and call
+  - `GEMINI_SHOW_REASONING` env var gate moved to the yield condition
+
+- [x] **Add `pendingThought` state in `useGeminiStream.ts`** (2026-04-07)
+  - New state: `useStateAndRef<HistoryItemWithoutId | null>(null)`
+  - Included in `pendingHistoryItems` array (before `pendingHistoryItem`)
+  - Automatically renders outside `<Static>` via existing MainContent.tsx
+
+- [x] **Modify `handleThoughtEvent` to use pending pattern** (2026-04-07)
+  - Replaced `addItem()` with `setPendingThought()` — accumulates description text
+  - Each thought event appends to pending item's description with space separator
+  - Space separator needed because `parseThought()` trims each chunk, stripping leading spaces
+  - `**` → `*` sanitization applied here (moved from `openaiReasoningToGeminiResponse`)
+
+- [x] **Flush `pendingThought` when thinking ends** (2026-04-07)
+  - In event loop, when non-Thought event arrives after thoughts
+  - Moves `pendingThought` to permanent history via `addItem()`
+  - Clears `pendingThought` state
+  - Respects `inlineThinkingMode` setting
+
+- [x] **Test real-time streaming with GLM-5** (2026-04-07)
+  - Thinking text grows in real-time as chunks arrive
+  - Single `ThinkingMessage` block that accumulates (not per-chunk lines)
+  - Final answer follows after thinking completes
+  - Verified with "Write a proof that there are infinitely many prime numbers"
+
+---
+
 ## P1: Reasoning Token Counting
 
 - [ ] **Extract reasoning token count from usage**
